@@ -42,24 +42,34 @@ function activate(context) {
         const reactAppUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "dist", "bundle.js"));
         // Get the html content for the webview
         panel.webview.html = getReactAppHtml(reactAppUri, panel);
-        // Get the file path for the active editor
+        // Get the active editor
         const activeEditor = vscode.window.activeTextEditor;
         if (!activeEditor) {
             vscode.window.showErrorMessage("No active editor found");
             return;
         }
         else {
+            // Path to active editor file
             var filePath = activeEditor.document.uri;
+            // Check if anything is selected in the file
+            var selection = activeEditor.selection;
         }
-        // Read file and send data to React frontend
-        fs.readFile(filePath.fsPath, "utf8", (err, data) => {
-            if (err) {
-                vscode.window.showErrorMessage("Error reading file");
-            }
-            else {
-                panel.webview.postMessage({ command: "fileData", data });
-            }
-        });
+        if (selection.isEmpty) {
+            // Read file and send data to React frontend
+            fs.readFile(filePath.fsPath, "utf8", (err, data) => {
+                if (err) {
+                    vscode.window.showErrorMessage("Error reading file");
+                }
+                else {
+                    panel.webview.postMessage({ command: "fileData", data });
+                }
+            });
+        }
+        else {
+            // Send selected text to React frontend
+            const selectedText = activeEditor.document.getText(selection);
+            panel.webview.postMessage({ command: "selectedText", selectedText });
+        }
         // Handle messages from the webview (React frontend)
         panel.webview.onDidReceiveMessage((message) => {
             if (message.command === "log") {

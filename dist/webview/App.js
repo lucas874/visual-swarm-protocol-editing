@@ -35,6 +35,10 @@ const App = () => {
                 // Update the state with the file content
                 setFileContent(message.data);
             }
+            else if (message.command === "selectedText") {
+                // Update the state with the selected text
+                setFileContent(message.selectedText);
+            }
         });
         return () => {
             window.removeEventListener("message", () => { });

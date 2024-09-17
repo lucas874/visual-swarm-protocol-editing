@@ -13,6 +13,9 @@ const App: React.FC = () => {
       if (message.command === "fileData") {
         // Update the state with the file content
         setFileContent(message.data);
+      } else if (message.command === "selectedText") {
+        // Update the state with the selected text
+        setFileContent(message.selectedText);
       }
     });
 
