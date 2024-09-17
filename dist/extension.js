@@ -28,16 +28,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 const vscode = __importStar(require("vscode"));
-const fs = __importStar(require("fs"));
 const path_1 = __importDefault(require("path"));
 function activate(context) {
-    context.subscriptions.push(vscode.commands.registerCommand("extension.openWebview", () => {
-        const panel = vscode.window.createWebviewPanel("myWebview", "React App", vscode.ViewColumn.One, {
-            enableScripts: true, // Enable JavaScript in the webview
+    context.subscriptions.push(
+    // Create the command to open the webview
+    vscode.commands.registerCommand("extension.openWebview", () => {
+        // Create the webview panel
+        const panel = vscode.window.createWebviewPanel("myWebview", "Actyx Swarm Protocol", vscode.ViewColumn.One, {
+            enableScripts: true, // Enable JavaScript in the webview to allow for React
             localResourceRoots: [
                 vscode.Uri.file(path_1.default.join(context.extensionPath, "dist")),
             ],
         });
+        const typeSubstring = "SwarmProtocolType";
         // Serve the bundled React app in the webview
         const reactAppUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "dist", "bundle.js"));
         // Get the html content for the webview
@@ -54,16 +57,29 @@ function activate(context) {
             // Check if anything is selected in the file
             var selection = activeEditor.selection;
         }
+        // Save text from active editor to a variable
+        const text = activeEditor.document.getText();
         if (selection.isEmpty) {
             // Read file and send data to React frontend
-            fs.readFile(filePath.fsPath, "utf8", (err, data) => {
-                if (err) {
-                    vscode.window.showErrorMessage("Error reading file");
-                }
-                else {
-                    panel.webview.postMessage({ command: "fileData", data });
-                }
-            });
+            // fs.readFile(filePath.fsPath, "utf8", (err, data) => {
+            //   if (err) {
+            //     vscode.window.showErrorMessage("Error reading file");
+            //   } else {
+            //     panel.webview.postMessage({ command: "fileData", data });
+            //   }
+            // });
+            // Check if the file contains a swarm protocol
+            if (text.includes(typeSubstring)) {
+                // Get index of the second occurence (first occurence is import)
+                const index = text.indexOf(typeSubstring, text.indexOf(typeSubstring) + 1);
+                // Get the JSON object from the file
+                const jsonObject = getNestedJSONObject(text, index);
+                console.log(jsonObject);
+                panel.webview.postMessage({
+                    command: "fileData",
+                    data: "Indeholder SWARM",
+                });
+            }
         }
         else {
             // Send selected text to React frontend
@@ -78,6 +94,37 @@ function activate(context) {
         });
     }));
 }
+function getNestedJSONObject(text, index) {
+    // With help from copilot
+    // Get the index of the opening curly brace
+    const openingCurlyBraceIndex = text.indexOf("{", index);
+    let closingCurlyBraceIndex = index;
+    let nextOpeningCurlyBraceIndex = openingCurlyBraceIndex;
+    let counter = 1;
+    while (counter != 0) {
+        // Get index of the next opening curly brace
+        let previousOpeningCurlyBraceIndex = nextOpeningCurlyBraceIndex;
+        // Find next opening curly brace after the previous opening curly brace
+        nextOpeningCurlyBraceIndex = text.indexOf("{", nextOpeningCurlyBraceIndex + 1);
+        // Save previous closing curly brace index
+        let previousClosingCurlyBraceIndex = closingCurlyBraceIndex;
+        // Get the index of the closing curly brace
+        closingCurlyBraceIndex = text.indexOf("}", closingCurlyBraceIndex + 1);
+        if (nextOpeningCurlyBraceIndex < closingCurlyBraceIndex) {
+            // If opening curlyBrace is before the closing curlyBrace, increment counter and save as next opening curlyBrace
+            counter++;
+            closingCurlyBraceIndex = previousClosingCurlyBraceIndex;
+        }
+        else {
+            // If closing curlyBrace is before the opening curlyBrace, decrement counter and don't increment next opening curlyBrace
+            counter--;
+            nextOpeningCurlyBraceIndex = previousOpeningCurlyBraceIndex;
+        }
+    }
+    // Get the JSON object from the file
+    const jsonObject = text.substring(openingCurlyBraceIndex, closingCurlyBraceIndex + 1);
+    return jsonObject;
+}
 function getReactAppHtml(scriptUri, panel) {
     return `
     <!DOCTYPE html>
@@ -89,7 +136,6 @@ function getReactAppHtml(scriptUri, panel) {
     </head>
     <body>
         <div id="root"></div>
-        <h1>Hello from extension!</h1>
         <script src="${scriptUri}"></script>
     </body>
     </html>
