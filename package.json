@@ -1,0 +1,48 @@
+{
+  "name": "my-vscode-extension",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build:ts": "tsc",
+    "build:react": "webpack --config ./src/webview/webpack.config.js",
+    "build": "npm run build:ts && npm run build:react",
+    "watch:ts": "tsc --watch",
+    "watch:react": "webpack --watch --config ./src/webview/webpack.config.js",
+    "watch": "npm run watch:ts & npm run watch:react"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-react": "^7.24.7",
+    "@babel/preset-typescript": "^7.24.7",
+    "@types/mocha": "10.0.8",
+    "@types/node": "^22.5.5",
+    "@types/react": "^18.3.6",
+    "@types/react-dom": "^18.3.0",
+    "@types/vscode": "1.93.0",
+    "babel-loader": "^9.2.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.2",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.0.0"
+  },
+  "activationEvents": [
+    "onCommand:extension.openWebview"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.openWebview",
+        "title": "Open webview"
+      }
+    ]
+  },
+  "dependencies": {
+    "@types/vscode": "^1.93.0",
+    "vscode-test": "^1.6.1"
+  }
+}
