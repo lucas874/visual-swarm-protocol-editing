@@ -47,15 +47,6 @@ export function activate(context: vscode.ExtensionContext) {
       const text = activeEditor.document.getText();
 
       if (selection.isEmpty) {
-        // Read file and send data to React frontend
-        // fs.readFile(filePath.fsPath, "utf8", (err, data) => {
-        //   if (err) {
-        //     vscode.window.showErrorMessage("Error reading file");
-        //   } else {
-        //     panel.webview.postMessage({ command: "fileData", data });
-        //   }
-        // });
-
         // Check if the file contains a swarm protocol
         if (text.includes(typeSubstring)) {
           // Get index of the second occurence (first occurence is import)
@@ -67,14 +58,13 @@ export function activate(context: vscode.ExtensionContext) {
           // Get the JSON object from the file
           const jsonObject = getNestedJSONObject(text, index);
 
-          console.log(jsonObject);
-
           panel.webview.postMessage({
             command: "fileData",
-            data: "Indeholder SWARM",
+            data: jsonObject,
           });
         }
       } else {
+        // TODO: IS IT STILL NECESSARY TO SEND SELECTED TEXT TO REACT FRONTEND?
         // Send selected text to React frontend
         const selectedText = activeEditor.document.getText(selection);
         panel.webview.postMessage({ command: "selectedText", selectedText });
