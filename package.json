@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "@types/vscode": "^1.93.0",
+    "tapable": "^2.2.1",
     "vscode-test": "^1.6.1"
   }
 }
