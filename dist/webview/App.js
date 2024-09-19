@@ -22,8 +22,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const react_1 = __importStar(require("react"));
+const TestFlow_1 = __importDefault(require("./TestFlow"));
 const App = () => {
     const [fileContent, setFileContent] = (0, react_1.useState)("");
     console.log("App component rendered");
@@ -45,6 +49,7 @@ const App = () => {
         };
     }, []);
     return (react_1.default.createElement("div", null,
+        react_1.default.createElement(TestFlow_1.default, null),
         react_1.default.createElement("h1", null, "File Content:"),
         react_1.default.createElement("pre", null, fileContent)));
 };

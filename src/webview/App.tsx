@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import TestFlow from "./TestFlow";
 
 const App: React.FC = () => {
   const [fileContent, setFileContent] = useState<string>("");
@@ -26,6 +27,7 @@ const App: React.FC = () => {
 
   return (
     <div>
+      <TestFlow />
       <h1>File Content:</h1>
       <pre>{fileContent}</pre>
     </div>
