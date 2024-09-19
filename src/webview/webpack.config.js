@@ -16,6 +16,10 @@ module.exports = {
         use: "ts-loader",
         exclude: /node_modules/,
       },
+      {
+        test: /\.css$/i, // For CSS files (optional)
+        use: ["style-loader", "css-loader"],
+      },
     ],
   },
   mode: "production", // Change to 'development' for easier debugging
