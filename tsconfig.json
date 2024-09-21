@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es6",
+    "jsx": "react", // Ensure JSX support is enabled
+    "outDir": "dist",
+    "sourceMap": true,
+    "lib": ["es6", "dom"],
+    "rootDir": "src",
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"], // Include .tsx files
+  "exclude": ["node_modules"]
+}
