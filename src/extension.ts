@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
       );
 
       // Get the html content for the webview
-      panel.webview.html = getReactAppHtml(reactAppUri, panel);
+      panel.webview.html = getReactAppHtml(reactAppUri);
 
       // Get the active editor
       const activeEditor = vscode.window.activeTextEditor;
@@ -125,10 +125,7 @@ function getNestedJSONObject(text: string, index: number) {
   return jsonObject;
 }
 
-function getReactAppHtml(
-  scriptUri: vscode.Uri,
-  panel: vscode.WebviewPanel
-): string {
+function getReactAppHtml(scriptUri: vscode.Uri): string {
   return `
     <!DOCTYPE html>
     <html lang="en">

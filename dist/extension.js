@@ -44,7 +44,7 @@ function activate(context) {
         // Serve the bundled React app in the webview
         const reactAppUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "dist", "bundle.js"));
         // Get the html content for the webview
-        panel.webview.html = getReactAppHtml(reactAppUri, panel);
+        panel.webview.html = getReactAppHtml(reactAppUri);
         // Get the active editor
         const activeEditor = vscode.window.activeTextEditor;
         if (!activeEditor) {
@@ -117,7 +117,7 @@ function getNestedJSONObject(text, index) {
     const jsonObject = text.substring(openingCurlyBraceIndex, closingCurlyBraceIndex + 1);
     return jsonObject;
 }
-function getReactAppHtml(scriptUri, panel) {
+function getReactAppHtml(scriptUri) {
     return `
     <!DOCTYPE html>
     <html lang="en">

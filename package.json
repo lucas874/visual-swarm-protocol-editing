@@ -46,6 +46,7 @@
   "dependencies": {
     "@types/vscode": "^1.93.0",
     "@xyflow/react": "^12.3.0",
+    "reactflow": "^11.11.4",
     "tapable": "^2.2.1",
     "vscode-test": "^1.6.1"
   }
