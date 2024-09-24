@@ -1,10 +1,34 @@
 import React, { useEffect, useState } from "react";
 import Flow from "./TestFlow";
+import JSON5 from "json5";
+
+// Define types of nodes and transitions for protocols
+type InitialNode = {
+  name: string;
+};
+
+type Transition = {
+  source: string;
+  target: string;
+  label: TransitionLabel;
+};
+
+type TransitionLabel = {
+  cmd: string;
+  logType: string[];
+  role: string;
+};
+
+interface SwarmProtocol {
+  initial: InitialNode;
+  transitions: Transition[];
+}
 
 const App: React.FC = () => {
   const [fileContent, setFileContent] = useState<string>("");
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+  // Set the initial state of nodes and edges, to ensure rerendering after values are set
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
 
   useEffect(() => {
     // Listen for messages from the VS Code extension
@@ -12,28 +36,14 @@ const App: React.FC = () => {
       const message = event.data;
 
       if (message.command === "fileData") {
-        // Update the state with the file content
-        setFileContent(message.data);
+        // Parse the JSON5 data
+        const protocol: SwarmProtocol = JSON5.parse(message.data);
 
-        // Convert message string to JSON object
-        // Replace all ' with "
-        const jsonStringWithDoubleQuotes = message.data.replace(/'/g, '"');
+        // Create edges for the flowchart
+        setEdges(createEdges(protocol.transitions));
 
-        // Give "" to all keys
-        const jsonStringWithQuotes = jsonStringWithDoubleQuotes.replace(
-          /(\w+):/g,
-          '"$1":'
-        );
-
-        // Stringify the JSON object
-        const jsonString = JSON.stringify(jsonStringWithQuotes, null, 2);
-
-        // Transform the file content to JSON object
-        const jsonObject = JSON.parse(jsonString);
-
-        // Create nodes and edges from JSON object
-        setNodes(jsonToNodes(jsonObject));
-        setEdges(jsonToEdges(jsonObject));
+        // Create nodes for the flowchart
+        setNodes(createNodes(protocol.transitions));
       } else if (message.command === "selectedText") {
         // Update the state with the selected text
         setFileContent(message.selectedText);
@@ -47,19 +57,51 @@ const App: React.FC = () => {
 
   return (
     <div>
-      <Flow />
-      <h1>File Content:</h1>
-      <pre>{fileContent}</pre>
+      <Flow nodes={nodes} edges={edges} />
     </div>
   );
 };
 
-function jsonToNodes(jsonObject): any[] {
-  return [];
+// Created partly using coPilot
+function createEdges(transitions: Transition[]): any[] {
+  // Take the values from transitions, and create edges that correspond to ReactFlow
+  const edges = transitions.map((transition) => {
+    return {
+      id: `${transition.source}-${transition.target}`,
+      source: transition.source,
+      target: transition.target,
+      label: transition.label.cmd,
+    };
+  });
+
+  return edges;
 }
 
-function jsonToEdges(jsonObject): any[] {
-  return [];
+function createNodes(transitions: Transition[]): any[] {
+  const nodeNames = new Set<string>();
+
+  // Find all unique nodes from transitions
+  transitions.forEach((element) => {
+    if (!nodeNames.has(element.source)) {
+      nodeNames.add(element.source);
+    }
+
+    if (!nodeNames.has(element.target)) {
+      nodeNames.add(element.target);
+    }
+  });
+
+  // Create nodes that correspond to ReactFlow
+  const nodes = Array.from(nodeNames).map((nodeName) => {
+    return {
+      id: nodeName,
+      data: { label: nodeName },
+      position: { x: 0, y: 0 },
+      type: "input",
+    };
+  });
+
+  return nodes;
 }
 
 export default App;

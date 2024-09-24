@@ -9,6 +9,6 @@
     "rootDir": "src",
     "esModuleInterop": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"], // Include .tsx files
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/webview/collide.js", "src/webview/initial.js"], // Include .tsx files
   "exclude": ["node_modules"]
 }
