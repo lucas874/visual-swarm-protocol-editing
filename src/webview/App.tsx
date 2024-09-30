@@ -35,6 +35,8 @@ const App: React.FC = () => {
     window.addEventListener("message", (event) => {
       const message = event.data;
 
+      console.log("event: ", event);
+
       if (message.command === "fileData") {
         // Parse the JSON5 data
         const protocol: SwarmProtocol = JSON5.parse(message.data);

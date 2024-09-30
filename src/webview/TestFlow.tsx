@@ -43,6 +43,8 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  console.log("initalNodes: ", initialNodes);
+  console.log("initialEdges: ", initialEdges);
 
   const onLayout = useCallback(
     (direction) => {
@@ -58,23 +60,21 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
     [nodes, edges]
   );
 
-  onLayout("TB");
-  console.log("nodes: ", nodes);
-  console.log("edges: ", edges);
-
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      fitView
-    >
-      {/* <Panel position="top-right">
-        <button onClick={() => onLayout("TB")}>vertical layout</button>
-        <button onClick={() => onLayout("LR")}>horizontal layout</button>
-      </Panel> */}
-    </ReactFlow>
+    <div style={{ height: "600px" }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        fitView
+      >
+        <Panel position="top-right">
+          <button onClick={() => onLayout("TB")}>vertical layout</button>
+          <button onClick={() => onLayout("LR")}>horizontal layout</button>
+        </Panel>
+      </ReactFlow>
+    </div>
   );
 };
 
