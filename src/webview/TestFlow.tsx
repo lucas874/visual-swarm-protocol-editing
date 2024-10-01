@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import Dagre from "@dagrejs/dagre";
 import {
   ReactFlow,
@@ -43,8 +43,6 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  console.log("initalNodes: ", initialNodes);
-  console.log("initialEdges: ", initialEdges);
 
   const onLayout = useCallback(
     (direction) => {
@@ -59,8 +57,15 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
         fitView();
       });
     },
-    [nodes, edges]
+    // Changed dependencies so it can be used inside the useEffect
+    [fitView, initialNodes, initialEdges, setNodes, setEdges]
   );
+
+  // Ensure that the layout is vertical when the component is first rendered
+  // And that no buttons are needed to be clicked
+  useEffect(() => {
+    onLayout("TB");
+  }, [onLayout]);
 
   return (
     <div style={{ height: "600px" }}>
@@ -71,10 +76,7 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
         onEdgesChange={onEdgesChange}
         fitView
       >
-        <Panel position="top-right">
-          <button onClick={() => onLayout("TB")}>vertical layout</button>
-          <button onClick={() => onLayout("LR")}>horizontal layout</button>
-        </Panel>
+        {/* Removed buttons */}
       </ReactFlow>
     </div>
   );
