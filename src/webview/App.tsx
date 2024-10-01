@@ -45,7 +45,7 @@ const App: React.FC = () => {
         setEdges(createEdges(protocol.transitions));
 
         // Create nodes for the flowchart
-        setNodes(createNodes(protocol.transitions));
+        setNodes(createNodes(protocol.initial, protocol.transitions));
       } else if (message.command === "selectedText") {
         // Update the state with the selected text
         setFileContent(message.selectedText);
@@ -79,7 +79,10 @@ function createEdges(transitions: Transition[]): any[] {
   return edges;
 }
 
-function createNodes(transitions: Transition[]): any[] {
+function createNodes(
+  initialNode: InitialNode,
+  transitions: Transition[]
+): any[] {
   const nodeNames = new Set<string>();
 
   // Find all unique nodes from transitions
@@ -95,12 +98,21 @@ function createNodes(transitions: Transition[]): any[] {
 
   // Create nodes that correspond to ReactFlow
   const nodes = Array.from(nodeNames).map((nodeName) => {
-    return {
-      id: nodeName,
-      data: { label: nodeName },
-      position: { x: 0, y: 0 },
-      type: "input",
-    };
+    if (nodeName === initialNode.name) {
+      return {
+        id: nodeName,
+        data: { label: nodeName },
+        position: { x: 0, y: 0 },
+        type: "output",
+      };
+    } else {
+      return {
+        id: nodeName,
+        data: { label: nodeName },
+        position: { x: 0, y: 0 },
+        type: "default",
+      };
+    }
   });
 
   return nodes;

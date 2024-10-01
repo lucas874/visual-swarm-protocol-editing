@@ -30,8 +30,8 @@ const getLayoutedElements = (nodes, edges, options) => {
       const position = g.node(node.id);
       // We are shifting the dagre node position (anchor=center center) to the top left
       // so it matches the React Flow node anchor point (top left).
-      const x = position.x - (node.measured?.width ?? 0) / 2;
-      const y = position.y - (node.measured?.height ?? 0) / 2;
+      const x = position.x - (node.measured?.width ?? 0) / 5;
+      const y = position.y - (node.measured?.height ?? 0) / 5;
 
       return { ...node, position: { x, y } };
     }),
@@ -48,7 +48,9 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
 
   const onLayout = useCallback(
     (direction) => {
-      const layouted = getLayoutedElements(nodes, edges, { direction });
+      const layouted = getLayoutedElements(initialNodes, initialEdges, {
+        direction,
+      });
 
       setNodes([...layouted.nodes]);
       setEdges([...layouted.edges]);
