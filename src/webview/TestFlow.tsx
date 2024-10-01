@@ -18,10 +18,16 @@ const getLayoutedElements = (nodes, edges, options) => {
   nodes.forEach((node) =>
     g.setNode(node.id, {
       ...node,
-      width: node.measured?.width ?? 0,
-      height: node.measured?.height ?? 0,
+      // Change to standard values other than 0, if no measurements found
+      // Helps collision detection from dagre
+      width: node.measured?.width ?? 100,
+      height: node.measured?.height ?? 50,
+      nodesep: 20,
+      ranksep: 100,
     })
   );
+
+  console.log("g", g);
 
   Dagre.layout(g);
 
@@ -30,8 +36,9 @@ const getLayoutedElements = (nodes, edges, options) => {
       const position = g.node(node.id);
       // We are shifting the dagre node position (anchor=center center) to the top left
       // so it matches the React Flow node anchor point (top left).
-      const x = position.x - (node.measured?.width ?? 0) / 5;
-      const y = position.y - (node.measured?.height ?? 0) / 5;
+      // Still using the same standard measurements from above
+      const x = position.x - (node.measured?.width ?? 100) / 5;
+      const y = position.y - (node.measured?.height ?? 50) / 5;
 
       return { ...node, position: { x, y } };
     }),

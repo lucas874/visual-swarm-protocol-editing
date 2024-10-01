@@ -98,14 +98,16 @@ function createNodes(
 
   // Create nodes that correspond to ReactFlow
   const nodes = Array.from(nodeNames).map((nodeName) => {
-    if (nodeName === initialNode.name) {
+    if (nodeName === initialNode.toString()) {
+      // Initial node only has an input type
       return {
         id: nodeName,
         data: { label: nodeName },
         position: { x: 0, y: 0 },
-        type: "output",
+        type: "input",
       };
     } else {
+      // All other nodes have a default type
       return {
         id: nodeName,
         data: { label: nodeName },
