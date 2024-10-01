@@ -41,6 +41,14 @@
         "command": "extension.openWebview",
         "title": "Open webview"
       }
+    ],
+    "keybindings": [
+      {
+        "command": "extension.openWebview",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorTextFocus"
+      }
     ]
   },
   "dependencies": {
