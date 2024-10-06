@@ -2,14 +2,15 @@ import React, { useCallback, useEffect } from "react";
 import Dagre from "@dagrejs/dagre";
 import {
   ReactFlow,
-  Panel,
   useReactFlow,
   useNodesState,
   useEdgesState,
   ReactFlowProvider,
+  ConnectionMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
+// Create nodes and edges from the protocol data
 const getLayoutedElements = (nodes, edges, options) => {
   const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
   g.setGraph({ rankdir: options.direction });
@@ -26,8 +27,6 @@ const getLayoutedElements = (nodes, edges, options) => {
       ranksep: 100,
     })
   );
-
-  console.log("g", g);
 
   Dagre.layout(g);
 
@@ -46,11 +45,13 @@ const getLayoutedElements = (nodes, edges, options) => {
   };
 };
 
-const LayoutFlow = ({ initialNodes, initialEdges }) => {
+// Create flow from values given
+const LayoutFlow = ({ initialNodes, initialEdges, edgesTypes }) => {
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  // Update nodes and edges with the layouted elements
   const onLayout = useCallback(
     (direction) => {
       const layouted = getLayoutedElements(initialNodes, initialEdges, {
@@ -72,6 +73,7 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
   // And that no buttons are needed to be clicked
   useEffect(() => {
     onLayout("TB");
+    console.log(edgesTypes);
   }, [onLayout]);
 
   return (
@@ -81,7 +83,10 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        edgeTypes={edgesTypes}
         fitView
+        attributionPosition="top-right"
+        connectionMode={ConnectionMode.Loose}
       >
         {/* Removed buttons */}
       </ReactFlow>
@@ -90,10 +95,14 @@ const LayoutFlow = ({ initialNodes, initialEdges }) => {
 };
 
 // This is the Flow component that will be rendered in the App component
-function Flow({ nodes, edges }) {
+function Flow({ nodes, edges, edgesTypes }) {
   return (
     <ReactFlowProvider>
-      <LayoutFlow initialNodes={nodes} initialEdges={edges} />
+      <LayoutFlow
+        initialNodes={nodes}
+        initialEdges={edges}
+        edgesTypes={edgesTypes}
+      />
     </ReactFlowProvider>
   );
 }

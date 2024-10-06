@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Flow from "./TestFlow";
 import JSON5 from "json5";
+import SelfConnecting from "./custom-edges/SelfConnectingEdge";
+import { MarkerType } from "@xyflow/react";
 
 // Define types of nodes and transitions for protocols
 type InitialNode = {
@@ -23,6 +25,10 @@ interface SwarmProtocol {
   initial: InitialNode;
   transitions: Transition[];
 }
+
+const edgesTypes = {
+  selfconnecting: SelfConnecting,
+};
 
 const App: React.FC = () => {
   const [fileContent, setFileContent] = useState<string>("");
@@ -59,7 +65,7 @@ const App: React.FC = () => {
 
   return (
     <div>
-      <Flow nodes={nodes} edges={edges} />
+      <Flow nodes={nodes} edges={edges} edgesTypes={edgesTypes} />
     </div>
   );
 };
@@ -68,12 +74,25 @@ const App: React.FC = () => {
 function createEdges(transitions: Transition[]): any[] {
   // Take the values from transitions, and create edges that correspond to ReactFlow
   const edges = transitions.map((transition) => {
-    return {
-      id: `${transition.source}-${transition.target}`,
-      source: transition.source,
-      target: transition.target,
-      label: transition.label.cmd,
-    };
+    if (transition.source === transition.target) {
+      console.log("Self connecting edge");
+      return {
+        id: `${transition.source}-${transition.target}`,
+        source: transition.source,
+        target: transition.target,
+        label: transition.label.cmd + "@" + transition.label.role,
+        type: "selfconnecting",
+        markerEnd: { type: MarkerType.Arrow },
+      };
+    } else {
+      return {
+        id: `${transition.source}-${transition.target}`,
+        source: transition.source,
+        target: transition.target,
+        label: transition.label.cmd + "@" + transition.label.role,
+        markerEnd: { type: MarkerType.Arrow },
+      };
+    }
   });
 
   return edges;
