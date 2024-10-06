@@ -73,7 +73,6 @@ const LayoutFlow = ({ initialNodes, initialEdges, edgesTypes }) => {
   // And that no buttons are needed to be clicked
   useEffect(() => {
     onLayout("TB");
-    console.log(edgesTypes);
   }, [onLayout]);
 
   return (

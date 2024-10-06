@@ -8,7 +8,6 @@ export default function SelfConnecting(props: EdgeProps) {
     return <BezierEdge {...props} />;
   }
 
-  console.log("SelfConnecting props: ", props);
   // Split props to match the following values
   const { sourceX, sourceY, targetX, targetY, id, markerEnd } = props;
 

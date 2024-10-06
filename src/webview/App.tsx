@@ -41,8 +41,6 @@ const App: React.FC = () => {
     window.addEventListener("message", (event) => {
       const message = event.data;
 
-      console.log("event: ", event);
-
       if (message.command === "fileData") {
         // Parse the JSON5 data
         const protocol: SwarmProtocol = JSON5.parse(message.data);
@@ -75,7 +73,6 @@ function createEdges(transitions: Transition[]): any[] {
   // Take the values from transitions, and create edges that correspond to ReactFlow
   const edges = transitions.map((transition) => {
     if (transition.source === transition.target) {
-      console.log("Self connecting edge");
       return {
         id: `${transition.source}-${transition.target}`,
         source: transition.source,
