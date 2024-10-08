@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",
+    "@tisoap/react-flow-smart-edge": "^2.0.0",
     "@types/vscode": "^1.93.0",
     "@xyflow/react": "^12.3.0",
     "json5": "^2.2.3",
