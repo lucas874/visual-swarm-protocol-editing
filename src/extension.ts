@@ -6,6 +6,43 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     // Create the command to open the webview
     vscode.commands.registerCommand("extension.openWebview", () => {
+      // Get the active editor
+      const activeEditor = vscode.window.activeTextEditor;
+
+      // Check if there is an active editor
+      if (!activeEditor) {
+        vscode.window.showErrorMessage("No active editor found");
+        return;
+      }
+
+      // Save text from active editor to a variable
+      const text = activeEditor.document.getText();
+
+      // Set the substring to search for
+      const typeSubstring = "SwarmProtocolType";
+
+      let jsonObject: string;
+
+      // Check if the file contains a swarm protocol
+      if (text.includes(typeSubstring)) {
+        // Get index of the second occurence (first occurence is import)
+        const index = text.indexOf(
+          typeSubstring,
+          text.indexOf(typeSubstring) + 1
+        );
+
+        if (index === -1) {
+          vscode.window.showErrorMessage("Cannot find the swarm protocol");
+          return;
+        } else {
+          // Get the JSON object from the file
+          jsonObject = getNestedJSONObject(text, index);
+        }
+      } else {
+        vscode.window.showErrorMessage("No swarm protocol found");
+        return;
+      }
+
       // Create the webview panel
       const panel = vscode.window.createWebviewPanel(
         "myWebview",
@@ -20,8 +57,6 @@ export function activate(context: vscode.ExtensionContext) {
         }
       );
 
-      const typeSubstring = "SwarmProtocolType";
-
       // Serve the bundled React app in the webview
       const reactAppUri = panel.webview.asWebviewUri(
         vscode.Uri.joinPath(context.extensionUri, "dist", "bundle.js")
@@ -30,46 +65,10 @@ export function activate(context: vscode.ExtensionContext) {
       // Get the html content for the webview
       panel.webview.html = getReactAppHtml(reactAppUri);
 
-      // Get the active editor
-      const activeEditor = vscode.window.activeTextEditor;
-
-      if (!activeEditor) {
-        vscode.window.showErrorMessage("No active editor found");
-        return;
-      } else {
-        // Path to active editor file
-        var filePath = activeEditor.document.uri;
-
-        // Check if anything is selected in the file
-        var selection = activeEditor.selection;
-      }
-
-      // Save text from active editor to a variable
-      const text = activeEditor.document.getText();
-
-      if (selection.isEmpty) {
-        // Check if the file contains a swarm protocol
-        if (text.includes(typeSubstring)) {
-          // Get index of the second occurence (first occurence is import)
-          const index = text.indexOf(
-            typeSubstring,
-            text.indexOf(typeSubstring) + 1
-          );
-
-          // Get the JSON object from the file
-          const jsonObject = getNestedJSONObject(text, index);
-
-          panel.webview.postMessage({
-            command: "fileData",
-            data: jsonObject,
-          });
-        }
-      } else {
-        // TODO: IS IT STILL NECESSARY TO SEND SELECTED TEXT TO REACT FRONTEND?
-        // Send selected text to React frontend
-        const selectedText = activeEditor.document.getText(selection);
-        panel.webview.postMessage({ command: "selectedText", selectedText });
-      }
+      panel.webview.postMessage({
+        command: "fileData",
+        data: jsonObject,
+      });
 
       // Handle messages from the webview (React frontend)
       panel.webview.onDidReceiveMessage((message) => {
