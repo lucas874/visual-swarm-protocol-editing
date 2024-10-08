@@ -16,6 +16,7 @@ export function activate(context: vscode.ExtensionContext) {
           localResourceRoots: [
             vscode.Uri.file(path.join(context.extensionPath, "dist")),
           ],
+          retainContextWhenHidden: true, // Retain the webview content when it is hidden
         }
       );
 
