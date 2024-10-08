@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import * as fs from "fs";
 import path from "path";
 
 export function activate(context: vscode.ExtensionContext) {
