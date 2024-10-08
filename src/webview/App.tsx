@@ -31,7 +31,6 @@ const edgesTypes = {
 };
 
 const App: React.FC = () => {
-  const [fileContent, setFileContent] = useState<string>("");
   // Set the initial state of nodes and edges, to ensure rerendering after values are set
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
@@ -50,9 +49,6 @@ const App: React.FC = () => {
 
         // Create nodes for the flowchart
         setNodes(createNodes(protocol.initial, protocol.transitions));
-      } else if (message.command === "selectedText") {
-        // Update the state with the selected text
-        setFileContent(message.selectedText);
       }
     });
 
