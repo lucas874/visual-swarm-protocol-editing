@@ -3,7 +3,6 @@ import Flow from "./TestFlow";
 import JSON5 from "json5";
 import SelfConnecting from "./custom-edges/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
-import { SmartBezierEdge } from "@tisoap/react-flow-smart-edge";
 
 // Define types of nodes and transitions for protocols
 type InitialNode = {
@@ -29,7 +28,6 @@ interface SwarmProtocol {
 
 const edgesTypes = {
   selfconnecting: SelfConnecting,
-  smart: SmartBezierEdge,
 };
 
 const App: React.FC = () => {
@@ -85,7 +83,6 @@ function createEdges(transitions: Transition[]): any[] {
         source: transition.source,
         target: transition.target,
         label: transition.label.cmd + "@" + transition.label.role,
-        type: "smart",
         markerEnd: { type: MarkerType.Arrow },
       };
     }
