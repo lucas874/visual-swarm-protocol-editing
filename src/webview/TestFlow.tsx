@@ -10,6 +10,9 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
+const nodeWidth = 175;
+const nodeHeight = 75;
+
 // Create nodes and edges from the protocol data
 const getLayoutedElements = (nodes, edges, options) => {
   const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
@@ -21,8 +24,8 @@ const getLayoutedElements = (nodes, edges, options) => {
       ...node,
       // Change to standard values other than 0, if no measurements found
       // Helps collision detection from dagre
-      width: node.measured?.width ?? 175,
-      height: node.measured?.height ?? 75,
+      width: node.measured?.width ?? nodeWidth,
+      height: node.measured?.height ?? nodeHeight,
       nodesep: 20,
       ranksep: 100,
     })
@@ -36,8 +39,8 @@ const getLayoutedElements = (nodes, edges, options) => {
       // We are shifting the dagre node position (anchor=center center) to the top left
       // so it matches the React Flow node anchor point (top left).
       // Still using the same standard measurements from above
-      const x = position.x - (node.measured?.width ?? 175) / 5;
-      const y = position.y - (node.measured?.height ?? 75) / 5;
+      const x = position.x - (node.measured?.width ?? nodeWidth) / 5;
+      const y = position.y - (node.measured?.height ?? nodeHeight) / 5;
 
       return { ...node, position: { x, y } };
     }),
