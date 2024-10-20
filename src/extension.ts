@@ -38,7 +38,11 @@ export function activate(context: vscode.ExtensionContext) {
         } else {
           // Get the JSON object from the file
           jsonObject = getNestedJSONObject(text, index);
-          console.log(jsonObject);
+
+          if (jsonObject === "") {
+            vscode.window.showErrorMessage("Cannot find the swarm protocol");
+            return;
+          }
         }
       } else {
         vscode.window.showErrorMessage("No swarm protocol found");
@@ -94,7 +98,15 @@ function getNestedJSONObject(text: string, index: number) {
     const openIndex = text.indexOf("{", index);
     const closingIndex = text.indexOf("}", index);
 
-    if (openIndex < closingIndex) {
+    // Ensure that last curly brace can be found
+    if (closingIndex === -1) {
+      vscode.window.showErrorMessage(
+        "Cannot find the last closing curly brace"
+      );
+      return "";
+    }
+
+    if (openIndex < closingIndex && openIndex !== -1) {
       index = openIndex + 1;
       counter++;
     } else {
@@ -102,42 +114,12 @@ function getNestedJSONObject(text: string, index: number) {
       closingCurlyBraceIndex = closingIndex;
       counter--;
     }
-    console.log(counter);
   } while (counter !== 0);
-
-  // while (counter != 0) {
-  //   // Get index of the next opening curly brace
-  //   let previousOpeningCurlyBraceIndex = openingCurlyBraceIndex;
-
-  //   // Find next opening curly brace after the previous opening curly brace
-  //   openingCurlyBraceIndex = text.indexOf("{", openingCurlyBraceIndex + 1);
-
-  //   if (openingCurlyBraceIndex === -1) {
-  //     // If there are no more opening curly braces, break
-  //     break;
-  //   }
-
-  //   // Save previous closing curly brace index
-  //   let previousClosingCurlyBraceIndex = closingCurlyBraceIndex;
-
-  //   // Get the index of the closing curly brace
-  //   closingCurlyBraceIndex = text.indexOf("}", closingCurlyBraceIndex + 1);
-
-  //   if (openingCurlyBraceIndex < closingCurlyBraceIndex) {
-  //     // If opening curlyBrace is before the closing curlyBrace, increment counter and save as next opening curlyBrace
-  //     counter++;
-  //     closingCurlyBraceIndex = previousClosingCurlyBraceIndex;
-  //   } else {
-  //     // If closing curlyBrace is before the opening curlyBrace, decrement counter and don't increment next opening curlyBrace
-  //     counter--;
-  //     openingCurlyBraceIndex = previousOpeningCurlyBraceIndex;
-  //   }
-  // }
 
   // Get the JSON object from the file
   const jsonObject = text.substring(
     openingCurlyBraceIndex,
-    closingCurlyBraceIndex
+    closingCurlyBraceIndex + 1
   );
 
   return jsonObject;
