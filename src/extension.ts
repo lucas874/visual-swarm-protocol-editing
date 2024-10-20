@@ -14,6 +14,8 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      console.log(activeEditor.document.fileName);
+
       // Save text from active editor to a variable
       const text = activeEditor.document.getText();
 
@@ -36,6 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
         } else {
           // Get the JSON object from the file
           jsonObject = getNestedJSONObject(text, index);
+          console.log(jsonObject);
         }
       } else {
         vscode.window.showErrorMessage("No swarm protocol found");
@@ -82,43 +85,59 @@ export function activate(context: vscode.ExtensionContext) {
 function getNestedJSONObject(text: string, index: number) {
   // With help from copilot
   // Get the index of the opening curly brace
-  const openingCurlyBraceIndex = text.indexOf("{", index);
-  let closingCurlyBraceIndex = index;
-  let nextOpeningCurlyBraceIndex = openingCurlyBraceIndex;
+  let openingCurlyBraceIndex = text.indexOf("{", index);
+  let closingCurlyBraceIndex;
 
-  let counter = 1;
+  let counter = 0;
 
-  while (counter != 0) {
-    // Get index of the next opening curly brace
-    let previousOpeningCurlyBraceIndex = nextOpeningCurlyBraceIndex;
+  do {
+    const openIndex = text.indexOf("{", index);
+    const closingIndex = text.indexOf("}", index);
 
-    // Find next opening curly brace after the previous opening curly brace
-    nextOpeningCurlyBraceIndex = text.indexOf(
-      "{",
-      nextOpeningCurlyBraceIndex + 1
-    );
-
-    // Save previous closing curly brace index
-    let previousClosingCurlyBraceIndex = closingCurlyBraceIndex;
-
-    // Get the index of the closing curly brace
-    closingCurlyBraceIndex = text.indexOf("}", closingCurlyBraceIndex + 1);
-
-    if (nextOpeningCurlyBraceIndex < closingCurlyBraceIndex) {
-      // If opening curlyBrace is before the closing curlyBrace, increment counter and save as next opening curlyBrace
+    if (openIndex < closingIndex) {
+      index = openIndex + 1;
       counter++;
-      closingCurlyBraceIndex = previousClosingCurlyBraceIndex;
     } else {
-      // If closing curlyBrace is before the opening curlyBrace, decrement counter and don't increment next opening curlyBrace
+      index = closingIndex + 1;
+      closingCurlyBraceIndex = closingIndex;
       counter--;
-      nextOpeningCurlyBraceIndex = previousOpeningCurlyBraceIndex;
     }
-  }
+    console.log(counter);
+  } while (counter !== 0);
+
+  // while (counter != 0) {
+  //   // Get index of the next opening curly brace
+  //   let previousOpeningCurlyBraceIndex = openingCurlyBraceIndex;
+
+  //   // Find next opening curly brace after the previous opening curly brace
+  //   openingCurlyBraceIndex = text.indexOf("{", openingCurlyBraceIndex + 1);
+
+  //   if (openingCurlyBraceIndex === -1) {
+  //     // If there are no more opening curly braces, break
+  //     break;
+  //   }
+
+  //   // Save previous closing curly brace index
+  //   let previousClosingCurlyBraceIndex = closingCurlyBraceIndex;
+
+  //   // Get the index of the closing curly brace
+  //   closingCurlyBraceIndex = text.indexOf("}", closingCurlyBraceIndex + 1);
+
+  //   if (openingCurlyBraceIndex < closingCurlyBraceIndex) {
+  //     // If opening curlyBrace is before the closing curlyBrace, increment counter and save as next opening curlyBrace
+  //     counter++;
+  //     closingCurlyBraceIndex = previousClosingCurlyBraceIndex;
+  //   } else {
+  //     // If closing curlyBrace is before the opening curlyBrace, decrement counter and don't increment next opening curlyBrace
+  //     counter--;
+  //     openingCurlyBraceIndex = previousOpeningCurlyBraceIndex;
+  //   }
+  // }
 
   // Get the JSON object from the file
   const jsonObject = text.substring(
     openingCurlyBraceIndex,
-    closingCurlyBraceIndex + 1
+    closingCurlyBraceIndex
   );
 
   return jsonObject;
