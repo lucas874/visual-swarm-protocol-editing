@@ -43,6 +43,7 @@ const App: React.FC = () => {
       setOccurrences(parseObjects(message.data));
 
       if (message.command === "fileData") {
+        // For the first render, not ensured to know occurrences, so message.data is used
         const protocol = JSON5.parse(message.data[0].jsonObject);
 
         // Create edges for the flowchart with the first occurence
@@ -58,6 +59,7 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // For selection of protocol
   const handleSelect = (e: any) => {
     // Find the occurence that corresponds to the selected protocol
     let occurrence = occurrences.find(
@@ -73,6 +75,7 @@ const App: React.FC = () => {
 
   return (
     <div>
+      {/* Select element for choosing the protocol, only if there are multiple occurrences */}
       {occurrences.length > 1 && (
         <select onChange={handleSelect}>
           {occurrences.map((occurence) => (
