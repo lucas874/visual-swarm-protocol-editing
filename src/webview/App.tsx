@@ -73,13 +73,15 @@ const App: React.FC = () => {
 
   return (
     <div>
-      <select onChange={handleSelect}>
-        {occurrences.map((occurence) => (
-          <option value={occurence.name} key={occurence.name}>
-            {occurence.name}
-          </option>
-        ))}
-      </select>
+      {occurrences.length > 1 && (
+        <select onChange={handleSelect}>
+          {occurrences.map((occurence) => (
+            <option value={occurence.name} key={occurence.name}>
+              {occurence.name}
+            </option>
+          ))}
+        </select>
+      )}
       <Flow nodes={nodes} edges={edges} edgesTypes={edgesTypes} />
     </div>
   );
