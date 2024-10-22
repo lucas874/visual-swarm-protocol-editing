@@ -59,6 +59,10 @@ const App: React.FC = () => {
 
   return (
     <div>
+      <select className="float-right">
+        <option value="swarm">Swarm</option>
+        <option value="other">Other</option>
+      </select>
       <Flow nodes={nodes} edges={edges} edgesTypes={edgesTypes} />
     </div>
   );

@@ -14,8 +14,6 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      console.log(activeEditor.document.fileName);
-
       // Save text from active editor to a variable
       const text = activeEditor.document.getText();
 
