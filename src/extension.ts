@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import path from "path";
+import { get } from "http";
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -17,30 +18,29 @@ export function activate(context: vscode.ExtensionContext) {
       // Save text from active editor to a variable
       const text = activeEditor.document.getText();
 
-      // Set the substring to search for
-      const typeSubstring = "SwarmProtocolType";
-
-      let jsonObject: string;
+      // Set regex string to search for the SwarmProtocolType
+      const typeRegex = /\S*:\s*SwarmProtocolType\s*=\s*/gm;
+      const occurences = [];
 
       // Check if the file contains a swarm protocol
-      if (text.includes(typeSubstring)) {
-        // Get index of the second occurence (first occurence is import)
-        const index = text.indexOf(
-          typeSubstring,
-          text.indexOf(typeSubstring) + 1
-        );
+      if (text.includes("SwarmProtocolType")) {
+        // Create list of all SwarmProtocolType occurences
+        let helperArray;
 
-        if (index === -1) {
-          vscode.window.showErrorMessage("Cannot find the swarm protocol");
-          return;
-        } else {
-          // Get the JSON object from the file
-          jsonObject = getNestedJSONObject(text, index);
+        // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
+        // Find all occurences of the SwarmProtocolType
+        while ((helperArray = typeRegex.exec(text)) !== null) {
+          // Find the name of the protocol
+          const occurenceName = helperArray[0].substring(
+            0,
+            helperArray[0].indexOf(":")
+          );
 
-          if (jsonObject === "") {
-            vscode.window.showErrorMessage("Cannot find the swarm protocol");
-            return;
-          }
+          // Put the occurence in the occurences array along with the json code.
+          occurences.push({
+            name: occurenceName,
+            jsonObject: getNestedJSONObject(text, typeRegex.lastIndex),
+          });
         }
       } else {
         vscode.window.showErrorMessage("No swarm protocol found");
@@ -69,9 +69,10 @@ export function activate(context: vscode.ExtensionContext) {
       // Get the html content for the webview
       panel.webview.html = getReactAppHtml(reactAppUri);
 
+      // Send the occurences to the webview
       panel.webview.postMessage({
         command: "fileData",
-        data: jsonObject,
+        data: occurences,
       });
 
       // Handle messages from the webview (React frontend)

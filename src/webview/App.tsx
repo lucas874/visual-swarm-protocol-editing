@@ -39,6 +39,7 @@ const App: React.FC = () => {
     // Listen for messages from the VS Code extension
     window.addEventListener("message", (event) => {
       const message = event.data;
+      console.log("messaage data: ", message.data);
 
       if (message.command === "fileData") {
         // Parse the JSON5 data
