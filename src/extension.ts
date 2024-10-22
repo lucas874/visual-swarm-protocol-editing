@@ -87,7 +87,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function getNestedJSONObject(text: string, index: number) {
-  // With help from copilot
   // Get the index of the opening curly brace
   let openingCurlyBraceIndex = text.indexOf("{", index);
   let closingCurlyBraceIndex;
