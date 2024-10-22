@@ -34,21 +34,21 @@ const App: React.FC = () => {
   // Set the initial state of nodes and edges, to ensure rerendering after values are set
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
+  const [occurrences, setOccurrences] = useState<any[]>([]);
 
   useEffect(() => {
     // Listen for messages from the VS Code extension
     window.addEventListener("message", (event) => {
       const message = event.data;
-      console.log("messaage data: ", message.data);
+      setOccurrences(parseObjects(message.data));
 
       if (message.command === "fileData") {
-        // Parse the JSON5 data
-        const protocol: SwarmProtocol = JSON5.parse(message.data);
+        const protocol = JSON5.parse(message.data[0].jsonObject);
 
-        // Create edges for the flowchart
+        // Create edges for the flowchart with the first occurence
         setEdges(createEdges(protocol.transitions));
 
-        // Create nodes for the flowchart
+        // Create nodes for the flowchart with the first occurence
         setNodes(createNodes(protocol.initial, protocol.transitions));
       }
     });
@@ -58,16 +58,46 @@ const App: React.FC = () => {
     };
   }, []);
 
+  const handleSelect = (e: any) => {
+    // Find the occurence that corresponds to the selected protocol
+    let occurrence = occurrences.find(
+      (occurrence) => occurrence.name === e.target.value
+    );
+
+    // Set nodes to correspond to the selected protocol
+    setNodes(createNodes(occurrence.json.initial, occurrence.json.transitions));
+
+    // Set edges to correspond to the selected protocol
+    setEdges(createEdges(occurrence.json.transitions));
+  };
+
   return (
     <div>
-      <select className="float-right">
-        <option value="swarm">Swarm</option>
-        <option value="other">Other</option>
+      <select onChange={handleSelect}>
+        {occurrences.map((occurence) => (
+          <option value={occurence.name} key={occurence.name}>
+            {occurence.name}
+          </option>
+        ))}
       </select>
       <Flow nodes={nodes} edges={edges} edgesTypes={edgesTypes} />
     </div>
   );
 };
+
+function parseObjects(occurrences: any[]): any[] {
+  let occurrences2 = [];
+
+  // Parse the jsonObject to JSON5
+  occurrences.forEach((occurrence) => {
+    occurrences2.push({
+      name: occurrence.name,
+      json: JSON5.parse(occurrence.jsonObject),
+    });
+  });
+
+  return occurrences2;
+}
 
 // Created partly using coPilot
 function createEdges(transitions: Transition[]): any[] {

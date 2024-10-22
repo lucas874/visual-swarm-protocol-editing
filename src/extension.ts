@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       // Set regex string to search for the SwarmProtocolType
       const typeRegex = /\S*:\s*SwarmProtocolType\s*=\s*/gm;
-      const occurences = [];
+      const occurrences = [];
 
       // Check if the file contains a swarm protocol
       if (text.includes("SwarmProtocolType")) {
@@ -31,14 +31,14 @@ export function activate(context: vscode.ExtensionContext) {
         // Find all occurences of the SwarmProtocolType
         while ((helperArray = typeRegex.exec(text)) !== null) {
           // Find the name of the protocol
-          const occurenceName = helperArray[0].substring(
+          const occurrenceName = helperArray[0].substring(
             0,
             helperArray[0].indexOf(":")
           );
 
           // Put the occurence in the occurences array along with the json code.
-          occurences.push({
-            name: occurenceName,
+          occurrences.push({
+            name: occurrenceName,
             jsonObject: getNestedJSONObject(text, typeRegex.lastIndex),
           });
         }
@@ -72,7 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
       // Send the occurences to the webview
       panel.webview.postMessage({
         command: "fileData",
-        data: occurences,
+        data: occurrences,
       });
 
       // Handle messages from the webview (React frontend)
