@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import path from "path";
-import { get } from "http";
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
