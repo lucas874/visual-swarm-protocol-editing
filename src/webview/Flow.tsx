@@ -7,6 +7,7 @@ import {
   useEdgesState,
   ReactFlowProvider,
   ConnectionMode,
+  addEdge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -49,10 +50,26 @@ const getLayoutedElements = (nodes, edges, options) => {
 };
 
 // Create flow from values given
-const LayoutFlow = ({ initialNodes, initialEdges, edgesTypes }) => {
+const LayoutFlow = ({
+  initialNodes,
+  initialEdges,
+  edgesTypes,
+  sendDataToParent,
+}) => {
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // From https://reactflow.dev/api-reference/utils/add-edge
+  const onConnect = useCallback(
+    (connection) => setEdges((edges) => addEdge(connection, edges)),
+    [setEdges]
+  );
+
+  // From https://medium.com/@ozhanli/passing-data-from-child-to-parent-components-in-react-e347ea60b1bb
+  function saveChanges() {
+    sendDataToParent(nodes, edges);
+  }
 
   // Update nodes and edges with the layouted elements
   const onLayout = useCallback(
@@ -79,33 +96,40 @@ const LayoutFlow = ({ initialNodes, initialEdges, edgesTypes }) => {
   }, [onLayout]);
 
   return (
-    <div style={{ height: "600px" }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        edgeTypes={edgesTypes}
-        fitView
-        attributionPosition="top-right"
-        connectionMode={ConnectionMode.Loose}
-      >
-        {/* Removed buttons */}
-      </ReactFlow>
+    <div>
+      <button onClick={saveChanges}>Save changes</button>
+      <div style={{ height: "600px" }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          edgeTypes={edgesTypes}
+          fitView
+          attributionPosition="top-right"
+          connectionMode={ConnectionMode.Loose}
+        >
+          {/* Removed buttons */}
+        </ReactFlow>
+      </div>
     </div>
   );
 };
 
 // This is the Flow component that will be rendered in the App component
-function Flow({ nodes, edges, edgesTypes }) {
+function Flow({ nodes, edges, edgesTypes, sendDataToParent }) {
   return (
-    <ReactFlowProvider>
-      <LayoutFlow
-        initialNodes={nodes}
-        initialEdges={edges}
-        edgesTypes={edgesTypes}
-      />
-    </ReactFlowProvider>
+    <div>
+      <ReactFlowProvider>
+        <LayoutFlow
+          initialNodes={nodes}
+          initialEdges={edges}
+          edgesTypes={edgesTypes}
+          sendDataToParent={sendDataToParent}
+        />
+      </ReactFlowProvider>
+    </div>
   );
 }
 

@@ -85,10 +85,39 @@ const App: React.FC = () => {
           ))}
         </select>
       )}
-      <Flow nodes={nodes} edges={edges} edgesTypes={edgesTypes} />
+      <Flow
+        nodes={nodes}
+        edges={edges}
+        edgesTypes={edgesTypes}
+        sendDataToParent={handleChangesFromFlow}
+      />
     </div>
   );
 };
+
+function handleChangesFromFlow(changedNodes, changedEdges) {
+  // Transform changes to transitions
+  let newTransitions = changedEdges.map((edge) => {
+    return {
+      source: edge.source,
+      target: edge.target,
+      label: {
+        cmd: edge.label.split("@")[0],
+        role: edge.label.split("@")[1],
+      },
+    };
+  });
+
+  // Change swarm protocol to correspond to the changes
+  const protocol: SwarmProtocol = {
+    initial: {
+      name: changedNodes[0].id,
+    },
+    transitions: newTransitions,
+  };
+
+  console.log("new protocol: ", protocol);
+}
 
 function parseObjects(occurrences: any[]): any[] {
   let occurrences2 = [];
