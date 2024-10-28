@@ -102,8 +102,8 @@ function handleChangesFromFlow(changedNodes, changedEdges) {
       source: edge.source,
       target: edge.target,
       label: {
-        cmd: edge.label.split("@")[0],
-        role: edge.label.split("@")[1],
+        cmd: edge.label?.split("@")[0],
+        role: edge.label?.split("@")[1],
       },
     };
   });
