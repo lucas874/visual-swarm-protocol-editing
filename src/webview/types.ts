@@ -16,10 +16,11 @@ export type TransitionLabel = {
 };
 
 export type layoutType = {
-  x: number;
-  y: number;
-  height: number;
-  width: number;
+  name: string;
+  x?: number;
+  y?: number;
+  height?: number;
+  width?: number;
 };
 
 export interface SwarmProtocol {

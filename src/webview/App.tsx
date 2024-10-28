@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
   const [occurrences, setOccurrences] = useState<any[]>([]);
+  const [hasLayout, setHasLayout] = useState<boolean>(false);
 
   useEffect(() => {
     // Listen for messages from the VS Code extension
@@ -29,7 +30,10 @@ const App: React.FC = () => {
         setEdges(createEdges(protocol.transitions));
 
         // Create nodes for the flowchart with the first occurence
-        setNodes(createNodes(protocol.initial, protocol.transitions));
+        setNodes(createNodes(protocol));
+
+        // Check if layout already exists for the first occurence
+        setHasLayout(protocol.layout !== undefined);
       }
     });
 
@@ -46,10 +50,13 @@ const App: React.FC = () => {
     );
 
     // Set nodes to correspond to the selected protocol
-    setNodes(createNodes(occurrence.json.initial, occurrence.json.transitions));
+    setNodes(createNodes(occurrence.json));
 
     // Set edges to correspond to the selected protocol
     setEdges(createEdges(occurrence.json.transitions));
+
+    // Check if layout already exists for the selected protocol
+    setHasLayout(occurrence.json.layout !== undefined);
   };
 
   return (
@@ -67,6 +74,7 @@ const App: React.FC = () => {
       <Flow
         nodes={nodes}
         edges={edges}
+        hasLayout={hasLayout}
         edgesTypes={edgesTypes}
         sendDataToParent={handleChangesFromFlow}
       />
@@ -95,8 +103,6 @@ function handleChangesFromFlow(changedNodes, changedEdges) {
     },
     transitions: newTransitions,
   };
-
-  console.log("new protocol: ", protocol);
 }
 
 function parseObjects(occurrences: any[]): any[] {
@@ -140,14 +146,11 @@ function createEdges(transitions: Transition[]): any[] {
   return edges;
 }
 
-function createNodes(
-  initialNode: InitialNode,
-  transitions: Transition[]
-): any[] {
+function createNodes(protocol: SwarmProtocol): any[] {
   const nodeNames = new Set<string>();
 
   // Find all unique nodes from transitions
-  transitions.forEach((element) => {
+  protocol.transitions.forEach((element) => {
     if (!nodeNames.has(element.source)) {
       nodeNames.add(element.source);
     }
@@ -159,12 +162,24 @@ function createNodes(
 
   // Create nodes that correspond to ReactFlow
   const nodes = Array.from(nodeNames).map((nodeName) => {
-    if (nodeName === initialNode.toString()) {
+    let nodeLayout = protocol.layout?.find(
+      (layout) => layout.name === nodeName
+    );
+
+    if (nodeName === protocol.initial.toString()) {
       // Initial node only has an input type
       return {
         id: nodeName,
         data: { label: nodeName },
-        position: { x: 0, y: 0 },
+        // Add any positions or measurements if they exist
+        position: {
+          x: nodeLayout?.x ?? 0,
+          y: nodeLayout?.x ?? 0,
+        },
+        measured: {
+          width: nodeLayout?.width,
+          height: nodeLayout?.height,
+        },
         type: "input",
       };
     } else {
@@ -172,7 +187,14 @@ function createNodes(
       return {
         id: nodeName,
         data: { label: nodeName },
-        position: { x: 0, y: 0 },
+        position: {
+          x: nodeLayout?.x ?? 0,
+          y: nodeLayout?.x ?? 0,
+        },
+        measured: {
+          width: nodeLayout?.width,
+          height: nodeLayout?.height,
+        },
         type: "default",
       };
     }

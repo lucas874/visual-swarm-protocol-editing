@@ -103,6 +103,7 @@ function getNestedJSONObject(text: string, index: number) {
       return "";
     }
 
+    // Check if the opening curly brace is before the closing curly brace
     if (openIndex < closingIndex && openIndex !== -1) {
       index = openIndex + 1;
       counter++;

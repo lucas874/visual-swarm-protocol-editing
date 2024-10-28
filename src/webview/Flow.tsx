@@ -118,16 +118,19 @@ const LayoutFlow = ({
 };
 
 // This is the Flow component that will be rendered in the App component
-function Flow({ nodes, edges, edgesTypes, sendDataToParent }) {
+function Flow({ nodes, edges, hasLayout, edgesTypes, sendDataToParent }) {
   return (
     <div>
       <ReactFlowProvider>
-        <LayoutFlow
-          initialNodes={nodes}
-          initialEdges={edges}
-          edgesTypes={edgesTypes}
-          sendDataToParent={sendDataToParent}
-        />
+        {!hasLayout && (
+          <LayoutFlow
+            initialNodes={nodes}
+            initialEdges={edges}
+            edgesTypes={edgesTypes}
+            sendDataToParent={sendDataToParent}
+          />
+        )}
+        {hasLayout && <ReactFlow nodes={nodes} edges={edges} />}
       </ReactFlowProvider>
     </div>
   );
