@@ -3,28 +3,7 @@ import Flow from "./Flow";
 import JSON5 from "json5";
 import SelfConnecting from "./custom-edges/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
-
-// Define types of nodes and transitions for protocols
-type InitialNode = {
-  name: string;
-};
-
-type Transition = {
-  source: string;
-  target: string;
-  label: TransitionLabel;
-};
-
-type TransitionLabel = {
-  cmd: string;
-  logType: string[];
-  role: string;
-};
-
-interface SwarmProtocol {
-  initial: InitialNode;
-  transitions: Transition[];
-}
+import { SwarmProtocol, Transition, InitialNode } from "./types";
 
 const edgesTypes = {
   selfconnecting: SelfConnecting,
@@ -111,6 +90,7 @@ function handleChangesFromFlow(changedNodes, changedEdges) {
   // Change swarm protocol to correspond to the changes
   const protocol: SwarmProtocol = {
     initial: {
+      // TODO: Change to the correct initial node
       name: changedNodes[0].id,
     },
     transitions: newTransitions,
