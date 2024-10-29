@@ -3,7 +3,10 @@ import Flow from "./Flow";
 import JSON5 from "json5";
 import SelfConnecting from "./custom-edges/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
-import { SwarmProtocol, Transition, InitialNode } from "./types";
+import { SwarmProtocol, Transition } from "./types";
+
+// Declare the vscode object to be able to communicate with the extension
+const vscode = acquireVsCodeApi();
 
 const edgesTypes = {
   selfconnecting: SelfConnecting,
@@ -15,6 +18,7 @@ const App: React.FC = () => {
   const [edges, setEdges] = useState<any[]>([]);
   const [occurrences, setOccurrences] = useState<any[]>([]);
   const [hasLayout, setHasLayout] = useState<boolean>(false);
+  const [selectedProtocol, setSelectedProtocol] = useState<string>("");
 
   useEffect(() => {
     // Listen for messages from the VS Code extension
@@ -22,7 +26,7 @@ const App: React.FC = () => {
       const message = event.data;
       setOccurrences(parseObjects(message.data));
 
-      if (message.command === "fileData") {
+      if (message.command === "buildProtocol") {
         // For the first render, not ensured to know occurrences, so message.data is used
         const protocol = JSON5.parse(message.data[0].jsonObject);
 
@@ -34,9 +38,13 @@ const App: React.FC = () => {
 
         // Check if layout already exists for the first occurence
         setHasLayout(protocol.layout !== undefined);
+
+        // Set the selected protocol to the first occurence
+        setSelectedProtocol(message.data[0].name);
       }
     });
 
+    // TODO: Research if this is why the flowchart is not rendered after changes
     return () => {
       window.removeEventListener("message", () => {});
     };
@@ -57,9 +65,53 @@ const App: React.FC = () => {
 
     // Check if layout already exists for the selected protocol
     setHasLayout(occurrence.json.layout !== undefined);
+
+    // Set the selected protocol to the selected occurence
+    setSelectedProtocol(e.target.value);
   };
 
   // TODO: Pass data back to extension
+  function handleChangesFromFlow(changedNodes, changedEdges) {
+    // Transform changes to transitions
+    let newTransitions = changedEdges.map((edge) => {
+      return {
+        source: edge.source,
+        target: edge.target,
+        label: {
+          cmd: edge.label?.split("@")[0],
+          role: edge.label?.split("@")[1],
+        },
+      };
+    });
+
+    let layout = changedNodes.map((node) => {
+      return {
+        name: node.id,
+        x: node.position.x,
+        y: node.position.y,
+        width: node.measured?.width,
+        height: node.measured?.height,
+      };
+    });
+
+    // Change swarm protocol to correspond to the changes
+    const protocol: SwarmProtocol = {
+      initial: {
+        // FIXME: Change to the correct initial node
+        name: changedNodes[0].id,
+      },
+      layout: layout,
+      transitions: newTransitions,
+    };
+
+    console.log(protocol);
+
+    // Send the changes to the extension
+    vscode.postMessage({
+      command: "changeProtocol",
+      data: { name: selectedProtocol, protocol: JSON5.stringify(protocol) },
+    });
+  }
 
   return (
     <div>
@@ -83,31 +135,6 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-function handleChangesFromFlow(changedNodes, changedEdges): SwarmProtocol {
-  // Transform changes to transitions
-  let newTransitions = changedEdges.map((edge) => {
-    return {
-      source: edge.source,
-      target: edge.target,
-      label: {
-        cmd: edge.label?.split("@")[0],
-        role: edge.label?.split("@")[1],
-      },
-    };
-  });
-
-  // Change swarm protocol to correspond to the changes
-  const protocol: SwarmProtocol = {
-    initial: {
-      // TODO: Change to the correct initial node
-      name: changedNodes[0].id,
-    },
-    transitions: newTransitions,
-  };
-
-  return protocol;
-}
 
 function parseObjects(occurrences: any[]): any[] {
   let occurrences2 = [];

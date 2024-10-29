@@ -70,24 +70,89 @@ export function activate(context: vscode.ExtensionContext) {
 
       // Send the occurences to the webview
       panel.webview.postMessage({
-        command: "fileData",
+        command: "buildProtocol",
         data: occurrences,
       });
 
       // TODO: Get data from child component
+      panel.webview.onDidReceiveMessage((message) => {
+        if (message.command === "changeProtocol") {
+          // Create list of all SwarmProtocolType occurences
+          let helperArray;
+
+          // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
+          // Find all occurences of the SwarmProtocolType
+          while ((helperArray = typeRegex.exec(text)) !== null) {
+            // Find the name of the protocol
+            const occurrenceName = helperArray[0].substring(
+              0,
+              helperArray[0].indexOf(":")
+            );
+
+            // Put the occurence in the occurences array along with the json code.
+            if (occurrenceName === message.data.name) {
+              console.log("Start index: ", text[typeRegex.lastIndex]);
+              console.log(
+                "Start index: ",
+                text[getLastIndex(text, typeRegex.lastIndex)]
+              );
+
+              // Replace the protocol with the new protocol
+              activeEditor.edit((editBuilder) => {
+                editBuilder.replace(
+                  new vscode.Range(
+                    activeEditor.document.positionAt(typeRegex.lastIndex),
+                    activeEditor.document.positionAt(
+                      getLastIndex(text, typeRegex.lastIndex)
+                    )
+                  ),
+                  `{ ${message.data.protocol} }`
+                );
+              });
+            }
+          }
+        }
+      });
 
       // TODO: Find the correct occurence based on the data from the child component
 
       // TODO: Replace text in the active editor with the new data
 
       // Handle messages from the webview (React frontend)
-      panel.webview.onDidReceiveMessage((message) => {
-        if (message.command === "log") {
-          console.log(message.data);
-        }
-      });
     })
   );
+}
+
+function getLastIndex(text: string, index: number): number {
+  // Get the index of the opening curly brace
+  let closingCurlyBraceIndex;
+
+  let counter = 0;
+
+  do {
+    const openIndex = text.indexOf("{", index);
+    const closingIndex = text.indexOf("}", index);
+
+    // Ensure that last curly brace can be found
+    if (closingIndex === -1) {
+      vscode.window.showErrorMessage(
+        "Cannot find the last closing curly brace"
+      );
+      return -1;
+    }
+
+    // Check if the opening curly brace is before the closing curly brace
+    if (openIndex < closingIndex && openIndex !== -1) {
+      index = openIndex + 1;
+      counter++;
+    } else {
+      index = closingIndex + 1;
+      closingCurlyBraceIndex = closingIndex;
+      counter--;
+    }
+  } while (counter !== 0);
+
+  return closingCurlyBraceIndex;
 }
 
 function getNestedJSONObject(text: string, index: number) {
