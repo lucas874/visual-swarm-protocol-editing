@@ -53,6 +53,7 @@ const getLayoutedElements = (nodes, edges, options) => {
 const LayoutFlow = ({
   initialNodes,
   initialEdges,
+  hasLayout,
   edgesTypes,
   sendDataToParent,
 }) => {
@@ -92,7 +93,9 @@ const LayoutFlow = ({
   // Ensure that the layout is vertical when the component is first rendered
   // And that no buttons are needed to be clicked
   useEffect(() => {
-    onLayout("TB");
+    if (!hasLayout) {
+      onLayout("TB");
+    }
   }, [onLayout]);
 
   return (
@@ -122,15 +125,13 @@ function Flow({ nodes, edges, hasLayout, edgesTypes, sendDataToParent }) {
   return (
     <div>
       <ReactFlowProvider>
-        {!hasLayout && (
-          <LayoutFlow
-            initialNodes={nodes}
-            initialEdges={edges}
-            edgesTypes={edgesTypes}
-            sendDataToParent={sendDataToParent}
-          />
-        )}
-        {hasLayout && <ReactFlow nodes={nodes} edges={edges} />}
+        <LayoutFlow
+          initialNodes={nodes}
+          initialEdges={edges}
+          hasLayout={hasLayout}
+          edgesTypes={edgesTypes}
+          sendDataToParent={sendDataToParent}
+        />
       </ReactFlowProvider>
     </div>
   );

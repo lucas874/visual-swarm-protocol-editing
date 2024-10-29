@@ -59,6 +59,8 @@ const App: React.FC = () => {
     setHasLayout(occurrence.json.layout !== undefined);
   };
 
+  // TODO: Pass data back to extension
+
   return (
     <div>
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
@@ -82,7 +84,7 @@ const App: React.FC = () => {
   );
 };
 
-function handleChangesFromFlow(changedNodes, changedEdges) {
+function handleChangesFromFlow(changedNodes, changedEdges): SwarmProtocol {
   // Transform changes to transitions
   let newTransitions = changedEdges.map((edge) => {
     return {
@@ -103,6 +105,8 @@ function handleChangesFromFlow(changedNodes, changedEdges) {
     },
     transitions: newTransitions,
   };
+
+  return protocol;
 }
 
 function parseObjects(occurrences: any[]): any[] {

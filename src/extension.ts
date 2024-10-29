@@ -74,6 +74,12 @@ export function activate(context: vscode.ExtensionContext) {
         data: occurrences,
       });
 
+      // TODO: Get data from child component
+
+      // TODO: Find the correct occurence based on the data from the child component
+
+      // TODO: Replace text in the active editor with the new data
+
       // Handle messages from the webview (React frontend)
       panel.webview.onDidReceiveMessage((message) => {
         if (message.command === "log") {
