@@ -74,8 +74,8 @@ export function activate(context: vscode.ExtensionContext) {
         data: occurrences,
       });
 
-      // TODO: Get data from child component
-      panel.webview.onDidReceiveMessage((message) => {
+      // Get data from child component
+      panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
           // Create list of all SwarmProtocolType occurences
           let helperArray;
@@ -89,7 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
               helperArray[0].indexOf(":")
             );
 
-            // Put the occurence in the occurences array along with the json code.
+            // Find the correct occurence based on the data from the child component
             if (occurrenceName === message.data.name) {
               console.log("Start index: ", text[typeRegex.lastIndex]);
               console.log(
@@ -97,7 +97,13 @@ export function activate(context: vscode.ExtensionContext) {
                 text[getLastIndex(text, typeRegex.lastIndex)]
               );
 
-              // Replace the protocol with the new protocol
+              console.log(activeEditor.document.getText());
+              // Editor might have been closed or tabbed away from, so make sure it's visible
+              const editor = await vscode.window.showTextDocument(
+                activeEditor.document.uri
+              );
+
+              // Replace text in the active editor with the new data
               activeEditor.edit((editBuilder) => {
                 editBuilder.replace(
                   new vscode.Range(
@@ -113,12 +119,6 @@ export function activate(context: vscode.ExtensionContext) {
           }
         }
       });
-
-      // TODO: Find the correct occurence based on the data from the child component
-
-      // TODO: Replace text in the active editor with the new data
-
-      // Handle messages from the webview (React frontend)
     })
   );
 }
