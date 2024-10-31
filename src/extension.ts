@@ -91,20 +91,13 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Find the correct occurence based on the data from the child component
             if (occurrenceName === message.data.name) {
-              console.log("Start index: ", text[typeRegex.lastIndex]);
-              console.log(
-                "Start index: ",
-                text[getLastIndex(text, typeRegex.lastIndex)]
-              );
-
-              console.log(activeEditor.document.getText());
               // Editor might have been closed or tabbed away from, so make sure it's visible
               const editor = await vscode.window.showTextDocument(
                 activeEditor.document.uri
               );
 
               // Replace text in the active editor with the new data
-              activeEditor.edit((editBuilder) => {
+              editor.edit((editBuilder) => {
                 editBuilder.replace(
                   new vscode.Range(
                     activeEditor.document.positionAt(typeRegex.lastIndex),
@@ -112,7 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
                       getLastIndex(text, typeRegex.lastIndex)
                     )
                   ),
-                  `{ ${message.data.protocol} }`
+                  `${message.data.protocol}`
                 );
               });
             }
@@ -152,7 +145,7 @@ function getLastIndex(text: string, index: number): number {
     }
   } while (counter !== 0);
 
-  return closingCurlyBraceIndex;
+  return closingCurlyBraceIndex + 1;
 }
 
 function getNestedJSONObject(text: string, index: number) {
