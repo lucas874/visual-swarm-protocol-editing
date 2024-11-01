@@ -96,12 +96,14 @@ const LayoutFlow = ({
   // And that no buttons are needed to be clicked
   useEffect(() => {
     onLayout(hasLayout);
+    console.log(initialNodes);
   }, [onLayout]);
 
   return (
     <div>
       <button onClick={saveChanges}>Save changes</button>
       <div style={{ height: "600px" }}>
+        {/* https://reactflow.dev/api-reference/react-flow#nodeorigin */}
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -109,6 +111,7 @@ const LayoutFlow = ({
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           edgeTypes={edgesTypes}
+          nodeOrigin={[0.5, 0.5]}
           fitView
           attributionPosition="top-right"
           connectionMode={ConnectionMode.Loose}

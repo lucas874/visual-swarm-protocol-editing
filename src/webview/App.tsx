@@ -3,7 +3,7 @@ import Flow from "./Flow";
 import JSON5 from "json5";
 import SelfConnecting from "./custom-edges/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
-import { SwarmProtocol, Transition } from "./types";
+import { LayoutType, SwarmProtocol, Transition } from "./types";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
@@ -73,7 +73,7 @@ const App: React.FC = () => {
   // Pass data back to extension
   function handleChangesFromFlow(changedNodes, changedEdges) {
     // Transform changes to transitions
-    let newTransitions = changedEdges.map((edge) => {
+    let newTransitions: Transition[] = changedEdges.map((edge) => {
       return {
         source: edge.source,
         target: edge.target,
@@ -84,13 +84,11 @@ const App: React.FC = () => {
       };
     });
 
-    let layout = changedNodes.map((node) => {
+    let layout: LayoutType[] = changedNodes.map((node) => {
       return {
         name: node.id,
         x: node.position.x,
         y: node.position.y,
-        width: node.measured?.width,
-        height: node.measured?.height,
       };
     });
 

@@ -15,7 +15,7 @@ export type TransitionLabel = {
   role: string;
 };
 
-export type layoutType = {
+export type LayoutType = {
   name: string;
   x?: number;
   y?: number;
@@ -23,6 +23,6 @@ export type layoutType = {
 
 export interface SwarmProtocol {
   initial: InitialNode;
-  layout?: layoutType[];
+  layout?: LayoutType[];
   transitions: Transition[];
 }
