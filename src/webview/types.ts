@@ -19,8 +19,6 @@ export type layoutType = {
   name: string;
   x?: number;
   y?: number;
-  height?: number;
-  width?: number;
 };
 
 export interface SwarmProtocol {

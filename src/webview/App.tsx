@@ -17,8 +17,8 @@ const App: React.FC = () => {
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
   const [occurrences, setOccurrences] = useState<any[]>([]);
-  const [hasLayout, setHasLayout] = useState<boolean>(false);
   const [selectedProtocol, setSelectedProtocol] = useState<string>("");
+  const [protocol, setProtocol] = useState<SwarmProtocol>();
 
   useEffect(() => {
     // Listen for messages from the VS Code extension
@@ -28,16 +28,16 @@ const App: React.FC = () => {
 
       if (message.command === "buildProtocol") {
         // For the first render, not ensured to know occurrences, so message.data is used
-        const protocol = JSON5.parse(message.data[0].jsonObject);
+        let tempProtocol = JSON5.parse(message.data[0].jsonObject);
+
+        // Save protocol to state
+        setProtocol(JSON5.parse(message.data[0].jsonObject));
 
         // Create edges for the flowchart with the first occurence
-        setEdges(createEdges(protocol.transitions));
+        setEdges(createEdges(tempProtocol.transitions));
 
         // Create nodes for the flowchart with the first occurence
-        setNodes(createNodes(protocol));
-
-        // Check if layout already exists for the first occurence
-        setHasLayout(protocol.layout !== undefined);
+        setNodes(createNodes(tempProtocol));
 
         // Set the selected protocol to the first occurence
         setSelectedProtocol(message.data[0].name);
@@ -63,14 +63,14 @@ const App: React.FC = () => {
     // Set edges to correspond to the selected protocol
     setEdges(createEdges(occurrence.json.transitions));
 
-    // Check if layout already exists for the selected protocol
-    setHasLayout(occurrence.json.layout !== undefined);
+    // Set the protocol to the selected occurence
+    setProtocol(occurrence.json);
 
     // Set the selected protocol to the selected occurence
     setSelectedProtocol(e.target.value);
   };
 
-  // TODO: Pass data back to extension
+  // Pass data back to extension
   function handleChangesFromFlow(changedNodes, changedEdges) {
     // Transform changes to transitions
     let newTransitions = changedEdges.map((edge) => {
@@ -104,8 +104,6 @@ const App: React.FC = () => {
       transitions: newTransitions,
     };
 
-    console.log(protocol);
-
     // Send the changes to the extension
     vscode.postMessage({
       command: "changeProtocol",
@@ -128,7 +126,7 @@ const App: React.FC = () => {
       <Flow
         nodes={nodes}
         edges={edges}
-        hasLayout={hasLayout}
+        hasLayout={protocol?.layout !== undefined}
         edgesTypes={edgesTypes}
         sendDataToParent={handleChangesFromFlow}
       />
@@ -207,10 +205,6 @@ function createNodes(protocol: SwarmProtocol): any[] {
           x: nodeLayout?.x ?? 0,
           y: nodeLayout?.x ?? 0,
         },
-        measured: {
-          width: nodeLayout?.width,
-          height: nodeLayout?.height,
-        },
         type: "input",
       };
     } else {
@@ -221,10 +215,6 @@ function createNodes(protocol: SwarmProtocol): any[] {
         position: {
           x: nodeLayout?.x ?? 0,
           y: nodeLayout?.x ?? 0,
-        },
-        measured: {
-          width: nodeLayout?.width,
-          height: nodeLayout?.height,
         },
         type: "default",
       };

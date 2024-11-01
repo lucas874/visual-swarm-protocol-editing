@@ -15,9 +15,9 @@ const nodeWidth = 175;
 const nodeHeight = 75;
 
 // Create nodes and edges from the protocol data
-const getLayoutedElements = (nodes, edges, options) => {
+const getLayoutedElements = (nodes, edges) => {
   const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: options.direction });
+  g.setGraph({ rankdir: "TB" });
 
   edges.forEach((edge) => g.setEdge(edge.source, edge.target));
   nodes.forEach((node) =>
@@ -74,13 +74,15 @@ const LayoutFlow = ({
 
   // Update nodes and edges with the layouted elements
   const onLayout = useCallback(
-    (direction) => {
-      const layouted = getLayoutedElements(initialNodes, initialEdges, {
-        direction,
-      });
-
-      setNodes([...layouted.nodes]);
-      setEdges([...layouted.edges]);
+    (isLayouted) => {
+      if (!isLayouted) {
+        const layouted = getLayoutedElements(initialNodes, initialEdges);
+        setNodes([...layouted.nodes]);
+        setEdges([...layouted.edges]);
+      } else {
+        setNodes([...initialNodes]);
+        setEdges([...initialEdges]);
+      }
 
       window.requestAnimationFrame(() => {
         fitView();
@@ -93,9 +95,7 @@ const LayoutFlow = ({
   // Ensure that the layout is vertical when the component is first rendered
   // And that no buttons are needed to be clicked
   useEffect(() => {
-    if (!hasLayout) {
-      onLayout("TB");
-    }
+    onLayout(hasLayout);
   }, [onLayout]);
 
   return (
