@@ -4,12 +4,14 @@ import JSON5 from "json5";
 import SelfConnecting from "./custom-edges/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
+import NewEdgeWithLabel from "./custom-edges/NewEdgeWithLabel";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
 
 const edgesTypes = {
   selfconnecting: SelfConnecting,
+  newEdgeWithLabel: NewEdgeWithLabel,
 };
 
 const App: React.FC = () => {
@@ -83,6 +85,8 @@ const App: React.FC = () => {
         },
       };
     });
+
+    console.log(changedNodes);
 
     let layout: LayoutType[] = changedNodes.map((node) => {
       return {
@@ -201,7 +205,7 @@ function createNodes(protocol: SwarmProtocol): any[] {
         // Add any positions or measurements if they exist
         position: {
           x: nodeLayout?.x ?? 0,
-          y: nodeLayout?.x ?? 0,
+          y: nodeLayout?.y ?? 0,
         },
         type: "input",
       };
@@ -212,7 +216,7 @@ function createNodes(protocol: SwarmProtocol): any[] {
         data: { label: nodeName },
         position: {
           x: nodeLayout?.x ?? 0,
-          y: nodeLayout?.x ?? 0,
+          y: nodeLayout?.y ?? 0,
         },
         type: "default",
       };

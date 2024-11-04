@@ -8,6 +8,7 @@ import {
   ReactFlowProvider,
   ConnectionMode,
   addEdge,
+  getNodesBounds,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -57,19 +58,30 @@ const LayoutFlow = ({
   edgesTypes,
   sendDataToParent,
 }) => {
-  const { fitView } = useReactFlow();
+  const { fitView, getNodes } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
-    (connection) => setEdges((edges) => addEdge(connection, edges)),
+    (connection) => {
+      connection.type = "newEdgeWithLabel";
+      setEdges((edges) => addEdge(connection, edges));
+    },
     [setEdges]
   );
 
   // From https://medium.com/@ozhanli/passing-data-from-child-to-parent-components-in-react-e347ea60b1bb
   function saveChanges() {
-    sendDataToParent(nodes, edges);
+    // Check that all edges have a "command@role" label
+    if (edges.some((edge) => !edge.label)) {
+      alert("All edges must have a label");
+      return;
+    } else {
+      console.log(getNodes());
+      sendDataToParent(getNodes(), edges);
+      // sendDataToParent(nodes, edges);
+    }
   }
 
   // Update nodes and edges with the layouted elements
