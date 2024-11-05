@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import JSON5 from "json5";
 import path from "path";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -35,11 +36,18 @@ export function activate(context: vscode.ExtensionContext) {
             helperArray[0].indexOf(":")
           );
 
-          // Put the occurence in the occurences array along with the json code.
-          occurrences.push({
-            name: occurrenceName,
-            jsonObject: getNestedJSONObject(text, typeRegex.lastIndex),
-          });
+          let jsonObject = getNestedJSONObject(text, typeRegex.lastIndex);
+
+          if (jsonObject === "") {
+            // End the process if there are errors
+            return;
+          } else {
+            // Put the occurence in the occurences array along with the json code.
+            occurrences.push({
+              name: occurrenceName,
+              jsonObject: jsonObject,
+            });
+          }
         }
       } else {
         vscode.window.showErrorMessage("No swarm protocol found");
@@ -74,7 +82,7 @@ export function activate(context: vscode.ExtensionContext) {
         data: occurrences,
       });
 
-      // Get data from child component
+      // Get messages from child component
       panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
           // Create list of all SwarmProtocolType occurences
@@ -110,6 +118,8 @@ export function activate(context: vscode.ExtensionContext) {
               });
             }
           }
+        } else if (message === "noEdgeLabel") {
+          vscode.window.showErrorMessage("All edges must have a label");
         }
       });
     })
@@ -183,6 +193,15 @@ function getNestedJSONObject(text: string, index: number) {
     openingCurlyBraceIndex,
     closingCurlyBraceIndex + 1
   );
+
+  try {
+    JSON5.parse(jsonObject);
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      "The JSON object is not valid. Please check the syntax"
+    );
+    return "";
+  }
 
   return jsonObject;
 }

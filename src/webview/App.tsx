@@ -4,14 +4,14 @@ import JSON5 from "json5";
 import SelfConnecting from "./custom-edges/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
-import NewEdgeWithLabel from "./custom-edges/NewEdgeWithLabel";
+import EditableLabelEdge from "./custom-edges/EditableLabelEdge";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
 
 const edgesTypes = {
   selfconnecting: SelfConnecting,
-  newEdgeWithLabel: NewEdgeWithLabel,
+  newEdgeWithLabel: EditableLabelEdge,
 };
 
 const App: React.FC = () => {
@@ -86,8 +86,6 @@ const App: React.FC = () => {
       };
     });
 
-    console.log(changedNodes);
-
     let layout: LayoutType[] = changedNodes.map((node) => {
       return {
         name: node.id,
@@ -131,6 +129,7 @@ const App: React.FC = () => {
         hasLayout={protocol?.layout !== undefined}
         edgesTypes={edgesTypes}
         sendDataToParent={handleChangesFromFlow}
+        sendErrorToParent={(error) => vscode.postMessage(error)}
       />
     </div>
   );

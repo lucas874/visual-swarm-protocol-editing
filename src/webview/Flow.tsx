@@ -8,7 +8,6 @@ import {
   ReactFlowProvider,
   ConnectionMode,
   addEdge,
-  getNodesBounds,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -57,15 +56,16 @@ const LayoutFlow = ({
   hasLayout,
   edgesTypes,
   sendDataToParent,
+  sendErrorToParent,
 }) => {
-  const { fitView, getNodes } = useReactFlow();
+  const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
     (connection) => {
-      connection.type = "newEdgeWithLabel";
+      connection.type = "editableLabelEdge";
       setEdges((edges) => addEdge(connection, edges));
     },
     [setEdges]
@@ -75,13 +75,25 @@ const LayoutFlow = ({
   function saveChanges() {
     // Check that all edges have a "command@role" label
     if (edges.some((edge) => !edge.label)) {
-      alert("All edges must have a label");
+      sendErrorToParent("noEdgeLabel");
       return;
     } else {
-      console.log(getNodes());
-      sendDataToParent(getNodes(), edges);
+      sendDataToParent(nodes, edges);
       // sendDataToParent(nodes, edges);
     }
+  }
+
+  // Add a new node to the flow
+  function addNode() {
+    const newNode = {
+      id: `${nodes.length + 1}`,
+      data: { label: `Node ${nodes.length + 1}` },
+      position: {
+        x: 0,
+        y: 0,
+      },
+    };
+    setNodes((nodes) => nodes.concat(newNode));
   }
 
   // Update nodes and edges with the layouted elements
@@ -108,12 +120,13 @@ const LayoutFlow = ({
   // And that no buttons are needed to be clicked
   useEffect(() => {
     onLayout(hasLayout);
-    console.log(initialNodes);
   }, [onLayout]);
 
   return (
     <div>
       <button onClick={saveChanges}>Save changes</button>
+      <button onClick={() => onLayout(false)}>Auto Layout</button>
+      <button onClick={addNode}>Add new node</button>
       <div style={{ height: "600px" }}>
         {/* https://reactflow.dev/api-reference/react-flow#nodeorigin */}
         <ReactFlow
@@ -123,7 +136,6 @@ const LayoutFlow = ({
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           edgeTypes={edgesTypes}
-          nodeOrigin={[0.5, 0.5]}
           fitView
           attributionPosition="top-right"
           connectionMode={ConnectionMode.Loose}
@@ -136,7 +148,14 @@ const LayoutFlow = ({
 };
 
 // This is the Flow component that will be rendered in the App component
-function Flow({ nodes, edges, hasLayout, edgesTypes, sendDataToParent }) {
+function Flow({
+  nodes,
+  edges,
+  hasLayout,
+  edgesTypes,
+  sendDataToParent,
+  sendErrorToParent,
+}) {
   return (
     <div>
       <ReactFlowProvider>
@@ -146,6 +165,7 @@ function Flow({ nodes, edges, hasLayout, edgesTypes, sendDataToParent }) {
           hasLayout={hasLayout}
           edgesTypes={edgesTypes}
           sendDataToParent={sendDataToParent}
+          sendErrorToParent={sendErrorToParent}
         />
       </ReactFlowProvider>
     </div>
