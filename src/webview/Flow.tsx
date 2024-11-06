@@ -160,6 +160,23 @@ const LayoutFlow = ({
           type="text"
           placeholder="Edit label"
           onChange={(e) => setEdgeLabel(editedEdge, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              if (
+                // Check that all edges have a label in the format "command@role"
+                edges.some(
+                  (edge) =>
+                    typeof edge.label === "string" &&
+                    !edge.label.match(/\w*@\w*/)
+                )
+              ) {
+                sendErrorToParent("edgeLabelWrongFormat");
+                return;
+              } else {
+                setIsEditing(false);
+              }
+            }
+          }}
         />
       )}
       <div style={{ height: "600px" }}>
