@@ -120,6 +120,10 @@ export function activate(context: vscode.ExtensionContext) {
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All edges must have a label");
+        } else if (message === "edgeLabelWrongFormat") {
+          vscode.window.showErrorMessage(
+            "The edge label must be in the format 'command@role'"
+          );
         }
       });
     })

@@ -61,11 +61,14 @@ const LayoutFlow = ({
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editedEdge, setEditedEdge] = React.useState(null);
 
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
     (connection) => {
-      connection.type = "editableLabelEdge";
+      setIsEditing(true);
+      setEditedEdge(connection);
       setEdges((edges) => addEdge(connection, edges));
     },
     [setEdges]
@@ -77,10 +80,32 @@ const LayoutFlow = ({
     if (edges.some((edge) => !edge.label)) {
       sendErrorToParent("noEdgeLabel");
       return;
+    } else if (
+      // Check that all edges have a label in the format "command@role"
+      edges.some(
+        (edge) => typeof edge.label === "string" && !edge.label.match(/\w*@\w*/)
+      )
+    ) {
+      sendErrorToParent("edgeLabelWrongFormat");
+      return;
     } else {
       sendDataToParent(nodes, edges);
-      // sendDataToParent(nodes, edges);
     }
+  }
+
+  // Set the label of the edge
+  function setEdgeLabel(edge, label) {
+    setEdges((edges) =>
+      edges.map((currentEdge) => {
+        if (
+          currentEdge.source === edge.source &&
+          currentEdge.target === edge.target
+        ) {
+          return { ...currentEdge, label };
+        }
+        return currentEdge;
+      })
+    );
   }
 
   // Add a new node to the flow
@@ -127,6 +152,16 @@ const LayoutFlow = ({
       <button onClick={saveChanges}>Save changes</button>
       <button onClick={() => onLayout(false)}>Auto Layout</button>
       <button onClick={addNode}>Add new node</button>
+      {/* Insert input field for new labels or editing old labels */}
+      {isEditing && (
+        <input
+          className="float-right"
+          name="label"
+          type="text"
+          placeholder="Edit label"
+          onChange={(e) => setEdgeLabel(editedEdge, e.target.value)}
+        />
+      )}
       <div style={{ height: "600px" }}>
         {/* https://reactflow.dev/api-reference/react-flow#nodeorigin */}
         <ReactFlow
@@ -139,9 +174,7 @@ const LayoutFlow = ({
           fitView
           attributionPosition="top-right"
           connectionMode={ConnectionMode.Loose}
-        >
-          {/* Removed buttons */}
-        </ReactFlow>
+        ></ReactFlow>
       </div>
     </div>
   );

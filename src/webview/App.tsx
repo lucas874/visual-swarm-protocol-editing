@@ -4,14 +4,12 @@ import JSON5 from "json5";
 import SelfConnecting from "./custom-edges/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
-import EditableLabelEdge from "./custom-edges/EditableLabelEdge";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
 
 const edgesTypes = {
   selfconnecting: SelfConnecting,
-  newEdgeWithLabel: EditableLabelEdge,
 };
 
 const App: React.FC = () => {
