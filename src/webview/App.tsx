@@ -85,8 +85,9 @@ const App: React.FC = () => {
     });
 
     let layout: LayoutType[] = changedNodes.map((node) => {
+      console.log(node);
       return {
-        name: node.id,
+        name: node.data.label,
         x: node.position.x,
         y: node.position.y,
       };
@@ -185,6 +186,12 @@ function createNodes(protocol: SwarmProtocol): any[] {
 
     if (!nodeNames.has(element.target)) {
       nodeNames.add(element.target);
+    }
+  });
+
+  protocol.layout?.forEach((element) => {
+    if (!nodeNames.has(element.name)) {
+      nodeNames.add(element.name);
     }
   });
 

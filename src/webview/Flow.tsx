@@ -61,13 +61,15 @@ const LayoutFlow = ({
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [isEditing, setIsEditing] = React.useState(false);
+  const [isEditingEdge, setIsEditingEdge] = React.useState(false);
+  const [isEditingNode, setIsEditingNode] = React.useState(false);
   const [editedEdge, setEditedEdge] = React.useState(null);
+  const [editedNode, setEditedNode] = React.useState(null);
 
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
     (connection) => {
-      setIsEditing(true);
+      setIsEditingEdge(true);
       setEditedEdge(connection);
       setEdges((edges) => addEdge(connection, edges));
     },
@@ -108,6 +110,34 @@ const LayoutFlow = ({
     );
   }
 
+  // Set the label of the node
+  function setNodeLabel(node, label) {
+    setNodes((nodes) =>
+      nodes.map((currentNode) => {
+        if (currentNode.id === node.id) {
+          return { ...currentNode, data: { label } };
+        }
+        return currentNode;
+      })
+    );
+  }
+
+  // Save changes to label and end editing
+  function endEditing(edge) {
+    if (
+      // Check that all edges have a label in the format "command@role"
+      edges.some(
+        (edge) => typeof edge.label === "string" && !edge.label.match(/\w*@\w*/)
+      )
+    ) {
+      sendErrorToParent("edgeLabelWrongFormat");
+      return;
+    } else {
+      setIsEditingEdge(false);
+      setEditedEdge(null);
+    }
+  }
+
   // Add a new node to the flow
   function addNode() {
     const newNode = {
@@ -118,6 +148,8 @@ const LayoutFlow = ({
         y: 0,
       },
     };
+    setIsEditingNode(true);
+    setEditedNode(newNode);
     setNodes((nodes) => nodes.concat(newNode));
   }
 
@@ -153,32 +185,37 @@ const LayoutFlow = ({
       <button onClick={() => onLayout(false)}>Auto Layout</button>
       <button onClick={addNode}>Add new node</button>
       {/* Insert input field for new labels or editing old labels */}
-      {isEditing && (
+      {isEditingEdge && (
         <input
           className="float-right"
           name="label"
           type="text"
-          placeholder={"Add label"}
+          placeholder={"Add edge label"}
           defaultValue={editedEdge?.label ?? ""}
           onChange={(e) => {
             setEdgeLabel(editedEdge, e.target.value);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              if (
-                // Check that all edges have a label in the format "command@role"
-                edges.some(
-                  (edge) =>
-                    typeof edge.label === "string" &&
-                    !edge.label.match(/\w*@\w*/)
-                )
-              ) {
-                sendErrorToParent("edgeLabelWrongFormat");
-                return;
-              } else {
-                setIsEditing(false);
-                setEditedEdge(null);
-              }
+              endEditing(editedEdge);
+            }
+          }}
+        />
+      )}
+      {isEditingNode && (
+        <input
+          className="float-right"
+          name="label"
+          type="text"
+          placeholder={"Add node label"}
+          defaultValue={editedNode?.data.label ?? ""}
+          onChange={(e) => {
+            setNodeLabel(editedNode, e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              setIsEditingNode(false);
+              setEditedNode(null);
             }
           }}
         />
@@ -193,7 +230,11 @@ const LayoutFlow = ({
           onConnect={onConnect}
           onEdgeClick={(event, edge) => {
             setEditedEdge(edge);
-            setIsEditing(true);
+            setIsEditingEdge(true);
+          }}
+          onNodeClick={(event, node) => {
+            setEditedNode(node);
+            setIsEditingNode(true);
           }}
           edgeTypes={edgesTypes}
           fitView
