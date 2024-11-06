@@ -158,8 +158,11 @@ const LayoutFlow = ({
           className="float-right"
           name="label"
           type="text"
-          placeholder="Edit label"
-          onChange={(e) => setEdgeLabel(editedEdge, e.target.value)}
+          placeholder={"Add label"}
+          defaultValue={editedEdge?.label ?? ""}
+          onChange={(e) => {
+            setEdgeLabel(editedEdge, e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               if (
@@ -174,6 +177,7 @@ const LayoutFlow = ({
                 return;
               } else {
                 setIsEditing(false);
+                setEditedEdge(null);
               }
             }
           }}
@@ -187,6 +191,10 @@ const LayoutFlow = ({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onEdgeClick={(event, edge) => {
+            setEditedEdge(edge);
+            setIsEditing(true);
+          }}
           edgeTypes={edgesTypes}
           fitView
           attributionPosition="top-right"
