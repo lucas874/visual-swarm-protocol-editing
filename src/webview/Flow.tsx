@@ -8,6 +8,7 @@ import {
   ReactFlowProvider,
   ConnectionMode,
   addEdge,
+  Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -91,7 +92,13 @@ const LayoutFlow = ({
       sendErrorToParent("edgeLabelWrongFormat");
       return;
     } else {
-      sendDataToParent(nodes, edges);
+      const fixNodeNames = nodes.map((node) => {
+        return {
+          ...node,
+          id: node.data.label,
+        };
+      });
+      sendDataToParent(fixNodeNames, edges);
     }
   }
 
@@ -154,25 +161,28 @@ const LayoutFlow = ({
   }
 
   // Delete the edge
-  function deleteEdge(edge) {
-    setEdges((edges) =>
-      edges.filter(
-        (currentEdge) =>
-          currentEdge.source !== edge.source ||
-          currentEdge.target !== edge.target
-      )
-    );
+  function deleteEdge(edgesToDelete) {
+    setEdges((edges) => edges.filter((edge) => !edgesToDelete.includes(edge)));
     setIsEditingEdge(false);
     setEditedEdge(null);
+    setIsEditingNode(false);
+    setEditedNode(null);
   }
 
   // Delete the node
-  function deleteNode(node) {
-    setNodes((nodes) =>
-      nodes.filter((currentNode) => currentNode.id !== node.id)
+  function deleteNode(nodesToDelete) {
+    setNodes((nodes) => nodes.filter((node) => !nodesToDelete.includes(node)));
+    setEdges((edges) =>
+      edges.filter(
+        (edge) =>
+          !nodesToDelete.map((node) => node.id).includes(edge.source) &&
+          !nodesToDelete.map((node) => node.id).includes(edge.target)
+      )
     );
-    setIsEditingNode(false);
+    setEditedEdge(null);
+    setIsEditingEdge(false);
     setEditedNode(null);
+    setIsEditingNode(false);
   }
 
   // Update nodes and edges with the layouted elements
@@ -271,14 +281,20 @@ const LayoutFlow = ({
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onEdgeClick={(event, edge) => {
+            setEditedNode(null);
+            setIsEditingNode(false);
             setEditedEdge(edge);
             setIsEditingEdge(true);
           }}
           onNodeClick={(event, node) => {
+            setEditedEdge(null);
+            setIsEditingEdge(false);
             setEditedNode(node);
             setIsEditingNode(true);
           }}
           edgeTypes={edgesTypes}
+          onNodesDelete={(nodesToDelete) => deleteNode(nodesToDelete)}
+          onEdgesDelete={(edgesToDelete) => deleteEdge(edgesToDelete)}
           fitView
           attributionPosition="top-right"
           connectionMode={ConnectionMode.Loose}
