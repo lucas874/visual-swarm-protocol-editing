@@ -153,6 +153,28 @@ const LayoutFlow = ({
     setNodes((nodes) => nodes.concat(newNode));
   }
 
+  // Delete the edge
+  function deleteEdge(edge) {
+    setEdges((edges) =>
+      edges.filter(
+        (currentEdge) =>
+          currentEdge.source !== edge.source ||
+          currentEdge.target !== edge.target
+      )
+    );
+    setIsEditingEdge(false);
+    setEditedEdge(null);
+  }
+
+  // Delete the node
+  function deleteNode(node) {
+    setNodes((nodes) =>
+      nodes.filter((currentNode) => currentNode.id !== node.id)
+    );
+    setIsEditingNode(false);
+    setEditedNode(null);
+  }
+
   // Update nodes and edges with the layouted elements
   const onLayout = useCallback(
     (isLayouted) => {
@@ -202,6 +224,16 @@ const LayoutFlow = ({
           }}
         />
       )}
+      {isEditingEdge && (
+        <button
+          className="float-right"
+          onClick={() => {
+            deleteEdge(editedEdge);
+          }}
+        >
+          Delete edge
+        </button>
+      )}
       {isEditingNode && (
         <input
           className="float-right"
@@ -219,6 +251,16 @@ const LayoutFlow = ({
             }
           }}
         />
+      )}
+      {isEditingNode && (
+        <button
+          className="float-right"
+          onClick={() => {
+            deleteNode(editedNode);
+          }}
+        >
+          Delete node
+        </button>
       )}
       <div style={{ height: "600px" }}>
         {/* https://reactflow.dev/api-reference/react-flow#nodeorigin */}
