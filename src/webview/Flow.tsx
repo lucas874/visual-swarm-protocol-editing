@@ -232,8 +232,7 @@ const LayoutFlow = ({
           className="float-right"
           name="label"
           type="text"
-          placeholder={"Add edge label"}
-          defaultValue={editedEdge?.label ?? ""}
+          placeholder={editedEdge?.label ?? "Add edge label"}
           onChange={(e) => {
             setEdgeLabel(editedEdge, e.target.value);
           }}
@@ -259,8 +258,7 @@ const LayoutFlow = ({
           className="float-right"
           name="label"
           type="text"
-          placeholder={"Add node label"}
-          defaultValue={editedNode?.data.label ?? ""}
+          placeholder={editedNode?.data.label ?? "Add node label"}
           onChange={(e) => {
             setNodeLabel(editedNode, e.target.value);
           }}
@@ -297,6 +295,7 @@ const LayoutFlow = ({
             setIsEditingEdge(true);
           }}
           onNodeClick={(event, node) => {
+            console.log(node);
             setEditedEdge(null);
             setIsEditingEdge(false);
             setEditedNode(node);
