@@ -162,7 +162,12 @@ const LayoutFlow = ({
 
   // Delete the edge
   function deleteEdge(edgesToDelete) {
-    setEdges((edges) => edges.filter((edge) => !edgesToDelete.includes(edge)));
+    console.log(edgesToDelete);
+    setEdges((edges) =>
+      edges.filter(
+        (edge) => !edgesToDelete.map((edge) => edge.label).includes(edge.label)
+      )
+    );
     setIsEditingEdge(false);
     setEditedEdge(null);
     setIsEditingNode(false);
@@ -171,7 +176,12 @@ const LayoutFlow = ({
 
   // Delete the node
   function deleteNode(nodesToDelete) {
-    setNodes((nodes) => nodes.filter((node) => !nodesToDelete.includes(node)));
+    console.log(nodesToDelete);
+    setNodes((nodes) =>
+      nodes.filter(
+        (node) => !nodesToDelete.map((node) => node.id).includes(node.id)
+      )
+    );
     setEdges((edges) =>
       edges.filter(
         (edge) =>
@@ -238,7 +248,7 @@ const LayoutFlow = ({
         <button
           className="float-right"
           onClick={() => {
-            deleteEdge(editedEdge);
+            deleteEdge([editedEdge]);
           }}
         >
           Delete edge
@@ -266,7 +276,7 @@ const LayoutFlow = ({
         <button
           className="float-right"
           onClick={() => {
-            deleteNode(editedNode);
+            deleteNode([editedNode]);
           }}
         >
           Delete node
