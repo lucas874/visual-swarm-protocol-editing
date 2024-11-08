@@ -117,6 +117,9 @@ export function activate(context: vscode.ExtensionContext) {
                 );
               });
             }
+
+            // Close the webview
+            panel.dispose();
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All edges must have a label");
