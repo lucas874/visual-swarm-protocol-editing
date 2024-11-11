@@ -8,12 +8,15 @@ import {
   ReactFlowProvider,
   ConnectionMode,
   addEdge,
-  Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 const nodeWidth = 175;
 const nodeHeight = 75;
+
+const nodeStyle = {
+  color: "black",
+};
 
 // Create nodes and edges from the protocol data
 const getLayoutedElements = (nodes, edges) => {
@@ -199,7 +202,15 @@ const LayoutFlow = ({
   const onLayout = useCallback(
     (isLayouted) => {
       if (!isLayouted) {
-        const layouted = getLayoutedElements(initialNodes, initialEdges);
+        const layouted = getLayoutedElements(
+          nodes.length > 0 ? nodes : initialNodes,
+          edges.length > 0 ? edges : initialEdges
+        );
+        console.log(nodes.length > 0 ? nodes : initialNodes);
+        console.log(nodes.length > 0 ? "nodes" : "initial nodes");
+        console.log(edges.length > 0 ? edges : initialEdges);
+        console.log(nodes.length > 0 ? "edges" : "initial edges");
+
         setNodes([...layouted.nodes]);
         setEdges([...layouted.edges]);
       } else {
@@ -295,7 +306,6 @@ const LayoutFlow = ({
             setIsEditingEdge(true);
           }}
           onNodeClick={(event, node) => {
-            console.log(node);
             setEditedEdge(null);
             setIsEditingEdge(false);
             setEditedNode(node);
@@ -307,6 +317,7 @@ const LayoutFlow = ({
           fitView
           attributionPosition="top-right"
           connectionMode={ConnectionMode.Loose}
+          style={nodeStyle}
         ></ReactFlow>
       </div>
     </div>
