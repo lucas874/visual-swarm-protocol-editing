@@ -14,7 +14,8 @@ export default function SelfConnecting(props: EdgeProps) {
   }
 
   // Split props to match the following values
-  const { sourceX, sourceY, targetX, targetY, id, markerEnd, label } = props;
+  const { sourceX, sourceY, targetX, targetY, id, markerEnd, label, style } =
+    props;
 
   // Set radius (switched from the example, to use top and bottom instead of left and right)
   const radiusX = 75;
@@ -27,7 +28,7 @@ export default function SelfConnecting(props: EdgeProps) {
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} {...props} />
       {/* Add label to the edge (inspired by https://reactflow.dev/examples/edges/edge-label-renderer) */}
       <EdgeLabelRenderer>
         {/* Position the label in the middle of the edge */}

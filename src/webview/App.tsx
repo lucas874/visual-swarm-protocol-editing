@@ -159,7 +159,10 @@ function createEdges(transitions: Transition[]): any[] {
         target: transition.target,
         label: transition.label.cmd + "@" + transition.label.role,
         type: "selfconnecting",
-        markerEnd: { type: MarkerType.Arrow },
+        markerEnd: { type: MarkerType.ArrowClosed },
+        style: {
+          strokeWidth: 1.7,
+        },
       };
     } else {
       return {
@@ -167,7 +170,10 @@ function createEdges(transitions: Transition[]): any[] {
         source: transition.source,
         target: transition.target,
         label: transition.label.cmd + "@" + transition.label.role,
-        markerEnd: { type: MarkerType.Arrow },
+        markerEnd: { type: MarkerType.ArrowClosed },
+        style: {
+          strokeWidth: 1.7,
+        },
       };
     }
   });

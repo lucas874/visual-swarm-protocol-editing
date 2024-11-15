@@ -309,7 +309,6 @@ const LayoutFlow = ({
           onEdgesDelete={(edgesToDelete) => deleteEdge(edgesToDelete)}
           fitView
           attributionPosition="top-right"
-          // connectionMode={ConnectionMode.Loose}
           style={nodeStyle}
         ></ReactFlow>
       </div>
