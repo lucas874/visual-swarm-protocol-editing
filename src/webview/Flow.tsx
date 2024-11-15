@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import Dagre from "@dagrejs/dagre";
 import {
   ReactFlow,
@@ -6,7 +6,6 @@ import {
   useNodesState,
   useEdgesState,
   ReactFlowProvider,
-  ConnectionMode,
   addEdge,
   MarkerType,
 } from "@xyflow/react";
@@ -70,6 +69,8 @@ const LayoutFlow = ({
   const [isEditingNode, setIsEditingNode] = React.useState(false);
   const [editedEdge, setEditedEdge] = React.useState(null);
   const [editedNode, setEditedNode] = React.useState(null);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
 
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
@@ -104,7 +105,7 @@ const LayoutFlow = ({
       sendErrorToParent("edgeLabelWrongFormat");
       return;
     } else {
-      const fixNodeNames = nodes.map((node) => {
+      const fixNodeNames = nodesRef.current.map((node) => {
         return {
           ...node,
           id: node.data.label,
@@ -174,7 +175,6 @@ const LayoutFlow = ({
 
   // Delete the edge
   function deleteEdge(edgesToDelete) {
-    console.log(edgesToDelete);
     setEdges((edges) =>
       edges.filter(
         (edge) => !edgesToDelete.map((edge) => edge.id).includes(edge.id)
@@ -188,7 +188,6 @@ const LayoutFlow = ({
 
   // Delete the node
   function deleteNode(nodesToDelete) {
-    console.log(nodesToDelete);
     setNodes((nodes) =>
       nodes.filter(
         (node) => !nodesToDelete.map((node) => node.id).includes(node.id)
@@ -211,7 +210,10 @@ const LayoutFlow = ({
   const onLayout = useCallback(
     (isLayouted) => {
       if (!isLayouted) {
-        const layouted = getLayoutedElements(initialNodes, initialEdges);
+        const layouted = getLayoutedElements(
+          nodesRef.current,
+          edgesRef.current
+        );
         setNodes([...layouted.nodes]);
         setEdges([...layouted.edges]);
       } else {
@@ -227,10 +229,32 @@ const LayoutFlow = ({
     [fitView, initialNodes, initialEdges, setNodes, setEdges]
   );
 
-  // Ensure that the layout is vertical when the component is first rendered
-  // And that no buttons are needed to be clicked
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
+
+  // Inspiration from https://medium.com/@harshsinghatz/key-bindings-in-react-bb1e8da265f9
   useEffect(() => {
     onLayout(hasLayout);
+
+    const handleKeyDown = (event) => {
+      if (
+        (event.metaKey && event.key === "s") ||
+        (event.ctrlKey && event.key === "s")
+      ) {
+        saveChanges();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [onLayout]);
 
   return (
@@ -244,7 +268,8 @@ const LayoutFlow = ({
           className="float-right"
           name="label"
           type="text"
-          placeholder={editedEdge?.label ?? "Add edge label"}
+          placeholder="Add edge label"
+          defaultValue={editedEdge?.label ?? ""}
           onChange={(e) => {
             setEdgeLabel(editedEdge, e.target.value);
           }}
@@ -270,7 +295,8 @@ const LayoutFlow = ({
           className="float-right"
           name="label"
           type="text"
-          placeholder={editedNode?.data.label ?? "Add node label"}
+          placeholder="Add node label"
+          defaultValue={editedNode?.data.label ?? ""}
           onChange={(e) => {
             setNodeLabel(editedNode, e.target.value);
           }}
@@ -278,7 +304,6 @@ const LayoutFlow = ({
             if (e.key === "Enter") {
               setIsEditingNode(false);
               setEditedNode(null);
-              console.log(nodes);
             }
           }}
         />

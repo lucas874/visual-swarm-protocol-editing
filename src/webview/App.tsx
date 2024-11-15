@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Flow from "./Flow";
 import JSON5 from "json5";
-import SelfConnecting from "./custom-edges/SelfConnectingEdge";
+import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
 
@@ -85,7 +85,6 @@ const App: React.FC = () => {
     });
 
     let layout: LayoutType[] = changedNodes.map((node) => {
-      console.log(node);
       return {
         name: node.data.label,
         x: node.position.x,
@@ -207,30 +206,30 @@ function createNodes(protocol: SwarmProtocol): any[] {
       (layout) => layout.name === nodeName
     );
 
-    if (nodeName === protocol.initial.toString()) {
-      // Initial node only has an input type
-      return {
-        id: nodeName,
-        data: { label: nodeName },
-        // Add any positions or measurements if they exist
-        position: {
-          x: nodeLayout?.x ?? 0,
-          y: nodeLayout?.y ?? 0,
-        },
-        type: "input",
-      };
-    } else {
-      // All other nodes have a default type
-      return {
-        id: nodeName,
-        data: { label: nodeName },
-        position: {
-          x: nodeLayout?.x ?? 0,
-          y: nodeLayout?.y ?? 0,
-        },
-        type: "default",
-      };
-    }
+    // if (nodeName === protocol.initial.toString()) {
+    //   // Initial node only has an input type
+    //   return {
+    //     id: nodeName,
+    //     data: { label: nodeName },
+    //     // Add any positions or measurements if they exist
+    //     position: {
+    //       x: nodeLayout?.x ?? 0,
+    //       y: nodeLayout?.y ?? 0,
+    //     },
+    //     type: "input",
+    //   };
+    // } else {
+    //   // All other nodes have a default type
+    return {
+      id: nodeName,
+      data: { label: nodeName },
+      position: {
+        x: nodeLayout?.x ?? 0,
+        y: nodeLayout?.y ?? 0,
+      },
+      type: "default",
+    };
+    // }
   });
 
   return nodes;
