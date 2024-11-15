@@ -78,6 +78,7 @@ const LayoutFlow = ({
       connection.style = {
         strokeWidth: 1.7,
       };
+      connection.id = `${connection.source}-${connection.target}`;
       if (connection.source === connection.target) {
         connection.type = "selfconnecting";
       }
@@ -176,7 +177,7 @@ const LayoutFlow = ({
     console.log(edgesToDelete);
     setEdges((edges) =>
       edges.filter(
-        (edge) => !edgesToDelete.map((edge) => edge.label).includes(edge.label)
+        (edge) => !edgesToDelete.map((edge) => edge.id).includes(edge.id)
       )
     );
     setIsEditingEdge(false);
