@@ -202,15 +202,7 @@ const LayoutFlow = ({
   const onLayout = useCallback(
     (isLayouted) => {
       if (!isLayouted) {
-        const layouted = getLayoutedElements(
-          nodes.length > 0 ? nodes : initialNodes,
-          edges.length > 0 ? edges : initialEdges
-        );
-        console.log(nodes.length > 0 ? nodes : initialNodes);
-        console.log(nodes.length > 0 ? "nodes" : "initial nodes");
-        console.log(edges.length > 0 ? edges : initialEdges);
-        console.log(nodes.length > 0 ? "edges" : "initial edges");
-
+        const layouted = getLayoutedElements(initialNodes, initialEdges);
         setNodes([...layouted.nodes]);
         setEdges([...layouted.edges]);
       } else {
@@ -277,6 +269,7 @@ const LayoutFlow = ({
             if (e.key === "Enter") {
               setIsEditingNode(false);
               setEditedNode(null);
+              console.log(nodes);
             }
           }}
         />
@@ -316,7 +309,7 @@ const LayoutFlow = ({
           onEdgesDelete={(edgesToDelete) => deleteEdge(edgesToDelete)}
           fitView
           attributionPosition="top-right"
-          connectionMode={ConnectionMode.Loose}
+          // connectionMode={ConnectionMode.Loose}
           style={nodeStyle}
         ></ReactFlow>
       </div>
