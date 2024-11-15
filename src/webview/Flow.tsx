@@ -62,12 +62,22 @@ const LayoutFlow = ({
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [isEditingEdge, setIsEditingEdge] = React.useState(false);
-  const [isEditingNode, setIsEditingNode] = React.useState(false);
-  const [editedEdge, setEditedEdge] = React.useState(null);
-  const [editedNode, setEditedNode] = React.useState(null);
+  const [isNodeDialogOpen, setIsNodeDialogOpen] = React.useState(false);
+  const [isEdgeDialogOpen, setIsEdgeDialogOpen] = React.useState(false);
+
   // https://react.dev/reference/react/useRef
   const nodesRef = useRef(nodes);
+  const labelRef = useRef("");
+  const commandRef = useRef("");
+  const roleRef = useRef("");
+  const selectedNodeRef = useRef(null);
+  const selectedEdgeRef = useRef(null);
+
+  // Open and close the dialogs
+  const openNodeDialog = () => setIsNodeDialogOpen(true);
+  const closeNodeDialog = () => setIsNodeDialogOpen(false);
+  const openEdgeDialog = () => setIsEdgeDialogOpen(true);
+  const closeEdgeDialog = () => setIsEdgeDialogOpen(false);
 
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
@@ -80,8 +90,6 @@ const LayoutFlow = ({
       if (connection.source === connection.target) {
         connection.type = "selfconnecting";
       }
-      setIsEditingEdge(true);
-      setEditedEdge(connection);
       setEdges((edges) => addEdge(connection, edges));
     },
     [setEdges]
@@ -113,14 +121,14 @@ const LayoutFlow = ({
   }
 
   // Set the label of the edge
-  function setEdgeLabel(edge, label) {
+  function setEdgeLabel() {
     setEdges((edges) =>
       edges.map((currentEdge) => {
         if (
-          currentEdge.source === edge.source &&
-          currentEdge.target === edge.target
+          currentEdge.source === selectedEdgeRef.current.source &&
+          currentEdge.target === selectedEdgeRef.current.target
         ) {
-          return { ...currentEdge, label };
+          return { ...currentEdge, label: labelRef.current };
         }
         return currentEdge;
       })
@@ -128,31 +136,30 @@ const LayoutFlow = ({
   }
 
   // Set the label of the node
-  function setNodeLabel(node, label) {
+  function setNodeLabel() {
     setNodes((nodes) =>
       nodes.map((currentNode) => {
-        if (currentNode.id === node.id) {
-          return { ...currentNode, data: { label } };
+        if (currentNode.id === selectedNodeRef.current.id) {
+          return {
+            ...currentNode,
+            data: { label: labelRef.current },
+            id: labelRef.current,
+          };
         }
         return currentNode;
       })
     );
-  }
 
-  // Save changes to label and end editing
-  function endEditing(edge) {
-    if (
-      // Check that all edges have a label in the format "command@role"
-      edges.some(
-        (edge) => typeof edge.label === "string" && !edge.label.match(/\S+@\S+/)
-      )
-    ) {
-      sendErrorToParent("edgeLabelWrongFormat");
-      return;
-    } else {
-      setIsEditingEdge(false);
-      setEditedEdge(null);
-    }
+    setEdges((edges) =>
+      edges.map((currentEdge) => {
+        if (currentEdge.source === selectedNodeRef.current.id) {
+          return { ...currentEdge, source: labelRef.current };
+        } else if (currentEdge.target === selectedNodeRef.current.id) {
+          return { ...currentEdge, target: labelRef.current };
+        }
+        return currentEdge;
+      })
+    );
   }
 
   // Add a new node to the flow
@@ -165,8 +172,6 @@ const LayoutFlow = ({
         y: 0,
       },
     };
-    setIsEditingNode(true);
-    setEditedNode(newNode);
     setNodes((nodes) => nodes.concat(newNode));
   }
 
@@ -177,10 +182,6 @@ const LayoutFlow = ({
         (edge) => !edgesToDelete.map((edge) => edge.id).includes(edge.id)
       )
     );
-    setIsEditingEdge(false);
-    setEditedEdge(null);
-    setIsEditingNode(false);
-    setEditedNode(null);
   }
 
   // Delete the node
@@ -197,10 +198,6 @@ const LayoutFlow = ({
           !nodesToDelete.map((node) => node.id).includes(edge.target)
       )
     );
-    setEditedEdge(null);
-    setIsEditingEdge(false);
-    setEditedNode(null);
-    setIsEditingNode(false);
   }
 
   // Update nodes and edges with the layouted elements
@@ -229,8 +226,6 @@ const LayoutFlow = ({
 
   // Inspiration from https://medium.com/@harshsinghatz/key-bindings-in-react-bb1e8da265f9
   useEffect(() => {
-    onLayout(hasLayout);
-
     const handleKeyDown = (event) => {
       if (
         (event.metaKey && event.key === "s") ||
@@ -245,6 +240,10 @@ const LayoutFlow = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
+  }, []);
+
+  useEffect(() => {
+    onLayout(hasLayout);
   }, [onLayout]);
 
   return (
@@ -258,63 +257,121 @@ const LayoutFlow = ({
       <button className="button" onClick={addNode}>
         Add new node
       </button>
-      {/* Insert input field for new labels or editing old labels */}
-      {isEditingEdge && (
-        <input
-          className="input"
-          name="label"
-          type="text"
-          placeholder="Add edge label"
-          defaultValue={editedEdge?.label ?? ""}
-          onChange={(e) => {
-            setEdgeLabel(editedEdge, e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              endEditing(editedEdge);
-            }
-          }}
-        />
+      {/* Create a dialog trying to delete */}
+      {isNodeDialogOpen && (
+        <div className="overlay" onClick={closeNodeDialog}>
+          <div className="dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="row">
+              <label className="label">Label</label>
+              <input
+                className="input float-right"
+                type="text"
+                placeholder="Add label"
+                onChange={(e) => (labelRef.current = e.target.value)}
+                defaultValue={labelRef.current}
+              />
+            </div>
+            <div className="row float-right">
+              <button
+                className="button-dialog float-right"
+                onClick={(e) => {
+                  closeNodeDialog();
+                  setNodeLabel();
+                }}
+              >
+                Save
+              </button>
+              <button
+                className="button-cancel float-right"
+                onClick={closeNodeDialog}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      {isEditingEdge && (
-        <button
-          className="button"
-          onClick={() => {
-            deleteEdge([editedEdge]);
-          }}
-        >
-          Delete edge
-        </button>
+      {/* Create a dialog when double clicking on a node */}
+      {isNodeDialogOpen && (
+        <div className="overlay" onClick={closeNodeDialog}>
+          <div className="dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="row">
+              <label className="label">Label</label>
+              <input
+                className="input float-right"
+                type="text"
+                placeholder="Add label"
+                onChange={(e) => (labelRef.current = e.target.value)}
+                defaultValue={labelRef.current}
+              />
+            </div>
+            <div className="row float-right">
+              <button
+                className="button-cancel float-right"
+                onClick={closeNodeDialog}
+              >
+                Cancel
+              </button>
+              <button
+                className="button-dialog float-right"
+                onClick={(e) => {
+                  closeNodeDialog();
+                  setNodeLabel();
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      {isEditingNode && (
-        <input
-          className="input"
-          name="label"
-          type="text"
-          placeholder="Add node label"
-          defaultValue={editedNode?.data.label ?? ""}
-          onChange={(e) => {
-            setNodeLabel(editedNode, e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              setIsEditingNode(false);
-              setEditedNode(null);
-            }
-          }}
-        />
+      {/* Create a dialog when double clicking on an edge */}
+      {isEdgeDialogOpen && (
+        <div className="overlay" onClick={closeEdgeDialog}>
+          <div className="dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="row">
+              <label className="label">Command</label>
+              <input
+                className="input float-right"
+                type="text"
+                placeholder="Add command"
+                onChange={(e) =>
+                  (labelRef.current = e.target.value + "@" + roleRef.current)
+                }
+                defaultValue={commandRef.current}
+              />
+            </div>
+            <div className="row">
+              <label className="label">Role</label>
+              <input
+                className="input"
+                type="text"
+                placeholder="Add role"
+                onChange={(e) =>
+                  (labelRef.current = commandRef.current + "@" + e.target.value)
+                }
+                defaultValue={roleRef.current}
+              />
+            </div>
+            <div className="row float-right">
+              <button className="button-cancel" onClick={closeEdgeDialog}>
+                Cancel
+              </button>
+              <button
+                className="button-dialog"
+                onClick={(e) => {
+                  closeEdgeDialog();
+                  setEdgeLabel();
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      {isEditingNode && (
-        <button
-          className="button"
-          onClick={() => {
-            deleteNode([editedNode]);
-          }}
-        >
-          Delete node
-        </button>
-      )}
-      <div style={{ height: "600px" }}>
+      {/* Create the flow, ensure visibility by adding height */}
+      <div style={{ height: "900px" }}>
         {/* https://reactflow.dev/api-reference/react-flow#nodeorigin */}
         <ReactFlow
           nodes={nodes}
@@ -322,17 +379,16 @@ const LayoutFlow = ({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onEdgeClick={(event, edge) => {
-            setEditedNode(null);
-            setIsEditingNode(false);
-            setEditedEdge(edge);
-            setIsEditingEdge(true);
+          onNodeDoubleClick={(_, node) => {
+            selectedNodeRef.current = node;
+            labelRef.current = node.data.label?.toString() ?? "";
+            openNodeDialog();
           }}
-          onNodeClick={(event, node) => {
-            setEditedEdge(null);
-            setIsEditingEdge(false);
-            setEditedNode(node);
-            setIsEditingNode(true);
+          onEdgeDoubleClick={(_, edge) => {
+            selectedEdgeRef.current = edge;
+            commandRef.current = edge.label?.toString().split("@")[0] ?? "";
+            roleRef.current = edge.label?.toString().split("@")[1] ?? "";
+            openEdgeDialog();
           }}
           edgeTypes={edgesTypes}
           onNodesDelete={(nodesToDelete) => deleteNode(nodesToDelete)}
