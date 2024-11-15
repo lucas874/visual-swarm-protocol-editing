@@ -8,6 +8,7 @@ import {
   ReactFlowProvider,
   ConnectionMode,
   addEdge,
+  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -73,6 +74,13 @@ const LayoutFlow = ({
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
     (connection) => {
+      connection.markerEnd = { type: MarkerType.ArrowClosed };
+      connection.style = {
+        strokeWidth: 1.7,
+      };
+      if (connection.source === connection.target) {
+        connection.type = "selfconnecting";
+      }
       setIsEditingEdge(true);
       setEditedEdge(connection);
       setEdges((edges) => addEdge(connection, edges));
@@ -82,7 +90,7 @@ const LayoutFlow = ({
 
   // From https://medium.com/@ozhanli/passing-data-from-child-to-parent-components-in-react-e347ea60b1bb
   function saveChanges() {
-    // Check that all edges have a "command@role" label
+    // Check that all edges have a label
     if (edges.some((edge) => !edge.label)) {
       sendErrorToParent("noEdgeLabel");
       return;

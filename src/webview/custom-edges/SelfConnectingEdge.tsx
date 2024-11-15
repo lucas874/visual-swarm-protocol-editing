@@ -30,24 +30,26 @@ export default function SelfConnecting(props: EdgeProps) {
     <>
       <BaseEdge path={edgePath} markerEnd={markerEnd} {...props} />
       {/* Add label to the edge (inspired by https://reactflow.dev/examples/edges/edge-label-renderer) */}
-      <EdgeLabelRenderer>
-        {/* Position the label in the middle of the edge */}
-        <div
-          style={{
-            position: "absolute",
-            transform: `translate(${sourceX - 175}px, ${
-              (targetY + sourceY) / 2 - 10
-            }px)`,
-            background: "white",
-            padding: "3px",
-            borderRadius: "2px",
-            fontSize: "10px",
-            color: "black",
-          }}
-        >
-          {label}
-        </div>
-      </EdgeLabelRenderer>
+      {label && (
+        <EdgeLabelRenderer>
+          {/* Position the label in the middle of the edge */}
+          <div
+            style={{
+              position: "absolute",
+              transform: `translate(${sourceX - 175}px, ${
+                (targetY + sourceY) / 2 - 10
+              }px)`,
+              background: "white",
+              padding: "3px",
+              borderRadius: "2px",
+              fontSize: "10px",
+              color: "black",
+            }}
+          >
+            {label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
     </>
   );
 }
