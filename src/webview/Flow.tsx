@@ -89,7 +89,7 @@ const LayoutFlow = ({
     } else if (
       // Check that all edges have a label in the format "command@role"
       edges.some(
-        (edge) => typeof edge.label === "string" && !edge.label.match(/\w*@\w*/)
+        (edge) => typeof edge.label === "string" && !edge.label.match(/\S+@\S+/)
       )
     ) {
       sendErrorToParent("edgeLabelWrongFormat");
@@ -137,7 +137,7 @@ const LayoutFlow = ({
     if (
       // Check that all edges have a label in the format "command@role"
       edges.some(
-        (edge) => typeof edge.label === "string" && !edge.label.match(/\w*@\w*/)
+        (edge) => typeof edge.label === "string" && !edge.label.match(/\S+@\S+/)
       )
     ) {
       sendErrorToParent("edgeLabelWrongFormat");
