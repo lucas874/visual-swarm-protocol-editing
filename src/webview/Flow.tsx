@@ -10,13 +10,10 @@ import {
   MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "./style.css";
 
 const nodeWidth = 175;
 const nodeHeight = 75;
-
-const nodeStyle = {
-  color: "black",
-};
 
 // Create nodes and edges from the protocol data
 const getLayoutedElements = (nodes, edges) => {
@@ -69,8 +66,8 @@ const LayoutFlow = ({
   const [isEditingNode, setIsEditingNode] = React.useState(false);
   const [editedEdge, setEditedEdge] = React.useState(null);
   const [editedNode, setEditedNode] = React.useState(null);
+  // https://react.dev/reference/react/useRef
   const nodesRef = useRef(nodes);
-  const edgesRef = useRef(edges);
 
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
@@ -210,10 +207,7 @@ const LayoutFlow = ({
   const onLayout = useCallback(
     (isLayouted) => {
       if (!isLayouted) {
-        const layouted = getLayoutedElements(
-          nodesRef.current,
-          edgesRef.current
-        );
+        const layouted = getLayoutedElements(initialNodes, initialEdges);
         setNodes([...layouted.nodes]);
         setEdges([...layouted.edges]);
       } else {
@@ -232,10 +226,6 @@ const LayoutFlow = ({
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
-
-  useEffect(() => {
-    edgesRef.current = edges;
-  }, [edges]);
 
   // Inspiration from https://medium.com/@harshsinghatz/key-bindings-in-react-bb1e8da265f9
   useEffect(() => {
@@ -259,13 +249,19 @@ const LayoutFlow = ({
 
   return (
     <div>
-      <button onClick={saveChanges}>Save changes</button>
-      <button onClick={() => onLayout(false)}>Auto Layout</button>
-      <button onClick={addNode}>Add new node</button>
+      <button className="button" onClick={saveChanges}>
+        Save changes
+      </button>
+      <button className="button" onClick={() => onLayout(false)}>
+        Auto Layout
+      </button>
+      <button className="button" onClick={addNode}>
+        Add new node
+      </button>
       {/* Insert input field for new labels or editing old labels */}
       {isEditingEdge && (
         <input
-          className="float-right"
+          className="input"
           name="label"
           type="text"
           placeholder="Add edge label"
@@ -282,7 +278,7 @@ const LayoutFlow = ({
       )}
       {isEditingEdge && (
         <button
-          className="float-right"
+          className="button"
           onClick={() => {
             deleteEdge([editedEdge]);
           }}
@@ -292,7 +288,7 @@ const LayoutFlow = ({
       )}
       {isEditingNode && (
         <input
-          className="float-right"
+          className="input"
           name="label"
           type="text"
           placeholder="Add node label"
@@ -310,7 +306,7 @@ const LayoutFlow = ({
       )}
       {isEditingNode && (
         <button
-          className="float-right"
+          className="button"
           onClick={() => {
             deleteNode([editedNode]);
           }}
@@ -343,7 +339,6 @@ const LayoutFlow = ({
           onEdgesDelete={(edgesToDelete) => deleteEdge(edgesToDelete)}
           fitView
           attributionPosition="top-right"
-          style={nodeStyle}
         ></ReactFlow>
       </div>
     </div>

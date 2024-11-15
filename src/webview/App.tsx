@@ -113,7 +113,7 @@ const App: React.FC = () => {
     <div>
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
       {occurrences.length > 1 && (
-        <select onChange={handleSelect}>
+        <select className="dropdown" onChange={handleSelect}>
           {occurrences.map((occurence) => (
             <option value={occurence.name} key={occurence.name}>
               {occurence.name}
@@ -227,6 +227,8 @@ function createNodes(protocol: SwarmProtocol): any[] {
         x: nodeLayout?.x ?? 0,
         y: nodeLayout?.y ?? 0,
       },
+      sourcePosition: "bottom",
+      targetPosition: "top",
       type: "default",
     };
     // }

@@ -1,0 +1,44 @@
+.react-flow__node {
+  background-color: #fff;
+  border-color: #000;
+  color: #000;
+}
+
+.react-flow__handle-top {
+  background-color: #f00;
+  color: #000;
+  border-color: #000;
+}
+
+.react-flow__handle-bottom {
+  background-color: #00f;
+  color: #000;
+  border-color: #000;
+}
+
+.button {
+  background-color: #edf3f9;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  margin: 15px 5px 5px 5px;
+  padding: 5px 5px 5px 5px;
+}
+
+.input {
+  background-color: #edf3f9;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  margin: 15px 5px 5px 5px;
+  padding: 5px 5px 5px 5px;
+}
+
+.dropdown {
+  background-color: #edf3f9;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  margin: 15px 5px 5px 5px;
+  padding: 5px 5px 5px 5px;
+}
