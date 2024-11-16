@@ -69,7 +69,8 @@ const LayoutFlow = ({
 
   // https://react.dev/reference/react/useRef
   const nodesRef = useRef(nodes);
-  const labelRef = useRef("");
+  const nodeLabelRef = useRef("");
+  const edgeLabelRef = useRef("");
   const commandRef = useRef("");
   const roleRef = useRef("");
   const selectedNodeRef = useRef(null);
@@ -133,7 +134,7 @@ const LayoutFlow = ({
           currentEdge.source === selectedEdgeRef.current.source &&
           currentEdge.target === selectedEdgeRef.current.target
         ) {
-          return { ...currentEdge, label: labelRef.current };
+          return { ...currentEdge, label: edgeLabelRef.current };
         }
         return currentEdge;
       })
@@ -147,8 +148,8 @@ const LayoutFlow = ({
         if (currentNode.id === selectedNodeRef.current.id) {
           return {
             ...currentNode,
-            data: { label: labelRef.current },
-            id: labelRef.current,
+            data: { label: nodeLabelRef.current },
+            id: nodeLabelRef.current,
           };
         }
         return currentNode;
@@ -158,9 +159,9 @@ const LayoutFlow = ({
     setEdges((edges) =>
       edges.map((currentEdge) => {
         if (currentEdge.source === selectedNodeRef.current.id) {
-          return { ...currentEdge, source: labelRef.current };
+          return { ...currentEdge, source: nodeLabelRef.current };
         } else if (currentEdge.target === selectedNodeRef.current.id) {
-          return { ...currentEdge, target: labelRef.current };
+          return { ...currentEdge, target: nodeLabelRef.current };
         }
         return currentEdge;
       })
@@ -298,8 +299,8 @@ const LayoutFlow = ({
                 className="input float-right"
                 type="text"
                 placeholder="Add label"
-                onChange={(e) => (labelRef.current = e.target.value)}
-                defaultValue={labelRef.current}
+                onChange={(e) => (nodeLabelRef.current = e.target.value)}
+                defaultValue={nodeLabelRef.current}
               />
             </div>
             <div className="row float-right">
@@ -332,9 +333,11 @@ const LayoutFlow = ({
                 className="input float-right"
                 type="text"
                 placeholder="Add command"
-                onChange={(e) =>
-                  (labelRef.current = e.target.value + "@" + roleRef.current)
-                }
+                onChange={(e) => {
+                  commandRef.current = e.target.value;
+                  edgeLabelRef.current =
+                    commandRef.current + "@" + roleRef.current;
+                }}
                 defaultValue={commandRef.current}
               />
             </div>
@@ -344,9 +347,11 @@ const LayoutFlow = ({
                 className="input"
                 type="text"
                 placeholder="Add role"
-                onChange={(e) =>
-                  (labelRef.current = commandRef.current + "@" + e.target.value)
-                }
+                onChange={(e) => {
+                  roleRef.current = e.target.value;
+                  edgeLabelRef.current =
+                    commandRef.current + "@" + roleRef.current;
+                }}
                 defaultValue={roleRef.current}
               />
             </div>
@@ -357,8 +362,16 @@ const LayoutFlow = ({
               <button
                 className="button-dialog"
                 onClick={(e) => {
-                  closeEdgeDialog();
-                  setEdgeLabel();
+                  if (!commandRef.current) {
+                    console.log(commandRef.current);
+                    sendErrorToParent("noCommand");
+                  } else if (!roleRef.current) {
+                    console.log(roleRef.current);
+                    sendErrorToParent("noRole");
+                  } else {
+                    closeEdgeDialog();
+                    setEdgeLabel();
+                  }
                 }}
               >
                 Save
@@ -378,7 +391,7 @@ const LayoutFlow = ({
           onConnect={onConnect}
           onNodeDoubleClick={(_, node) => {
             selectedNodeRef.current = node;
-            labelRef.current = node.data.label?.toString() ?? "";
+            nodeLabelRef.current = node.data.label?.toString() ?? "";
             openNodeDialog();
           }}
           onEdgeDoubleClick={(_, edge) => {
