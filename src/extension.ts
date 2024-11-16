@@ -85,12 +85,19 @@ export function activate(context: vscode.ExtensionContext) {
       // Get messages from child component
       panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
+          // Editor might have been closed or tabbed away from, so make sure it's visible
+          const editor = await vscode.window.showTextDocument(
+            activeEditor.document.uri
+          );
+
           // Create list of all SwarmProtocolType occurences
           let helperArray;
 
           // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
           // Find all occurences of the SwarmProtocolType
-          while ((helperArray = typeRegex.exec(text)) !== null) {
+          while (
+            (helperArray = typeRegex.exec(editor.document.getText())) !== null
+          ) {
             // Find the name of the protocol
             const occurrenceName = helperArray[0].substring(
               0,
@@ -99,27 +106,22 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Find the correct occurence based on the data from the child component
             if (occurrenceName === message.data.name) {
-              // Editor might have been closed or tabbed away from, so make sure it's visible
-              const editor = await vscode.window.showTextDocument(
-                activeEditor.document.uri
-              );
-
               // Replace text in the active editor with the new data
               editor.edit((editBuilder) => {
                 editBuilder.replace(
                   new vscode.Range(
                     activeEditor.document.positionAt(typeRegex.lastIndex),
                     activeEditor.document.positionAt(
-                      getLastIndex(text, typeRegex.lastIndex)
+                      getLastIndex(
+                        editor.document.getText(),
+                        typeRegex.lastIndex
+                      )
                     )
                   ),
                   `${message.data.protocol}`
                 );
               });
             }
-
-            // Close the webview
-            panel.dispose();
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All edges must have a label");
