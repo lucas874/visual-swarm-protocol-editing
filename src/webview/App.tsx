@@ -17,8 +17,9 @@ const App: React.FC = () => {
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
   const [occurrences, setOccurrences] = useState<any[]>([]);
-  const [selectedProtocol, setSelectedProtocol] = useState<string>("");
   const [protocol, setProtocol] = useState<SwarmProtocol>();
+
+  const selectedProtocolRef = React.useRef("");
 
   useEffect(() => {
     // Listen for messages from the VS Code extension
@@ -40,7 +41,7 @@ const App: React.FC = () => {
         setNodes(createNodes(tempProtocol));
 
         // Set the selected protocol to the first occurence
-        setSelectedProtocol(message.data[0].name);
+        selectedProtocolRef.current = message.data[0].name;
       }
     });
 
@@ -67,7 +68,7 @@ const App: React.FC = () => {
     setProtocol(occurrence.json);
 
     // Set the selected protocol to the selected occurence
-    setSelectedProtocol(e.target.value);
+    selectedProtocolRef.current = e.target.value;
   };
 
   // Pass data back to extension
@@ -85,6 +86,7 @@ const App: React.FC = () => {
     });
 
     let layout: LayoutType[] = changedNodes.map((node) => {
+      console.log(node.position);
       return {
         name: node.data.label,
         x: node.position.x,
@@ -105,7 +107,10 @@ const App: React.FC = () => {
     // Send the changes to the extension
     vscode.postMessage({
       command: "changeProtocol",
-      data: { name: selectedProtocol, protocol: JSON5.stringify(protocol) },
+      data: {
+        name: selectedProtocolRef.current,
+        protocol: JSON5.stringify(protocol),
+      },
     });
   }
 
@@ -205,21 +210,6 @@ function createNodes(protocol: SwarmProtocol): any[] {
     let nodeLayout = protocol.layout?.find(
       (layout) => layout.name === nodeName
     );
-
-    // if (nodeName === protocol.initial.toString()) {
-    //   // Initial node only has an input type
-    //   return {
-    //     id: nodeName,
-    //     data: { label: nodeName },
-    //     // Add any positions or measurements if they exist
-    //     position: {
-    //       x: nodeLayout?.x ?? 0,
-    //       y: nodeLayout?.y ?? 0,
-    //     },
-    //     type: "input",
-    //   };
-    // } else {
-    //   // All other nodes have a default type
     return {
       id: nodeName,
       data: { label: nodeName },

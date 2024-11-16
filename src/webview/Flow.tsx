@@ -11,7 +11,6 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
-import { on } from "events";
 
 const nodeWidth = 175;
 const nodeHeight = 75;
@@ -69,6 +68,7 @@ const LayoutFlow = ({
 
   // https://react.dev/reference/react/useRef
   const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
   const nodeLabelRef = useRef("");
   const edgeLabelRef = useRef("");
   const commandRef = useRef("");
@@ -122,7 +122,7 @@ const LayoutFlow = ({
           id: node.data.label,
         };
       });
-      sendDataToParent(fixNodeNames, edges);
+      sendDataToParent(fixNodeNames, edgesRef.current);
     }
   }
 
@@ -221,9 +221,14 @@ const LayoutFlow = ({
     [fitView, initialNodes, initialEdges, setNodes, setEdges]
   );
 
+  // Update the nodes and edges references
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
 
   // Inspiration from https://medium.com/@harshsinghatz/key-bindings-in-react-bb1e8da265f9
   useEffect(() => {
