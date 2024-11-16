@@ -11,6 +11,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
+import { on } from "events";
 
 const nodeWidth = 175;
 const nodeHeight = 75;
@@ -64,6 +65,7 @@ const LayoutFlow = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [isNodeDialogOpen, setIsNodeDialogOpen] = React.useState(false);
   const [isEdgeDialogOpen, setIsEdgeDialogOpen] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // https://react.dev/reference/react/useRef
   const nodesRef = useRef(nodes);
@@ -72,12 +74,15 @@ const LayoutFlow = ({
   const roleRef = useRef("");
   const selectedNodeRef = useRef(null);
   const selectedEdgeRef = useRef(null);
+  const onDeleteRef = useRef(null);
 
   // Open and close the dialogs
   const openNodeDialog = () => setIsNodeDialogOpen(true);
   const closeNodeDialog = () => setIsNodeDialogOpen(false);
   const openEdgeDialog = () => setIsEdgeDialogOpen(true);
   const closeEdgeDialog = () => setIsEdgeDialogOpen(false);
+  const openDeleteDialog = () => setIsDeleteDialogOpen(true);
+  const closeDeleteDialog = () => setIsDeleteDialogOpen(false);
 
   // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback(
@@ -176,26 +181,21 @@ const LayoutFlow = ({
   }
 
   // Delete the edge
-  function deleteEdge(edgesToDelete) {
+  function deleteEdges() {
     setEdges((edges) =>
       edges.filter(
-        (edge) => !edgesToDelete.map((edge) => edge.id).includes(edge.id)
+        (edge) =>
+          !onDeleteRef.current.edges.map((edge) => edge.id).includes(edge.id)
       )
     );
   }
 
   // Delete the node
-  function deleteNode(nodesToDelete) {
+  function deleteNodes() {
     setNodes((nodes) =>
       nodes.filter(
-        (node) => !nodesToDelete.map((node) => node.id).includes(node.id)
-      )
-    );
-    setEdges((edges) =>
-      edges.filter(
-        (edge) =>
-          !nodesToDelete.map((node) => node.id).includes(edge.source) &&
-          !nodesToDelete.map((node) => node.id).includes(edge.target)
+        (node) =>
+          !onDeleteRef.current.nodes.map((node) => node.id).includes(node.id)
       )
     );
   }
@@ -258,34 +258,31 @@ const LayoutFlow = ({
         Add new node
       </button>
       {/* Create a dialog trying to delete */}
-      {isNodeDialogOpen && (
+      {isDeleteDialogOpen && (
         <div className="overlay" onClick={closeNodeDialog}>
           <div className="dialog" onClick={(e) => e.stopPropagation()}>
             <div className="row">
-              <label className="label">Label</label>
-              <input
-                className="input float-right"
-                type="text"
-                placeholder="Add label"
-                onChange={(e) => (labelRef.current = e.target.value)}
-                defaultValue={labelRef.current}
-              />
+              <h2 className="label">Are you sure you want to delete?</h2>
+            </div>
+            <div className="row">
+              <label className="label">This action cannot be undone</label>
             </div>
             <div className="row float-right">
               <button
                 className="button-dialog float-right"
-                onClick={(e) => {
-                  closeNodeDialog();
-                  setNodeLabel();
-                }}
+                onClick={closeDeleteDialog}
               >
-                Save
+                Cancel
               </button>
               <button
                 className="button-cancel float-right"
-                onClick={closeNodeDialog}
+                onClick={(e) => {
+                  deleteEdges();
+                  deleteNodes();
+                  closeDeleteDialog();
+                }}
               >
-                Cancel
+                Delete
               </button>
             </div>
           </div>
@@ -390,9 +387,14 @@ const LayoutFlow = ({
             roleRef.current = edge.label?.toString().split("@")[1] ?? "";
             openEdgeDialog();
           }}
+          onBeforeDelete={(onBeforeDelete) => {
+            onDeleteRef.current = onBeforeDelete;
+            openDeleteDialog();
+            return Promise.resolve(false);
+          }}
           edgeTypes={edgesTypes}
-          onNodesDelete={(nodesToDelete) => deleteNode(nodesToDelete)}
-          onEdgesDelete={(edgesToDelete) => deleteEdge(edgesToDelete)}
+          // onNodesDelete={(nodesToDelete) => deleteNode(nodesToDelete)}
+          // onEdgesDelete={(edgesToDelete) => deleteEdge(edgesToDelete)}
           fitView
           attributionPosition="top-right"
         ></ReactFlow>
