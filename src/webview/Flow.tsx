@@ -67,8 +67,8 @@ const LayoutFlow = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // https://react.dev/reference/react/useRef
-  const nodesRef = useRef(nodes);
-  const edgesRef = useRef(edges);
+  const nodesRef = useRef(initialNodes);
+  const edgesRef = useRef(initialEdges);
   const nodeLabelRef = useRef("");
   const edgeLabelRef = useRef("");
   const commandRef = useRef("");
@@ -205,7 +205,17 @@ const LayoutFlow = ({
   const onLayout = useCallback(
     (isLayouted) => {
       if (!isLayouted) {
-        const layouted = getLayoutedElements(initialNodes, initialEdges);
+        let layouted;
+        if (nodesRef.current.length > 0 && edgesRef.current.length > 0) {
+          layouted = getLayoutedElements(nodesRef.current, edgesRef.current);
+        } else if (nodesRef.current.length > 0) {
+          layouted = getLayoutedElements(nodesRef.current, initialEdges);
+        } else if (edgesRef.current.length > 0) {
+          layouted = getLayoutedElements(initialNodes, edgesRef.current);
+        } else {
+          layouted = getLayoutedElements(initialNodes, initialEdges);
+        }
+
         setNodes([...layouted.nodes]);
         setEdges([...layouted.edges]);
       } else {
