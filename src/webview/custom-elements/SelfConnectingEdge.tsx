@@ -5,12 +5,13 @@ import {
   EdgeLabelRenderer,
   EdgeProps,
 } from "@xyflow/react";
+import { SmoothStepEdge, StepEdge } from "reactflow";
 
 // Example from React Flow: https://reactflow.dev/examples/edges/custom-edges
 export default function SelfConnecting(props: EdgeProps) {
   // we are using the default bezier edge when source and target are not the same
   if (props.source !== props.target) {
-    return <BezierEdge {...props} />;
+    return <SmoothStepEdge {...props} />;
   }
 
   // Split props to match the following values

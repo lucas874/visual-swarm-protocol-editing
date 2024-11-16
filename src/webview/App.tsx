@@ -174,6 +174,7 @@ function createEdges(transitions: Transition[]): any[] {
         source: transition.source,
         target: transition.target,
         label: transition.label.cmd + "@" + transition.label.role,
+        type: "smoothstep",
         markerEnd: { type: MarkerType.ArrowClosed },
         style: {
           strokeWidth: 1.7,
