@@ -17,45 +17,16 @@ export function activate(context: vscode.ExtensionContext) {
 
       // Save text from active editor to a variable
       const text = activeEditor.document.getText();
-
       // Set regex string to search for the SwarmProtocolType
       const typeRegex = /\S*:\s*SwarmProtocolType\s*=\s*/gm;
-      const occurrences = [];
 
-      // Check if the file contains a swarm protocol
-      if (text.includes("SwarmProtocolType")) {
-        // Create list of all SwarmProtocolType occurences
-        let helperArray;
-
-        // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-        // Find all occurences of the SwarmProtocolType
-        while ((helperArray = typeRegex.exec(text)) !== null) {
-          // Find the name of the protocol
-          const occurrenceName = helperArray[0].substring(
-            0,
-            helperArray[0].indexOf(":")
-          );
-
-          let jsonObject = getNestedJSONObject(text, typeRegex.lastIndex);
-
-          if (jsonObject === "") {
-            // End the process if there are errors
-            return;
-          } else {
-            // Put the occurence in the occurences array along with the json code.
-            occurrences.push({
-              name: occurrenceName,
-              jsonObject: jsonObject,
-            });
-          }
-        }
-      } else {
-        vscode.window.showErrorMessage("No swarm protocol found");
+      let occurrences = getAllProtocolOccurrences(text, typeRegex);
+      if (occurrences.length === 0) {
         return;
       }
 
       // Create the webview panel
-      const panel = vscode.window.createWebviewPanel(
+      let panel = vscode.window.createWebviewPanel(
         "myWebview",
         "Actyx Swarm Protocol",
         vscode.ViewColumn.One,
@@ -107,20 +78,38 @@ export function activate(context: vscode.ExtensionContext) {
             // Find the correct occurence based on the data from the child component
             if (occurrenceName === message.data.name) {
               // Replace text in the active editor with the new data
-              editor.edit((editBuilder) => {
-                editBuilder.replace(
-                  new vscode.Range(
-                    activeEditor.document.positionAt(typeRegex.lastIndex),
-                    activeEditor.document.positionAt(
-                      getLastIndex(
-                        editor.document.getText(),
-                        typeRegex.lastIndex
+              editor
+                .edit((editBuilder) => {
+                  editBuilder.replace(
+                    new vscode.Range(
+                      activeEditor.document.positionAt(typeRegex.lastIndex),
+                      activeEditor.document.positionAt(
+                        getLastIndex(
+                          editor.document.getText(),
+                          typeRegex.lastIndex
+                        )
                       )
-                    )
-                  ),
-                  `${message.data.protocol}`
-                );
-              });
+                    ),
+                    `${message.data.protocol}`
+                  );
+                })
+                // Wait until the editor has been updated
+                .then(() => {
+                  // Get the updated occurrences
+                  occurrences = getAllProtocolOccurrences(
+                    editor.document.getText(),
+                    typeRegex
+                  );
+
+                  // Open the webview again with the new data
+                  panel.webview.postMessage({
+                    command: "buildProtocol",
+                    data: occurrences,
+                  });
+
+                  // Make sure the panel is visible again
+                  panel.reveal();
+                });
             }
           }
         } else if (message === "noEdgeLabel") {
@@ -137,6 +126,44 @@ export function activate(context: vscode.ExtensionContext) {
       });
     })
   );
+}
+
+function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
+  let occurrences = [];
+
+  // Check if the file contains a swarm protocol
+  if (text.includes("SwarmProtocolType")) {
+    // Create list of all SwarmProtocolType occurences
+    let helperArray;
+
+    // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
+    // Find all occurences of the SwarmProtocolType
+    while ((helperArray = typeRegex.exec(text)) !== null) {
+      // Find the name of the protocol
+      const occurrenceName = helperArray[0].substring(
+        0,
+        helperArray[0].indexOf(":")
+      );
+
+      let jsonObject = getNestedJSONObject(text, typeRegex.lastIndex);
+
+      if (jsonObject === "") {
+        // End the process if there are errors
+        return;
+      } else {
+        // Put the occurence in the occurences array along with the json code.
+        occurrences.push({
+          name: occurrenceName,
+          jsonObject: jsonObject,
+        });
+      }
+    }
+
+    return occurrences;
+  } else {
+    vscode.window.showErrorMessage("No swarm protocol found");
+    return [];
+  }
 }
 
 function getLastIndex(text: string, index: number): number {
