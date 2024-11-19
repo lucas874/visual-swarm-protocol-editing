@@ -1,5 +1,6 @@
 {
   "name": "visual-swarm-protocol-editing",
+  "displayName": "Visual Swarm Protocol Editing",
   "publisher": "CarolineFallesen",
   "repository": "https://github.com/cbfallesen/visual-swarm-protocol-editing",
   "version": "0.1.0",
