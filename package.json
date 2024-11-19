@@ -39,7 +39,7 @@
     "commands": [
       {
         "command": "extension.openWebview",
-        "title": "machine-check: Show protocol"
+        "title": "Visualise protocol"
       }
     ],
     "keybindings": [
