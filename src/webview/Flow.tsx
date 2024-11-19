@@ -115,7 +115,7 @@ const LayoutFlow = ({
     (connection) => {
       connection.markerEnd = { type: MarkerType.ArrowClosed };
       connection.style = {
-        strokeWidth: 1.7,
+        strokeWidth: 2,
       };
       connection.id = `${connection.source}-${connection.target}`;
       if (connection.source === connection.target) {
@@ -135,8 +135,8 @@ const LayoutFlow = ({
       data: { label: `Node ${nodes.length + 1}` },
       // TODO: Make prettier
       position: {
-        x: nodes[(nodes.length - 1) / 2]?.position.x + 20,
-        y: nodes[(nodes.length - 1) / 2]?.position.y + 20,
+        x: nodes[Math.floor((nodes.length - 1) / 2)]?.position.x + 20,
+        y: nodes[Math.floor((nodes.length - 1) / 2)]?.position.y + 20,
       },
       type: "standard",
     };
