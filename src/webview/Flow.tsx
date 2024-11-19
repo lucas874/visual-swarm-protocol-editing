@@ -11,6 +11,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
+import { getViewportForBounds } from "reactflow";
 
 const nodeWidth = 175;
 const nodeHeight = 75;
@@ -175,9 +176,10 @@ const LayoutFlow = ({
     const newNode = {
       id: `${nodes.length + 1}`,
       data: { label: `Node ${nodes.length + 1}` },
+      // TODO: Make prettier
       position: {
-        x: 0,
-        y: 0,
+        x: nodes[(nodes.length - 1) / 2]?.position.x + 20,
+        y: nodes[(nodes.length - 1) / 2]?.position.y + 20,
       },
     };
     setNodes((nodes) => nodes.concat(newNode));

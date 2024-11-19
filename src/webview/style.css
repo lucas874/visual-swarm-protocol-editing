@@ -4,14 +4,31 @@
   color: #000;
 }
 
+.react-flow__node.selected {
+  border-color: #8a8a8b;
+  border-width: 2px;
+}
+
+.react-flow__edge-label-renderer {
+  border-color: #000;
+}
+
+.react-flow__edge-text {
+  border-color: #000;
+}
+
+.react-flow__edge-textwrapper {
+  border-color: #000;
+}
+
 .react-flow__handle-top {
-  background-color: #f00;
+  background-color: #ff6c5c;
   color: #000;
   border-color: #000;
 }
 
 .react-flow__handle-bottom {
-  background-color: #00f;
+  background-color: #4f5eff;
   color: #000;
   border-color: #000;
 }

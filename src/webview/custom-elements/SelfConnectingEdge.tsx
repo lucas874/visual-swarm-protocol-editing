@@ -35,6 +35,7 @@ export default function SelfConnecting(props: EdgeProps) {
         <EdgeLabelRenderer>
           {/* Position the label in the middle of the edge */}
           <div
+            // className="react-flow__edge-label-renderer"
             style={{
               position: "absolute",
               transform: `translate(${sourceX - 175}px, ${
