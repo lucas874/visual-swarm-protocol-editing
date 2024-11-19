@@ -1,8 +1,10 @@
 {
-  "name": "my-vscode-extension",
+  "name": "Visual Swarm Protocol Editing",
+  "publisher": "CarolineFallesen",
+  "repository": "https://github.com/cbfallesen/visual-swarm-protocol-editing",
   "version": "1.0.0",
   "engines": {
-    "vscode": "^1.60.0"
+    "vscode": "^1.93.0"
   },
   "main": "./dist/extension.js",
   "scripts": {

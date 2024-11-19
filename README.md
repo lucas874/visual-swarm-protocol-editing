@@ -48,6 +48,8 @@ Changes can be saved either by pressing the "Save changes" button or by pressing
 
 ## Requirements
 
+Visual Studio Code v. 1.93.0 or later.
+
 For the visualisation of a protocol to work, it is important that a variable is initialised with the type `SwarmProtocolType`. See the example below.
 
 ```typescript
