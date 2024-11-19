@@ -2,8 +2,8 @@
 
 All notable changes to the "data-to-extension" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+<!-- ## [Unreleased] -->
 
-## [Unreleased]
+## [0.1.0] - 19.11.2024
 
 - Initial release
