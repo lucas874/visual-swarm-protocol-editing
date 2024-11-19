@@ -10,7 +10,7 @@ The extension allows the user to visualise a protocol by using the VS Code comma
 
 ### Creating new states
 
-Once the flow has been visualised, it is possible to create a new state by pressing the button "Add state" in the top left corner. This will result in a new state appearing near the current flow. It might be necessary to zoom out a bit to see the new state.
+Once the flow has been visualised, it is possible to create a new state by pressing the button "Add new state" in the top left corner. This will result in a new state appearing near the current flow. It might be necessary to zoom out a bit to see the new state.
 
 ![add-node](feature-images/new-node.png)
 

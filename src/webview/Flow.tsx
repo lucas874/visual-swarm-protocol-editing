@@ -275,7 +275,7 @@ const LayoutFlow = ({
         Auto Layout
       </button>
       <button className="button" onClick={addNode}>
-        Add new node
+        Add new state
       </button>
       {/* Create a dialog trying to delete */}
       {isDeleteDialogOpen && (
