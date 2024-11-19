@@ -180,16 +180,6 @@ function createEdges(transitions: Transition[]): any[] {
         style: {
           strokeWidth: 1.7,
         },
-        // Set label style for non-custom edges
-        labelStyle: {
-          position: "absolute",
-          background: "white",
-          padding: "3px",
-          border: "1px solid #000",
-          borderRadius: "2px",
-          fontSize: "10px",
-          color: "black",
-        },
       };
     }
   });
@@ -229,8 +219,6 @@ function createNodes(protocol: SwarmProtocol): any[] {
         x: nodeLayout?.x ?? 0,
         y: nodeLayout?.y ?? 0,
       },
-      sourcePosition: "bottom",
-      targetPosition: "top",
       type: "default",
     };
     // }

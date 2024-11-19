@@ -11,7 +11,6 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
-import { getViewportForBounds } from "reactflow";
 
 const nodeWidth = 175;
 const nodeHeight = 75;
@@ -86,24 +85,6 @@ const LayoutFlow = ({
   const openDeleteDialog = () => setIsDeleteDialogOpen(true);
   const closeDeleteDialog = () => setIsDeleteDialogOpen(false);
 
-  // From https://reactflow.dev/api-reference/utils/add-edge
-  const onConnect = useCallback(
-    (connection) => {
-      connection.markerEnd = { type: MarkerType.ArrowClosed };
-      connection.style = {
-        strokeWidth: 1.7,
-      };
-      connection.id = `${connection.source}-${connection.target}`;
-      if (connection.source === connection.target) {
-        connection.type = "selfconnecting";
-      } else {
-        connection.type = "standard";
-      }
-      setEdges((edges) => addEdge(connection, edges));
-    },
-    [setEdges]
-  );
-
   // From https://medium.com/@ozhanli/passing-data-from-child-to-parent-components-in-react-e347ea60b1bb
   function saveChanges() {
     // Check that all edges have a label
@@ -127,6 +108,39 @@ const LayoutFlow = ({
       });
       sendDataToParent(fixNodeNames, edgesRef.current);
     }
+  }
+
+  // From https://reactflow.dev/api-reference/utils/add-edge
+  const onConnect = useCallback(
+    (connection) => {
+      connection.markerEnd = { type: MarkerType.ArrowClosed };
+      connection.style = {
+        strokeWidth: 1.7,
+      };
+      connection.id = `${connection.source}-${connection.target}`;
+      if (connection.source === connection.target) {
+        connection.type = "selfconnecting";
+      } else {
+        connection.type = "standard";
+      }
+      setEdges((edges) => addEdge(connection, edges));
+    },
+    [setEdges]
+  );
+
+  // Add a new node to the flow
+  function addNode() {
+    const newNode = {
+      id: `${nodes.length + 1}`,
+      data: { label: `Node ${nodes.length + 1}` },
+      // TODO: Make prettier
+      position: {
+        x: nodes[(nodes.length - 1) / 2]?.position.x + 20,
+        y: nodes[(nodes.length - 1) / 2]?.position.y + 20,
+      },
+      type: "standard",
+    };
+    setNodes((nodes) => nodes.concat(newNode));
   }
 
   // Set the label of the edge
@@ -169,20 +183,6 @@ const LayoutFlow = ({
         return currentEdge;
       })
     );
-  }
-
-  // Add a new node to the flow
-  function addNode() {
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      data: { label: `Node ${nodes.length + 1}` },
-      // TODO: Make prettier
-      position: {
-        x: nodes[(nodes.length - 1) / 2]?.position.x + 20,
-        y: nodes[(nodes.length - 1) / 2]?.position.y + 20,
-      },
-    };
-    setNodes((nodes) => nodes.concat(newNode));
   }
 
   // Delete the edge
