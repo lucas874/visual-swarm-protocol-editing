@@ -45,7 +45,6 @@ const App: React.FC = () => {
       }
     });
 
-    // TODO: Research if this is why the flowchart is not rendered after changes
     return () => {
       window.removeEventListener("message", () => {});
     };

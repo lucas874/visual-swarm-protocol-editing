@@ -95,6 +95,8 @@ const LayoutFlow = ({
       connection.id = `${connection.source}-${connection.target}`;
       if (connection.source === connection.target) {
         connection.type = "selfconnecting";
+      } else {
+        connection.type = "smoothstep";
       }
       setEdges((edges) => addEdge(connection, edges));
     },
@@ -285,13 +287,13 @@ const LayoutFlow = ({
             </div>
             <div className="row float-right">
               <button
-                className="button-dialog float-right"
+                className="button-cancel float-right"
                 onClick={closeDeleteDialog}
               >
                 Cancel
               </button>
               <button
-                className="button-cancel float-right"
+                className="button-dialog-delete float-right"
                 onClick={(e) => {
                   deleteEdges();
                   deleteNodes();
