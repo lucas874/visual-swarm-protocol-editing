@@ -4,12 +4,14 @@ import JSON5 from "json5";
 import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
+import Standard from "./custom-elements/StandardEdge";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
 
 const edgesTypes = {
   selfconnecting: SelfConnecting,
+  standard: Standard,
 };
 
 const App: React.FC = () => {
@@ -173,10 +175,20 @@ function createEdges(transitions: Transition[]): any[] {
         source: transition.source,
         target: transition.target,
         label: transition.label.cmd + "@" + transition.label.role,
-        type: "smoothstep",
+        type: "standard",
         markerEnd: { type: MarkerType.ArrowClosed },
         style: {
           strokeWidth: 1.7,
+        },
+        // Set label style for non-custom edges
+        labelStyle: {
+          position: "absolute",
+          background: "white",
+          padding: "3px",
+          border: "1px solid #000",
+          borderRadius: "2px",
+          fontSize: "10px",
+          color: "black",
         },
       };
     }

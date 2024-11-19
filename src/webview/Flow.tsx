@@ -97,7 +97,7 @@ const LayoutFlow = ({
       if (connection.source === connection.target) {
         connection.type = "selfconnecting";
       } else {
-        connection.type = "smoothstep";
+        connection.type = "standard";
       }
       setEdges((edges) => addEdge(connection, edges));
     },

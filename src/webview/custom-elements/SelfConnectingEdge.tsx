@@ -1,11 +1,6 @@
 import React from "react";
-import {
-  BaseEdge,
-  BezierEdge,
-  EdgeLabelRenderer,
-  EdgeProps,
-} from "@xyflow/react";
-import { SmoothStepEdge, StepEdge } from "reactflow";
+import { BaseEdge, EdgeLabelRenderer, EdgeProps } from "@xyflow/react";
+import { SmoothStepEdge } from "reactflow";
 
 // Example from React Flow: https://reactflow.dev/examples/edges/custom-edges
 export default function SelfConnecting(props: EdgeProps) {
@@ -43,7 +38,9 @@ export default function SelfConnecting(props: EdgeProps) {
               }px)`,
               background: "white",
               padding: "3px",
-              borderRadius: "2px",
+              border: "solid #000",
+              borderWidth: "thin",
+              borderRadius: "4px",
               fontSize: "10px",
               color: "black",
             }}
