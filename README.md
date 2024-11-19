@@ -28,7 +28,7 @@ By double-clicking either a state or an transition it is possible to rename the 
 
 ![rename-node](feature-images/rename-node.png)
 
-For transitions, a command and role is required, in order to follow the syntax of the machine-check library.
+For transitions, a command and role is required, in order to follow the syntax of the machine-check library. Here transitions are named by command@role.
 
 ![rename-edge](feature-images/rename-edge.png)
 
