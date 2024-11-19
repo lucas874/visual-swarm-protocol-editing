@@ -8,7 +8,7 @@ Describe specific features of your extension including screenshots of your exten
 
 For example if there is an image subfolder under your extension project workspace:
 
-![feature X](images/feature-x.png)
+![feature X](feature-images/feature-x.png)
 
 \!\[Input handles are red, output handles are blue\]\(feature-images/handles.png)
 
