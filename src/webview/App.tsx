@@ -5,6 +5,7 @@ import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
 import Standard from "./custom-elements/StandardEdge";
+import "./style.css";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
@@ -116,7 +117,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div>
+    <>
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
       {occurrences.length > 1 && (
         <select className="dropdown" onChange={handleSelect}>
@@ -135,7 +136,7 @@ const App: React.FC = () => {
         sendDataToParent={handleChangesFromFlow}
         sendErrorToParent={(error) => vscode.postMessage(error)}
       />
-    </div>
+    </>
   );
 };
 

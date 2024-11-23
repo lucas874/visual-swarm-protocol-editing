@@ -1,3 +1,17 @@
+.react-flow__renderer {
+  height: 100%;
+  width: 100%;
+}
+
+.react-flow__container-div {
+  height: 94vh;
+  width: 100%;
+}
+
+.button-container-div {
+  height: 6vh;
+}
+
 .react-flow__node {
   background-color: #fff;
   border-color: #000;
@@ -41,9 +55,10 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 15px 5px 5px 5px;
-  padding: 5px;
+  margin: 1vh;
+  padding: 1vh;
   width: 100px;
+  height: 4vh;
 }
 
 .button-dialog {

@@ -62,6 +62,8 @@ const LayoutFlow = ({
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // TODO: Custom hooks?
   const [isNodeDialogOpen, setIsNodeDialogOpen] = React.useState(false);
   const [isEdgeDialogOpen, setIsEdgeDialogOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
@@ -245,6 +247,7 @@ const LayoutFlow = ({
   }, [edges]);
 
   // Inspiration from https://medium.com/@harshsinghatz/key-bindings-in-react-bb1e8da265f9
+  // TODO: Create a custom hook for this
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (
@@ -267,16 +270,18 @@ const LayoutFlow = ({
   }, [onLayout]);
 
   return (
-    <div>
-      <button className="button" onClick={saveChanges}>
-        Save changes
-      </button>
-      <button className="button" onClick={() => onLayout(false)}>
-        Auto Layout
-      </button>
-      <button className="button" onClick={addNode}>
-        Add new state
-      </button>
+    <>
+      <div className="button-container-div">
+        <button className="button" onClick={saveChanges}>
+          Save changes
+        </button>
+        <button className="button" onClick={() => onLayout(false)}>
+          Auto Layout
+        </button>
+        <button className="button" onClick={addNode}>
+          Add new state
+        </button>
+      </div>
       {/* Create a dialog trying to delete */}
       {isDeleteDialogOpen && (
         <div className="overlay" onClick={closeNodeDialog}>
@@ -400,7 +405,7 @@ const LayoutFlow = ({
         </div>
       )}
       {/* Create the flow, ensure visibility by adding height */}
-      <div style={{ height: "900px" }}>
+      <div className="react-flow__container-div">
         {/* https://reactflow.dev/api-reference/react-flow#nodeorigin */}
         <ReactFlow
           nodes={nodes}
@@ -425,14 +430,12 @@ const LayoutFlow = ({
             return Promise.resolve(false);
           }}
           edgeTypes={edgesTypes}
-          // onNodesDelete={(nodesToDelete) => deleteNode(nodesToDelete)}
-          // onEdgesDelete={(edgesToDelete) => deleteEdge(edgesToDelete)}
           fitView
           attributionPosition="top-right"
           selectNodesOnDrag={false}
         ></ReactFlow>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -446,7 +449,7 @@ function Flow({
   sendErrorToParent,
 }) {
   return (
-    <div>
+    <>
       <ReactFlowProvider>
         <LayoutFlow
           initialNodes={nodes}
@@ -457,7 +460,7 @@ function Flow({
           sendErrorToParent={sendErrorToParent}
         />
       </ReactFlowProvider>
-    </div>
+    </>
   );
 }
 
