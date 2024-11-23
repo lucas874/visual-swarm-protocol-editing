@@ -166,7 +166,7 @@ function createEdges(transitions: Transition[]): any[] {
         type: "selfconnecting",
         markerEnd: { type: MarkerType.ArrowClosed },
         style: {
-          strokeWidth: 2,
+          strokeWidth: 1.7,
         },
       };
     } else {
@@ -178,7 +178,7 @@ function createEdges(transitions: Transition[]): any[] {
         type: "standard",
         markerEnd: { type: MarkerType.ArrowClosed },
         style: {
-          strokeWidth: 2,
+          strokeWidth: 1.7,
         },
       };
     }

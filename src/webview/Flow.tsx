@@ -115,7 +115,7 @@ const LayoutFlow = ({
     (connection) => {
       connection.markerEnd = { type: MarkerType.ArrowClosed };
       connection.style = {
-        strokeWidth: 2,
+        strokeWidth: 1.7,
       };
       connection.id = `${connection.source}-${connection.target}`;
       if (connection.source === connection.target) {
@@ -429,6 +429,7 @@ const LayoutFlow = ({
           // onEdgesDelete={(edgesToDelete) => deleteEdge(edgesToDelete)}
           fitView
           attributionPosition="top-right"
+          selectNodesOnDrag={false}
         ></ReactFlow>
       </div>
     </div>

@@ -27,7 +27,7 @@ export default function Standard(props: EdgeProps) {
   });
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} {...props} />
       {/* Add label to the edge (inspired by https://reactflow.dev/examples/edges/edge-label-renderer) */}
       {label && (
         <EdgeLabelRenderer>
