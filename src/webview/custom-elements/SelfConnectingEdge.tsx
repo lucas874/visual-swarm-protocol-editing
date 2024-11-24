@@ -1,6 +1,6 @@
 import React from "react";
 import { BaseEdge, EdgeLabelRenderer, EdgeProps } from "@xyflow/react";
-import { SmoothStepEdge } from "reactflow";
+import { SmoothStepEdge } from "@xyflow/react";
 
 // Example from React Flow: https://reactflow.dev/examples/edges/custom-edges
 export default function SelfConnecting(props: EdgeProps) {
@@ -10,8 +10,7 @@ export default function SelfConnecting(props: EdgeProps) {
   }
 
   // Split props to match the following values
-  const { sourceX, sourceY, targetX, targetY, id, markerEnd, label, style } =
-    props;
+  const { sourceX, sourceY, targetX, targetY, markerEnd, label } = props;
 
   // Set radius (switched from the example, to use top and bottom instead of left and right)
   const radiusX = 75;
@@ -30,7 +29,6 @@ export default function SelfConnecting(props: EdgeProps) {
         <EdgeLabelRenderer>
           {/* Position the label in the middle of the edge */}
           <div
-            // className="react-flow__edge-label-renderer"
             style={{
               position: "absolute",
               transform: `translate(${sourceX - 175}px, ${

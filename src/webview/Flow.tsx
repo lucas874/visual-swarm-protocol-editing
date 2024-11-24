@@ -2,15 +2,14 @@ import React, { useCallback, useEffect, useRef } from "react";
 import Dagre from "@dagrejs/dagre";
 import {
   ReactFlow,
-  useReactFlow,
-  useNodesState,
-  useEdgesState,
   ReactFlowProvider,
-  addEdge,
   MarkerType,
+  type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
+import useStore, { RFState } from "./store";
+import { shallow } from "zustand/shallow";
 
 const nodeWidth = 175;
 const nodeHeight = 75;
@@ -50,6 +49,22 @@ const getLayoutedElements = (nodes, edges) => {
   };
 };
 
+const selector = (state: RFState) => ({
+  nodes: state.nodes,
+  edges: state.edges,
+  setInitialElements: state.setInitialElements,
+  setNodes: state.setNodes,
+  setEdges: state.setEdges,
+  onNodesChange: state.onNodesChange,
+  onEdgesChange: state.onEdgesChange,
+  addEdge: state.addEdge,
+  addNode: state.addNode,
+  updateNodeLabel: state.updateNodeLabel,
+  updateEdgeLabel: state.updateEdgeLabel,
+  deleteNodes: state.deleteNodes,
+  deleteEdges: state.deleteEdges,
+});
+
 // Create flow from values given
 const LayoutFlow = ({
   initialNodes,
@@ -59,9 +74,21 @@ const LayoutFlow = ({
   sendDataToParent,
   sendErrorToParent,
 }) => {
-  const { fitView } = useReactFlow();
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const {
+    nodes,
+    edges,
+    setInitialElements,
+    setNodes,
+    setEdges,
+    onNodesChange,
+    onEdgesChange,
+    addEdge,
+    addNode,
+    updateNodeLabel,
+    updateEdgeLabel,
+    deleteNodes,
+    deleteEdges,
+  } = useStore(selector, shallow);
 
   // TODO: Custom hooks?
   const [isNodeDialogOpen, setIsNodeDialogOpen] = React.useState(false);
@@ -69,8 +96,6 @@ const LayoutFlow = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // https://react.dev/reference/react/useRef
-  const nodesRef = useRef(initialNodes);
-  const edgesRef = useRef(initialEdges);
   const nodeLabelRef = useRef("");
   const edgeLabelRef = useRef("");
   const commandRef = useRef("");
@@ -102,122 +127,42 @@ const LayoutFlow = ({
       sendErrorToParent("edgeLabelWrongFormat");
       return;
     } else {
-      const fixNodeNames = nodesRef.current.map((node) => {
+      const fixNodeNames = nodes.map((node) => {
         return {
           ...node,
           id: node.data.label,
         };
       });
-      sendDataToParent(fixNodeNames, edgesRef.current);
+      sendDataToParent(fixNodeNames, edges);
     }
   }
 
   // From https://reactflow.dev/api-reference/utils/add-edge
-  const onConnect = useCallback(
-    (connection) => {
-      connection.markerEnd = { type: MarkerType.ArrowClosed };
-      connection.style = {
-        strokeWidth: 1.7,
-      };
-      connection.id = `${connection.source}-${connection.target}`;
-      if (connection.source === connection.target) {
-        connection.type = "selfconnecting";
-      } else {
-        connection.type = "standard";
-      }
-      setEdges((edges) => addEdge(connection, edges));
-    },
-    [setEdges]
-  );
-
-  // Add a new node to the flow
-  function addNode() {
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      data: { label: `Node ${nodes.length + 1}` },
-      // TODO: Make prettier
-      position: {
-        x: nodes[Math.floor((nodes.length - 1) / 2)]?.position.x + 20,
-        y: nodes[Math.floor((nodes.length - 1) / 2)]?.position.y + 20,
-      },
-      type: "standard",
+  const onConnect = useCallback((connection) => {
+    connection.markerEnd = { type: MarkerType.ArrowClosed };
+    connection.style = {
+      strokeWidth: 1.7,
     };
-    setNodes((nodes) => nodes.concat(newNode));
-  }
-
-  // Set the label of the edge
-  function setEdgeLabel() {
-    setEdges((edges) =>
-      edges.map((currentEdge) => {
-        if (
-          currentEdge.source === selectedEdgeRef.current.source &&
-          currentEdge.target === selectedEdgeRef.current.target
-        ) {
-          return { ...currentEdge, label: edgeLabelRef.current };
-        }
-        return currentEdge;
-      })
-    );
-  }
-
-  // Set the label of the node
-  function setNodeLabel() {
-    setNodes((nodes) =>
-      nodes.map((currentNode) => {
-        if (currentNode.id === selectedNodeRef.current.id) {
-          return {
-            ...currentNode,
-            data: { label: nodeLabelRef.current },
-            id: nodeLabelRef.current,
-          };
-        }
-        return currentNode;
-      })
-    );
-
-    setEdges((edges) =>
-      edges.map((currentEdge) => {
-        if (currentEdge.source === selectedNodeRef.current.id) {
-          return { ...currentEdge, source: nodeLabelRef.current };
-        } else if (currentEdge.target === selectedNodeRef.current.id) {
-          return { ...currentEdge, target: nodeLabelRef.current };
-        }
-        return currentEdge;
-      })
-    );
-  }
-
-  // Delete the edge
-  function deleteEdges() {
-    setEdges((edges) =>
-      edges.filter(
-        (edge) =>
-          !onDeleteRef.current.edges.map((edge) => edge.id).includes(edge.id)
-      )
-    );
-  }
-
-  // Delete the node
-  function deleteNodes() {
-    setNodes((nodes) =>
-      nodes.filter(
-        (node) =>
-          !onDeleteRef.current.nodes.map((node) => node.id).includes(node.id)
-      )
-    );
-  }
+    connection.id = `${connection.source}-${connection.target}`;
+    if (connection.source === connection.target) {
+      connection.type = "selfconnecting";
+    } else {
+      connection.type = "standard";
+    }
+    addEdge(connection);
+  }, []);
 
   // Update nodes and edges with the layouted elements
   const onLayout = useCallback(
     (isLayouted) => {
       if (!isLayouted) {
         let layouted;
-        if (nodesRef.current.length > 0 && edgesRef.current.length > 0) {
-          layouted = getLayoutedElements(nodesRef.current, edgesRef.current);
-        } else if (nodesRef.current.length > 0) {
-          layouted = getLayoutedElements(nodesRef.current, initialEdges);
-        } else if (edgesRef.current.length > 0) {
-          layouted = getLayoutedElements(initialNodes, edgesRef.current);
+        if (nodes.length > 0 && edges.length > 0) {
+          layouted = getLayoutedElements(nodes, edges);
+        } else if (nodes.length > 0) {
+          layouted = getLayoutedElements(nodes, initialEdges);
+        } else if (edges.length > 0) {
+          layouted = getLayoutedElements(initialNodes, edges);
         } else {
           layouted = getLayoutedElements(initialNodes, initialEdges);
         }
@@ -228,23 +173,14 @@ const LayoutFlow = ({
         setNodes([...initialNodes]);
         setEdges([...initialEdges]);
       }
-
-      window.requestAnimationFrame(() => {
-        fitView();
-      });
     },
     // Changed dependencies so it can be used inside the useEffect
-    [fitView, initialNodes, initialEdges, setNodes, setEdges]
+    [initialNodes, initialEdges, setNodes, setEdges]
   );
 
-  // Update the nodes and edges references
   useEffect(() => {
-    nodesRef.current = nodes;
-  }, [nodes]);
-
-  useEffect(() => {
-    edgesRef.current = edges;
-  }, [edges]);
+    setInitialElements(initialNodes, initialEdges);
+  }, [setInitialElements, initialNodes, initialEdges]);
 
   // Inspiration from https://medium.com/@harshsinghatz/key-bindings-in-react-bb1e8da265f9
   // TODO: Create a custom hook for this
@@ -278,7 +214,22 @@ const LayoutFlow = ({
         <button className="button" onClick={() => onLayout(false)}>
           Auto Layout
         </button>
-        <button className="button" onClick={addNode}>
+        <button
+          className="button"
+          onClick={() => {
+            const newNode: Node = {
+              id: `Node ${nodes.length + 1}`,
+              data: { label: `Node ${nodes.length + 1}` },
+              position: {
+                x: nodes[Math.floor((nodes.length - 1) / 2)]?.position.x + 20,
+                y: nodes[Math.floor((nodes.length - 1) / 2)]?.position.y + 20,
+              },
+              type: "standard",
+            };
+
+            addNode(newNode);
+          }}
+        >
           Add new state
         </button>
       </div>
@@ -302,8 +253,8 @@ const LayoutFlow = ({
               <button
                 className="button-dialog-delete float-right"
                 onClick={(e) => {
-                  deleteEdges();
-                  deleteNodes();
+                  deleteEdges(onDeleteRef.current.edges.map((edge) => edge.id));
+                  deleteNodes(onDeleteRef.current.nodes.map((node) => node.id));
                   closeDeleteDialog();
                 }}
               >
@@ -338,7 +289,10 @@ const LayoutFlow = ({
                 className="button-dialog float-right"
                 onClick={(e) => {
                   closeNodeDialog();
-                  setNodeLabel();
+                  updateNodeLabel(
+                    selectedNodeRef.current.id,
+                    nodeLabelRef.current
+                  );
                 }}
               >
                 Save
@@ -394,7 +348,10 @@ const LayoutFlow = ({
                     sendErrorToParent("noRole");
                   } else {
                     closeEdgeDialog();
-                    setEdgeLabel();
+                    updateEdgeLabel(
+                      selectedEdgeRef.current.id,
+                      edgeLabelRef.current
+                    );
                   }
                 }}
               >
@@ -404,7 +361,6 @@ const LayoutFlow = ({
           </div>
         </div>
       )}
-      {/* Create the flow, ensure visibility by adding height */}
       <div className="react-flow__container-div">
         {/* https://reactflow.dev/api-reference/react-flow#nodeorigin */}
         <ReactFlow

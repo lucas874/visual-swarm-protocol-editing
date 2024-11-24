@@ -1,6 +1,10 @@
 import React from "react";
-import { BaseEdge, EdgeLabelRenderer, EdgeProps } from "@xyflow/react";
-import { getSmoothStepPath, SmoothStepEdge } from "reactflow";
+import {
+  BaseEdge,
+  EdgeLabelRenderer,
+  EdgeProps,
+  getSmoothStepPath,
+} from "@xyflow/react";
 
 // Example from React Flow: https://reactflow.dev/examples/edges/custom-edges
 export default function Standard(props: EdgeProps) {
@@ -25,6 +29,7 @@ export default function Standard(props: EdgeProps) {
     targetY,
     targetPosition,
   });
+
   return (
     <>
       <BaseEdge path={edgePath} markerEnd={markerEnd} {...props} />
