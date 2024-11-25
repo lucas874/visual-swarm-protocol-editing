@@ -147,8 +147,11 @@ const LayoutFlow = ({
     if (connection.source === connection.target) {
       connection.type = "selfconnecting";
     } else {
-      connection.type = "standard";
+      connection.type = "positionable";
     }
+    connection.data = {
+      positionHandlers: [],
+    };
     addEdge(connection);
   }, []);
 

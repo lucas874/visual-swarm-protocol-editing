@@ -36,14 +36,14 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
       edges: initialEdges,
     });
   },
-  setNodes: (nodes: Node[]) => {
+  setNodes: (setNodes: Node[]) => {
     set({
-      nodes,
+      nodes: setNodes,
     });
   },
-  setEdges: (edges: Edge[]) => {
+  setEdges: (setEdges: Edge[]) => {
     set({
-      edges,
+      edges: setEdges,
     });
   },
   onNodesChange: (changes: NodeChange[]) => {

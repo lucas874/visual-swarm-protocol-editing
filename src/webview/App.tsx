@@ -6,13 +6,14 @@ import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
 import Standard from "./custom-elements/StandardEdge";
 import "./style.css";
+import PositionableEdge from "./custom-elements/PositionableEdge";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
 
 const edgesTypes = {
   selfconnecting: SelfConnecting,
-  standard: Standard,
+  positionable: PositionableEdge,
 };
 
 const App: React.FC = () => {
@@ -164,6 +165,9 @@ function createEdges(transitions: Transition[]): any[] {
         source: transition.source,
         target: transition.target,
         label: transition.label.cmd + "@" + transition.label.role,
+        data: {
+          positionHandlers: [],
+        },
         type: "selfconnecting",
         markerEnd: { type: MarkerType.ArrowClosed },
         style: {
@@ -176,7 +180,10 @@ function createEdges(transitions: Transition[]): any[] {
         source: transition.source,
         target: transition.target,
         label: transition.label.cmd + "@" + transition.label.role,
-        type: "standard",
+        data: {
+          positionHandlers: [],
+        },
+        type: "positionable",
         markerEnd: { type: MarkerType.ArrowClosed },
         style: {
           strokeWidth: 1.7,
