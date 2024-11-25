@@ -27,15 +27,16 @@ export default function PositionableEdge(props: EdgeProps) {
     style = {},
     markerEnd,
     data,
+    label,
   } = props;
 
   const reactFlowInstance = useReactFlow();
   const { edges, setEdges } = useStore(selector, shallow);
-  const type = data?.type ?? "positionable";
   const positionHandlers = (data?.positionHandlers ?? []) as {
     x: number;
     y: number;
     active: number;
+    isLabel: boolean;
   }[];
   const edgeSegmentsCount = positionHandlers.length + 1;
 
@@ -61,6 +62,7 @@ export default function PositionableEdge(props: EdgeProps) {
       segmentTargetY = handler.y;
     }
 
+    // Create a standard path for the edge
     const [edgePath, labelX, labelY] = getSmoothStepPath({
       sourceX: segmentSourceX,
       sourceY: segmentSourceY,
@@ -71,8 +73,6 @@ export default function PositionableEdge(props: EdgeProps) {
     });
 
     edgeSegments.push({ edgePath, labelX, labelY });
-
-    // console.log(edgeSegments);
   }
 
   return (
@@ -99,11 +99,13 @@ export default function PositionableEdge(props: EdgeProps) {
                       x: number;
                       y: number;
                       active: number;
+                      isLabel: boolean;
                     }[]
                   ).splice(index, 0, {
                     x: position.x,
                     y: position.y,
                     active: -1,
+                    isLabel: edgeSegments.length === 1,
                   });
                 }
                 return edge;
@@ -112,95 +114,222 @@ export default function PositionableEdge(props: EdgeProps) {
           }}
         />
       ))}
-      {positionHandlers.map((handler, handlerIndex) => (
-        <EdgeLabelRenderer key={`edge${id}_label${handlerIndex}`}>
+      {positionHandlers.length === 0 && label && (
+        <EdgeLabelRenderer>
           <div
-            className="nopan positionHandlerContainer"
             style={{
-              transform: `translate(-50%, -50%) translate(${handler.x}px, ${handler.y}px)`,
+              position: "absolute",
+              transform: `translate(-50%, -50%) translate(${edgeSegments[0].labelX}px,${edgeSegments[0].labelY}px)`,
+              background: "white",
+              padding: "3px",
+              border: "solid #000",
+              borderWidth: "thin",
+              borderRadius: "4px",
+              fontSize: "10px",
+              color: "black",
             }}
           >
+            {label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
+      {positionHandlers.map((handler, handlerIndex) => (
+        <EdgeLabelRenderer key={`edge${id}_label${handlerIndex}`}>
+          {!handler.isLabel && (
             <div
-              className={`positionHandlerEventContainer ${handler.active} ${
-                `${handler.active ?? -1}` !== "-1" ? "active" : ""
-              }`}
-              data-active={handler.active ?? -1}
-              onMouseMove={(event) => {
-                let eventTarget: any = event.target;
-                let activeEdge = parseInt(eventTarget.dataset.active ?? "-1");
-
-                if (activeEdge === -1) {
-                  return;
-                }
-
-                const position = reactFlowInstance.screenToFlowPosition({
-                  x: event.clientX,
-                  y: event.clientY,
-                });
-
-                setEdges(
-                  edges.map((edge) => {
-                    if (edge.id === id) {
-                      //   edge.id = Math.random().toString();
-                      edge.data.positionHandlers[handlerIndex] = {
-                        x: position.x,
-                        y: position.y,
-                        active: activeEdge,
-                      };
-                    }
-                    return edge;
-                  })
-                );
-              }}
-              onMouseUp={() => {
-                setEdges(
-                  edges.map((edge) => {
-                    const handlersLength = (edge.data.positionHandlers as any[])
-                      .length;
-                    for (let i = 0; i < handlersLength; i++) {
-                      edge.data.positionHandlers[i].active = -1;
-                    }
-                    return edge;
-                  })
-                );
+              className="nopan positionHandlerContainer"
+              style={{
+                transform: `translate(-50%, -50%) translate(${handler.x}px, ${handler.y}px)`,
               }}
             >
-              <button
-                className="positionHandler"
+              <div
+                className={`positionHandlerEventContainer ${handler.active} ${
+                  `${handler.active ?? -1}` !== "-1" ? "active" : ""
+                }`}
                 data-active={handler.active ?? -1}
-                onMouseDown={() => {
-                  const edgeIndex = edges.findIndex((edge) => edge.id === id);
+                onMouseMove={(event) => {
+                  let eventTarget: any = event.target;
+                  let activeEdge = parseInt(eventTarget.dataset.active ?? "-1");
+
+                  if (activeEdge === -1) {
+                    return;
+                  }
+
+                  const position = reactFlowInstance.screenToFlowPosition({
+                    x: event.clientX,
+                    y: event.clientY,
+                  });
+
                   setEdges(
                     edges.map((edge) => {
                       if (edge.id === id) {
-                        edge.data.positionHandlers[handlerIndex].active =
-                          edgeIndex;
+                        //   edge.id = Math.random().toString();
+                        edge.data.positionHandlers[handlerIndex] = {
+                          x: position.x,
+                          y: position.y,
+                          active: activeEdge,
+                          isLabel: false,
+                        };
                       }
                       return edge;
                     })
                   );
                 }}
-                onContextMenu={(event) => {
-                  event.preventDefault();
+                onMouseUp={() => {
                   setEdges(
                     edges.map((edge) => {
-                      if (edge.id === id) {
-                        edge.id = Math.random().toString();
-                        (
-                          edge.data.positionHandlers as {
-                            x: number;
-                            y: number;
-                            active: number;
-                          }[]
-                        ).splice(handlerIndex, 1);
+                      const handlersLength = (
+                        edge.data.positionHandlers as any[]
+                      ).length;
+                      for (let i = 0; i < handlersLength; i++) {
+                        edge.data.positionHandlers[i].active = -1;
                       }
                       return edge;
                     })
                   );
                 }}
-              />
+              >
+                <button
+                  className="positionHandler"
+                  data-active={handler.active ?? -1}
+                  onMouseDown={() => {
+                    const edgeIndex = edges.findIndex((edge) => edge.id === id);
+                    setEdges(
+                      edges.map((edge) => {
+                        if (edge.id === id) {
+                          edge.data.positionHandlers[handlerIndex].active =
+                            edgeIndex;
+                        }
+                        return edge;
+                      })
+                    );
+                  }}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    setEdges(
+                      edges.map((edge) => {
+                        if (edge.id === id) {
+                          //   edge.id = Math.random().toString();
+                          (
+                            edge.data.positionHandlers as {
+                              x: number;
+                              y: number;
+                              active: number;
+                              isLabel: boolean;
+                            }[]
+                          ).splice(handlerIndex, 1);
+                        }
+                        return edge;
+                      })
+                    );
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          )}
+          {handler.isLabel && (
+            <div
+              className="nopan positionHandlerContainer"
+              style={{
+                transform: `translate(-50%, -50%) translate(${handler.x}px, ${handler.y}px)`,
+              }}
+            >
+              <div
+                className={`positionHandlerEventContainer ${handler.active} ${
+                  `${handler.active ?? -1}` !== "-1" ? "active" : ""
+                }`}
+                data-active={handler.active ?? -1}
+                onMouseMove={(event) => {
+                  let eventTarget: any = event.target;
+                  let activeEdge = parseInt(eventTarget.dataset.active ?? "-1");
+
+                  if (activeEdge === -1) {
+                    return;
+                  }
+
+                  const position = reactFlowInstance.screenToFlowPosition({
+                    x: event.clientX,
+                    y: event.clientY,
+                  });
+
+                  setEdges(
+                    edges.map((edge) => {
+                      if (edge.id === id) {
+                        //   edge.id = Math.random().toString();
+                        edge.data.positionHandlers[handlerIndex] = {
+                          x: position.x,
+                          y: position.y,
+                          active: activeEdge,
+                          isLabel: true,
+                        };
+                      }
+                      return edge;
+                    })
+                  );
+                }}
+                onMouseUp={() => {
+                  setEdges(
+                    edges.map((edge) => {
+                      const handlersLength = (
+                        edge.data.positionHandlers as any[]
+                      ).length;
+                      for (let i = 0; i < handlersLength; i++) {
+                        edge.data.positionHandlers[i].active = -1;
+                      }
+                      return edge;
+                    })
+                  );
+                }}
+              >
+                <button
+                  style={{
+                    position: "absolute",
+                    background: "white",
+                    padding: "3px",
+                    border: "solid #000",
+                    borderWidth: "thin",
+                    borderRadius: "4px",
+                    fontSize: "10px",
+                    color: "black",
+                  }}
+                  data-active={handler.active ?? -1}
+                  onMouseDown={() => {
+                    const edgeIndex = edges.findIndex((edge) => edge.id === id);
+                    setEdges(
+                      edges.map((edge) => {
+                        if (edge.id === id) {
+                          edge.data.positionHandlers[handlerIndex].active =
+                            edgeIndex;
+                        }
+                        return edge;
+                      })
+                    );
+                  }}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    setEdges(
+                      edges.map((edge) => {
+                        if (edge.id === id) {
+                          //   edge.id = Math.random().toString();
+                          (
+                            edge.data.positionHandlers as {
+                              x: number;
+                              y: number;
+                              active: number;
+                              isLabel: boolean;
+                            }[]
+                          ).splice(handlerIndex, 1);
+                        }
+                        return edge;
+                      })
+                    );
+                  }}
+                >
+                  {label}
+                </button>
+              </div>
+            </div>
+          )}
         </EdgeLabelRenderer>
       ))}
     </>
