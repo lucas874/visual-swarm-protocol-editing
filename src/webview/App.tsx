@@ -39,7 +39,7 @@ const App: React.FC = () => {
         setProtocol(JSON5.parse(message.data[0].jsonObject));
 
         // Create edges for the flowchart with the first occurence
-        setEdges(createEdges(tempProtocol.transitions));
+        setEdges(createEdges(tempProtocol));
 
         // Create nodes for the flowchart with the first occurence
         setNodes(createNodes(tempProtocol));
@@ -65,7 +65,7 @@ const App: React.FC = () => {
     setNodes(createNodes(occurrence.json));
 
     // Set edges to correspond to the selected protocol
-    setEdges(createEdges(occurrence.json.transitions));
+    setEdges(createEdges(occurrence.json));
 
     // Set the protocol to the selected occurence
     setProtocol(occurrence.json);
@@ -88,20 +88,33 @@ const App: React.FC = () => {
       };
     });
 
-    let layout: LayoutType[] = changedNodes.map((node) => {
-      console.log(node.position);
-      return {
-        name: node.data.label,
-        x: node.position.x,
-        y: node.position.y,
-      };
+    let transitionsWithHandlers = changedEdges.filter((edge) => {
+      return edge.data.positionHandlers.length > 0;
     });
+
+    let layout: LayoutType = {
+      nodes: changedNodes.map((node) => {
+        return {
+          name: node.data.label,
+          x: node.position.x,
+          y: node.position.y,
+        };
+      }),
+      edges: transitionsWithHandlers.map((edge) => {
+        if (edge.data.positionHandlers.length > 0) {
+          return {
+            id: edge.id,
+            positionHandlers: edge.data.positionHandlers,
+          };
+        }
+      }),
+    };
 
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
       initial: {
         // FIXME: Change to the correct initial node
-        name: changedNodes[0].id,
+        name: changedNodes[0].name,
       },
       layout: layout,
       transitions: newTransitions,
@@ -156,9 +169,9 @@ function parseObjects(occurrences: any[]): any[] {
 }
 
 // Created partly using coPilot
-function createEdges(transitions: Transition[]): any[] {
+function createEdges(protocol: SwarmProtocol): any[] {
   // Take the values from transitions, and create edges that correspond to ReactFlow
-  const edges = transitions.map((transition) => {
+  const edges = protocol.transitions.map((transition) => {
     if (transition.source === transition.target) {
       return {
         id: `${transition.source}-${transition.target}`,
@@ -175,13 +188,16 @@ function createEdges(transitions: Transition[]): any[] {
         },
       };
     } else {
+      const edgeLayout = protocol.layout?.edges?.find(
+        (edge) => edge.id === `${transition.source}-${transition.target}`
+      );
       return {
         id: `${transition.source}-${transition.target}`,
         source: transition.source,
         target: transition.target,
         label: transition.label.cmd + "@" + transition.label.role,
         data: {
-          positionHandlers: [],
+          positionHandlers: edgeLayout?.positionHandlers ?? [],
         },
         type: "positionable",
         markerEnd: { type: MarkerType.ArrowClosed },
@@ -209,7 +225,7 @@ function createNodes(protocol: SwarmProtocol): any[] {
     }
   });
 
-  protocol.layout?.forEach((element) => {
+  protocol.layout?.nodes?.forEach((element) => {
     if (!nodeNames.has(element.name)) {
       nodeNames.add(element.name);
     }
@@ -217,8 +233,8 @@ function createNodes(protocol: SwarmProtocol): any[] {
 
   // Create nodes that correspond to ReactFlow
   const nodes = Array.from(nodeNames).map((nodeName) => {
-    let nodeLayout = protocol.layout?.find(
-      (layout) => layout.name === nodeName
+    let nodeLayout = protocol.layout?.nodes?.find(
+      (node) => node.name === nodeName
     );
     return {
       id: nodeName,
@@ -229,7 +245,6 @@ function createNodes(protocol: SwarmProtocol): any[] {
       },
       type: "default",
     };
-    // }
   });
 
   return nodes;

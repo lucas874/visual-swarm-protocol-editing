@@ -9,6 +9,7 @@ import { shallow } from "zustand/shallow";
 import useStore, { RFState } from "../store";
 import ClickableBaseEdge from "./ClickableBaseEdge";
 import "./PositionableEdge.css";
+import { PositionHandler } from "../types";
 
 const selector = (state: RFState) => ({
   edges: state.edges,
@@ -32,12 +33,7 @@ export default function PositionableEdge(props: EdgeProps) {
 
   const reactFlowInstance = useReactFlow();
   const { edges, setEdges } = useStore(selector, shallow);
-  const positionHandlers = (data?.positionHandlers ?? []) as {
-    x: number;
-    y: number;
-    active: number;
-    isLabel: boolean;
-  }[];
+  const positionHandlers = (data?.positionHandlers ?? []) as PositionHandler[];
   const edgeSegmentsCount = positionHandlers.length + 1;
 
   let edgeSegments = [];
@@ -85,7 +81,7 @@ export default function PositionableEdge(props: EdgeProps) {
           markerEnd={markerEnd}
           markerStart={props.markerStart}
           style={style}
-          onClick={(event) => {
+          onMouseDown={(event) => {
             const position = reactFlowInstance.screenToFlowPosition({
               x: event.clientX,
               y: event.clientY,
@@ -94,19 +90,16 @@ export default function PositionableEdge(props: EdgeProps) {
             setEdges(
               edges.map((edge) => {
                 if (edge.id === id) {
-                  (
-                    edge.data.positionHandlers as {
-                      x: number;
-                      y: number;
-                      active: number;
-                      isLabel: boolean;
-                    }[]
-                  ).splice(index, 0, {
-                    x: position.x,
-                    y: position.y,
-                    active: -1,
-                    isLabel: edgeSegments.length === 1,
-                  });
+                  (edge.data.positionHandlers as PositionHandler[]).splice(
+                    index,
+                    0,
+                    {
+                      x: position.x,
+                      y: position.y,
+                      active: -1,
+                      isLabel: edgeSegments.length === 1,
+                    }
+                  );
                 }
                 return edge;
               })
@@ -179,7 +172,7 @@ export default function PositionableEdge(props: EdgeProps) {
                   setEdges(
                     edges.map((edge) => {
                       const handlersLength = (
-                        edge.data.positionHandlers as any[]
+                        edge.data.positionHandlers as PositionHandler[]
                       ).length;
                       for (let i = 0; i < handlersLength; i++) {
                         edge.data.positionHandlers[i].active = -1;
@@ -211,12 +204,7 @@ export default function PositionableEdge(props: EdgeProps) {
                         if (edge.id === id) {
                           //   edge.id = Math.random().toString();
                           (
-                            edge.data.positionHandlers as {
-                              x: number;
-                              y: number;
-                              active: number;
-                              isLabel: boolean;
-                            }[]
+                            edge.data.positionHandlers as PositionHandler[]
                           ).splice(handlerIndex, 1);
                         }
                         return edge;
@@ -255,7 +243,6 @@ export default function PositionableEdge(props: EdgeProps) {
                   setEdges(
                     edges.map((edge) => {
                       if (edge.id === id) {
-                        //   edge.id = Math.random().toString();
                         edge.data.positionHandlers[handlerIndex] = {
                           x: position.x,
                           y: position.y,
@@ -271,7 +258,7 @@ export default function PositionableEdge(props: EdgeProps) {
                   setEdges(
                     edges.map((edge) => {
                       const handlersLength = (
-                        edge.data.positionHandlers as any[]
+                        edge.data.positionHandlers as PositionHandler[]
                       ).length;
                       for (let i = 0; i < handlersLength; i++) {
                         edge.data.positionHandlers[i].active = -1;
@@ -310,14 +297,8 @@ export default function PositionableEdge(props: EdgeProps) {
                     setEdges(
                       edges.map((edge) => {
                         if (edge.id === id) {
-                          //   edge.id = Math.random().toString();
                           (
-                            edge.data.positionHandlers as {
-                              x: number;
-                              y: number;
-                              active: number;
-                              isLabel: boolean;
-                            }[]
+                            edge.data.positionHandlers as PositionHandler[]
                           ).splice(handlerIndex, 1);
                         }
                         return edge;

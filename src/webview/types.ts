@@ -11,18 +11,35 @@ export type Transition = {
 
 export type TransitionLabel = {
   cmd: string;
-  logType: string[];
+  logType?: string[];
   role: string;
 };
 
-export type LayoutType = {
+export type NodeLayout = {
   name: string;
   x?: number;
   y?: number;
 };
 
+export type PositionHandler = {
+  x: number;
+  y: number;
+  active: number;
+  isLabel: boolean;
+};
+
+export type EdgeLayout = {
+  id: string;
+  positionHandlers: PositionHandler[];
+};
+
+export type LayoutType = {
+  nodes?: NodeLayout[];
+  edges?: EdgeLayout[];
+};
+
 export interface SwarmProtocol {
   initial: InitialNode;
-  layout?: LayoutType[];
+  layout?: LayoutType;
   transitions: Transition[];
 }
