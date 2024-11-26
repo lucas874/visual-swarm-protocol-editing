@@ -96,6 +96,8 @@ const LayoutFlow = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // https://react.dev/reference/react/useRef
+  const nodesRef = useRef([]);
+  const edgesRef = useRef([]);
   const nodeLabelRef = useRef("");
   const edgeLabelRef = useRef("");
   const commandRef = useRef("");
@@ -127,13 +129,14 @@ const LayoutFlow = ({
       sendErrorToParent("edgeLabelWrongFormat");
       return;
     } else {
-      const fixNodeNames = nodes.map((node) => {
+      console.log("nodes", nodesRef.current);
+      const fixNodeNames = nodesRef.current.map((node) => {
         return {
           ...node,
           id: node.data.label,
         };
       });
-      sendDataToParent(fixNodeNames, edges);
+      sendDataToParent(fixNodeNames, edgesRef.current);
     }
   }
 
@@ -183,6 +186,8 @@ const LayoutFlow = ({
 
   useEffect(() => {
     setInitialElements(initialNodes, initialEdges);
+    nodesRef.current = initialNodes;
+    edgesRef.current = initialEdges;
   }, [setInitialElements, initialNodes, initialEdges]);
 
   // Inspiration from https://medium.com/@harshsinghatz/key-bindings-in-react-bb1e8da265f9
@@ -193,6 +198,7 @@ const LayoutFlow = ({
         (event.metaKey && event.key === "s") ||
         (event.ctrlKey && event.key === "s")
       ) {
+        console.log("Save changes");
         saveChanges();
       }
     };
@@ -203,6 +209,14 @@ const LayoutFlow = ({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
 
   useEffect(() => {
     onLayout(hasLayout);

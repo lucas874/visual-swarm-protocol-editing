@@ -4,7 +4,6 @@ import JSON5 from "json5";
 import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
-import Standard from "./custom-elements/StandardEdge";
 import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
 
@@ -110,11 +109,12 @@ const App: React.FC = () => {
       }),
     };
 
+    console.log(changedNodes);
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
       initial: {
         // FIXME: Change to the correct initial node
-        name: changedNodes[0].name,
+        name: changedNodes[0].id,
       },
       layout: layout,
       transitions: newTransitions,
