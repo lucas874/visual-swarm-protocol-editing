@@ -24,33 +24,37 @@ New edges are created by dragging from the input handle of a state to the output
 
 ### Renaming states and transitions
 
-By double-clicking either a state or an transition it is possible to rename the label of the element. For states, only a name is required.
+By double-clicking either a state or a transition it is possible to rename the label of the element. For states, only a name is required.
 
 ![rename-node](feature-images/rename-node.png)
 
-For transitions, a command and role is required, in order to follow the syntax of the machine-check library. Here transitions are named by command@role.
+For transitions, a command and role are required, to follow the syntax of the machine-check library. Here transitions are named by command@role.
 
 ![rename-edge](feature-images/rename-edge.png)
 
+### Moving transitions
+
+To move a transition, click on the transition, this will transform the label to a handle. It is then possible to drag the handle and move the edge. If more mobility is needed, it is possible to create more handles, by clicking the edge where the handle should be placed, and then dragging the new handle.
+
 ### Deleting states and transitions
 
-By selecting a state or transition and then pressing the backspace button on the keyboard, the element can be deleted. The user will be prompted with a dialog asking if they are sure.
+The element can be deleted by selecting a state or transition and then pressing the backspace button on the keyboard. The user will be prompted with a dialogue asking if they are sure.
 
 ![delete](feature-images/delete.png)
 
 ### Autolayout
 
-Pressing the autolayout button moves the states and transitions according to an algorithm. Pressing this button will also ensure that no nodes overlap.
+Pressing the auto layout button moves the states and transitions according to an algorithm. Pressing this button will also ensure that no nodes overlap.
 
 ### Saving changes
 
-Changes can be saved either by pressing the "Save changes" button or by pressing Ctrl + S on the keyboard (Cmd + S on mac). The changes will then be reflected in the protocol, but the changes to the file are not saved automatically, this is up to the user. There is no formatting on the new protocol, this is to allow any auto-formatters the user may have installed to format on save.
+Changes can be saved by pressing the "Save changes" button or by pressing Ctrl + S on the keyboard (Cmd + S on Mac). The changes will then be reflected in the protocol, but the changes to the file are not saved automatically, this is up to the user. There is no formatting on the new protocol, this is to allow any auto-formatters the user may have installed to format on save.
 
 ## Requirements
 
 Visual Studio Code v. 1.93.0 or later.
 
-For the visualisation of a protocol to work, it is important that a variable is initialised with the type `SwarmProtocolType`. See the example below.
+For the visualisation of a protocol to work, a variable must be initialised with the type `SwarmProtocolType`. See the example below.
 
 ```typescript
 const protocol: SwarmProtocolType = {
@@ -78,13 +82,17 @@ const protocol: SwarmProtocolType = {
 ## Known Issues
 
 - It is possible to drag a transition going from output to input, but it will create a transition in the opposite direction.
-- Transitions and labels may overlap with nodes. The problem can be solve by dragging nodes away from each other.
+- Transitions and labels may overlap with nodes. The problem can be solved by dragging nodes away from each other.
 - It is not possible to move edges.
 
 ## Release Notes
 
 This version is only meant for testing.
 
+### 0.2.0
+
+Added the possibility of movable edges. Create handles and drag edges, to create a simpler overview of the diagram.
+
 ### 0.1.0
 
-Initial realease of extension for testing purposes.
+The initial release of extension for testing purposes.
