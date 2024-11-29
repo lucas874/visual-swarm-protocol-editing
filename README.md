@@ -82,17 +82,4 @@ const protocol: SwarmProtocolType = {
 ## Known Issues
 
 - It is possible to drag a transition going from output to input, but it will create a transition in the opposite direction.
-- Transitions and labels may overlap with nodes. The problem can be solved by dragging nodes away from each other.
-- It is not possible to move edges.
-
-## Release Notes
-
-This version is only meant for testing.
-
-### 0.2.0
-
-Added the possibility of movable edges. Create handles and drag edges, to create a simpler overview of the diagram.
-
-### 0.1.0
-
-The initial release of extension for testing purposes.
+- Transitions and labels may overlap with nodes. The problem can be solved by dragging nodes away from each other, or dragging labels.
