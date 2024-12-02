@@ -253,7 +253,7 @@ function getReactAppHtml(scriptUri: vscode.Uri): string {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>React App</title>
+        <title>Visual Swarm Protocol Editing</title>
     </head>
     <body>
         <div id="root"></div>

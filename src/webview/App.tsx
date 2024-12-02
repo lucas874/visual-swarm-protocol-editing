@@ -109,7 +109,6 @@ const App: React.FC = () => {
       }),
     };
 
-    console.log(changedNodes);
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
       initial: {
