@@ -133,11 +133,11 @@ function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
 
   // Check if the file contains a swarm protocol
   if (text.includes("SwarmProtocolType")) {
-    // Create list of all SwarmProtocolType occurences
+    // Create list of all SwarmProtocolType occurrences
     let helperArray;
 
     // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-    // Find all occurences of the SwarmProtocolType
+    // Find all occurrences of the SwarmProtocolType
     while ((helperArray = typeRegex.exec(text)) !== null) {
       // Find the name of the protocol
       const occurrenceName = helperArray[0].substring(
@@ -201,37 +201,12 @@ function getLastIndex(text: string, index: number): number {
 function getNestedJSONObject(text: string, index: number) {
   // Get the index of the opening curly brace
   let openingCurlyBraceIndex = text.indexOf("{", index);
-  let closingCurlyBraceIndex;
-
-  let counter = 0;
-
-  do {
-    const openIndex = text.indexOf("{", index);
-    const closingIndex = text.indexOf("}", index);
-
-    // Ensure that last curly brace can be found
-    if (closingIndex === -1) {
-      vscode.window.showErrorMessage(
-        "Cannot find the last closing curly brace"
-      );
-      return "";
-    }
-
-    // Check if the opening curly brace is before the closing curly brace
-    if (openIndex < closingIndex && openIndex !== -1) {
-      index = openIndex + 1;
-      counter++;
-    } else {
-      index = closingIndex + 1;
-      closingCurlyBraceIndex = closingIndex;
-      counter--;
-    }
-  } while (counter !== 0);
+  let closingCurlyBraceIndex = getLastIndex(text, index);
 
   // Get the JSON object from the file
   const jsonObject = text.substring(
     openingCurlyBraceIndex,
-    closingCurlyBraceIndex + 1
+    closingCurlyBraceIndex
   );
 
   try {
