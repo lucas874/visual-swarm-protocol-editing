@@ -129,7 +129,6 @@ const LayoutFlow = ({
       sendErrorToParent("edgeLabelWrongFormat");
       return;
     } else {
-      console.log("nodes", nodesRef.current);
       const fixNodeNames = nodesRef.current.map((node) => {
         return {
           ...node,
@@ -140,7 +139,6 @@ const LayoutFlow = ({
     }
   }
 
-  // From https://reactflow.dev/api-reference/utils/add-edge
   const onConnect = useCallback((connection) => {
     connection.markerEnd = { type: MarkerType.ArrowClosed };
     connection.style = {
@@ -286,6 +284,14 @@ const LayoutFlow = ({
         <div className="overlay" onClick={closeNodeDialog}>
           <div className="dialog" onClick={(e) => e.stopPropagation()}>
             <div className="row">
+              <h2 className="label">Rename state</h2>
+            </div>
+            <div className="row">
+              <label className="label">
+                Change the current name of the state
+              </label>
+            </div>
+            <div className="row">
               <label className="label">Label</label>
               <input
                 className="input float-right"
@@ -322,6 +328,14 @@ const LayoutFlow = ({
       {isEdgeDialogOpen && (
         <div className="overlay" onClick={closeEdgeDialog}>
           <div className="dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="row">
+              <h2 className="label">Rename transition</h2>
+            </div>
+            <div className="row">
+              <label className="label">
+                Change the current command and/or role of the transition
+              </label>
+            </div>
             <div className="row">
               <label className="label">Command</label>
               <input

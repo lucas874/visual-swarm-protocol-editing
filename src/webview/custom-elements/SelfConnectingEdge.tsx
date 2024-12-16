@@ -38,7 +38,7 @@ export default function SelfConnecting(props: EdgeProps) {
               padding: "3px",
               border: "solid #000",
               borderWidth: "thin",
-              borderRadius: "4px",
+              borderRadius: "2px",
               fontSize: "10px",
               color: "black",
             }}

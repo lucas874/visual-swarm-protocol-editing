@@ -117,7 +117,7 @@ export default function PositionableEdge(props: EdgeProps) {
               padding: "3px",
               border: "solid #000",
               borderWidth: "thin",
-              borderRadius: "4px",
+              borderRadius: "2px",
               fontSize: "10px",
               color: "black",
             }}
@@ -156,7 +156,6 @@ export default function PositionableEdge(props: EdgeProps) {
                   setEdges(
                     edges.map((edge) => {
                       if (edge.id === id) {
-                        //   edge.id = Math.random().toString();
                         edge.data.positionHandlers[handlerIndex] = {
                           x: position.x,
                           y: position.y,
@@ -202,7 +201,6 @@ export default function PositionableEdge(props: EdgeProps) {
                     setEdges(
                       edges.map((edge) => {
                         if (edge.id === id) {
-                          //   edge.id = Math.random().toString();
                           (
                             edge.data.positionHandlers as PositionHandler[]
                           ).splice(handlerIndex, 1);
@@ -275,7 +273,7 @@ export default function PositionableEdge(props: EdgeProps) {
                     padding: "3px",
                     border: "solid #000",
                     borderWidth: "thin",
-                    borderRadius: "4px",
+                    borderRadius: "2px",
                     fontSize: "10px",
                     color: "black",
                   }}

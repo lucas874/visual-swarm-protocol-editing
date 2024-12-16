@@ -31,19 +31,19 @@ const App: React.FC = () => {
       setOccurrences(parseObjects(message.data));
 
       if (message.command === "buildProtocol") {
-        // For the first render, not ensured to know occurrences, so message.data is used
+        // Message data is used to set values, occurrences not updated this rendering
         let tempProtocol = JSON5.parse(message.data[0].jsonObject);
 
         // Save protocol to state
-        setProtocol(JSON5.parse(message.data[0].jsonObject));
+        setProtocol(tempProtocol);
 
-        // Create edges for the flowchart with the first occurence
+        // Create edges for the flowchart with the first occurrence
         setEdges(createEdges(tempProtocol));
 
-        // Create nodes for the flowchart with the first occurence
+        // Create nodes for the flowchart with the first occurrence
         setNodes(createNodes(tempProtocol));
 
-        // Set the selected protocol to the first occurence
+        // Set the selected protocol to the first occurrence
         selectedProtocolRef.current = message.data[0].name;
       }
     });
@@ -55,7 +55,7 @@ const App: React.FC = () => {
 
   // For selection of protocol
   const handleSelect = (e: any) => {
-    // Find the occurence that corresponds to the selected protocol
+    // Find the occurrence that corresponds to the selected protocol
     let occurrence = occurrences.find(
       (occurrence) => occurrence.name === e.target.value
     );
@@ -66,10 +66,10 @@ const App: React.FC = () => {
     // Set edges to correspond to the selected protocol
     setEdges(createEdges(occurrence.json));
 
-    // Set the protocol to the selected occurence
+    // Set the protocol to the selected occurrence
     setProtocol(occurrence.json);
 
-    // Set the selected protocol to the selected occurence
+    // Set the selected protocol to the selected occurrence
     selectedProtocolRef.current = e.target.value;
   };
 
@@ -134,9 +134,9 @@ const App: React.FC = () => {
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
       {occurrences.length > 1 && (
         <select className="dropdown" onChange={handleSelect}>
-          {occurrences.map((occurence) => (
-            <option value={occurence.name} key={occurence.name}>
-              {occurence.name}
+          {occurrences.map((occurrence) => (
+            <option value={occurrence.name} key={occurrence.name}>
+              {occurrence.name}
             </option>
           ))}
         </select>
@@ -167,7 +167,6 @@ function parseObjects(occurrences: any[]): any[] {
   return occurrences2;
 }
 
-// Created partly using coPilot
 function createEdges(protocol: SwarmProtocol): any[] {
   // Take the values from transitions, and create edges that correspond to ReactFlow
   const edges = protocol.transitions.map((transition) => {

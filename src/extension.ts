@@ -27,8 +27,8 @@ export function activate(context: vscode.ExtensionContext) {
 
       // Create the webview panel
       let panel = vscode.window.createWebviewPanel(
-        "myWebview",
-        "Actyx Swarm Protocol",
+        "webview",
+        "Visual Swarm Protocol",
         vscode.ViewColumn.One,
         {
           enableScripts: true, // Enable JavaScript in the webview to allow for React
@@ -47,7 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
       // Get the html content for the webview
       panel.webview.html = getReactAppHtml(reactAppUri);
 
-      // Send the occurences to the webview
+      // Send the occurrences to the webview
       panel.webview.postMessage({
         command: "buildProtocol",
         data: occurrences,
@@ -61,11 +61,11 @@ export function activate(context: vscode.ExtensionContext) {
             activeEditor.document.uri
           );
 
-          // Create list of all SwarmProtocolType occurences
+          // Create list of all SwarmProtocolType occurrences
           let helperArray;
 
           // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-          // Find all occurences of the SwarmProtocolType
+          // Find all occurrences of the SwarmProtocolType
           while (
             (helperArray = typeRegex.exec(editor.document.getText())) !== null
           ) {
@@ -75,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
               helperArray[0].indexOf(":")
             );
 
-            // Find the correct occurence based on the data from the child component
+            // Find the correct occurrence based on the data from the child component
             if (occurrenceName === message.data.name) {
               // Replace text in the active editor with the new data
               editor
@@ -151,7 +151,7 @@ function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
         // End the process if there are errors
         return;
       } else {
-        // Put the occurence in the occurences array along with the json code.
+        // Put the occurrence in the occurrences array along with the json code.
         occurrences.push({
           name: occurrenceName,
           jsonObject: jsonObject,
@@ -164,6 +164,29 @@ function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
     vscode.window.showErrorMessage("No swarm protocol found");
     return [];
   }
+}
+
+function getNestedJSONObject(text: string, index: number) {
+  // Get the index of the opening curly brace
+  let openingCurlyBraceIndex = text.indexOf("{", index);
+  let closingCurlyBraceIndex = getLastIndex(text, index);
+
+  // Get the JSON object from the file
+  const jsonObject = text.substring(
+    openingCurlyBraceIndex,
+    closingCurlyBraceIndex
+  );
+
+  try {
+    JSON5.parse(jsonObject);
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      "The JSON object is not valid. Please check the syntax"
+    );
+    return "";
+  }
+
+  return jsonObject;
 }
 
 function getLastIndex(text: string, index: number): number {
@@ -196,29 +219,6 @@ function getLastIndex(text: string, index: number): number {
   } while (counter !== 0);
 
   return closingCurlyBraceIndex + 1;
-}
-
-function getNestedJSONObject(text: string, index: number) {
-  // Get the index of the opening curly brace
-  let openingCurlyBraceIndex = text.indexOf("{", index);
-  let closingCurlyBraceIndex = getLastIndex(text, index);
-
-  // Get the JSON object from the file
-  const jsonObject = text.substring(
-    openingCurlyBraceIndex,
-    closingCurlyBraceIndex
-  );
-
-  try {
-    JSON5.parse(jsonObject);
-  } catch (error) {
-    vscode.window.showErrorMessage(
-      "The JSON object is not valid. Please check the syntax"
-    );
-    return "";
-  }
-
-  return jsonObject;
 }
 
 function getReactAppHtml(scriptUri: vscode.Uri): string {
