@@ -41,5 +41,6 @@ export type LayoutType = {
 export interface SwarmProtocol {
   initial: InitialNode;
   layout?: LayoutType;
+  subscriptions?: Record<string, string[]>;
   transitions: Transition[];
 }
