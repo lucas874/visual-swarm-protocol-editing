@@ -63,6 +63,9 @@ const App: React.FC = () => {
       } else if (message.command === "highlightEdges") {
         let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
         setEdges(createEdges(tempProtocol, message.data.transitions));
+      } else if (message.command === "highlightNodes") {
+        let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+        setNodes(createNodes(tempProtocol, message.data.nodes));
       }
     });
 
@@ -306,7 +309,10 @@ function createEdges(
   return edges;
 }
 
-function createNodes(protocol: SwarmProtocol): any[] {
+function createNodes(
+  protocol: SwarmProtocol,
+  highlighted: string[] = []
+): any[] {
   const nodeNames = new Set<string>();
 
   // Find all unique nodes from transitions
@@ -337,6 +343,11 @@ function createNodes(protocol: SwarmProtocol): any[] {
       position: {
         x: nodeLayout?.x ?? 0,
         y: nodeLayout?.y ?? 0,
+      },
+      style: {
+        border: highlighted.includes(nodeName)
+          ? "2px solid red"
+          : "2px solid #b1b1b6",
       },
       type: "default",
     };

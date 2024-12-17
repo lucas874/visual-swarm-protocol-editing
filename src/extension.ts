@@ -66,6 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (message.command === "changeProtocol") {
           // Only save if protocol is well-formed
           let wellFormedness = checkWellFormedness(message.data.protocol);
+          console.log(wellFormedness);
           if (wellFormedness.name === "highlightEdges") {
             panel.webview.postMessage({
               command: "highlightEdges",
@@ -74,8 +75,15 @@ export function activate(context: vscode.ExtensionContext) {
                 transitions: wellFormedness.transitions,
               },
             });
-          }
-          if (wellFormedness.name === "OK") {
+          } else if (wellFormedness.name === "highlightNodes") {
+            panel.webview.postMessage({
+              command: "highlightNodes",
+              data: {
+                protocol: JSON5.stringify(message.data.protocol),
+                nodes: wellFormedness.nodes,
+              },
+            });
+          } else if (wellFormedness.name === "OK") {
             // Editor might have been closed or tabbed away from, so make sure it's visible
             const editor = await vscode.window.showTextDocument(
               activeEditor.document.uri
@@ -173,6 +181,34 @@ function checkWellFormedness(protocol: string): wellFormednessCheck {
     });
   }
 
+  // Check for duplicated edges
+  let duplicatedEdges = checkDuplicatedEdgeLabels(protocolObject);
+  if (duplicatedEdges.length > 0) {
+    vscode.window.showErrorMessage("DUPLICATED LABELS", {
+      modal: true,
+      detail:
+        "Protocol has duplicated edges. Affected edges are highlighted in the visual editor.",
+    });
+    return {
+      name: "highlightEdges",
+      transitions: duplicatedEdges,
+      nodes: [],
+    };
+  }
+
+  let unconnectedNodes = checkUnconnectedNodes(protocolObject);
+  if (unconnectedNodes.length > 0) {
+    vscode.window.showErrorMessage("UNCONNECTED STATES", {
+      modal: true,
+      detail:
+        "Protocol has unconnected states. Affected nodes are highlighted in the visual editor.",
+    });
+    return {
+      name: "highlightNodes",
+      transitions: [],
+      nodes: unconnectedNodes,
+    };
+  }
   // Check if the protocol is well-formed
   try {
     const message = checkSwarmProtocol(
@@ -180,7 +216,15 @@ function checkWellFormedness(protocol: string): wellFormednessCheck {
       protocolObject.subscriptions
     );
 
-    if (message.type === "ERROR") {
+    if (message.type === "OK") {
+      vscode.window.showInformationMessage("Protocol is well-formed");
+      return {
+        name: "OK",
+        transitions: [],
+        nodes: [],
+      };
+    } else if (message.type === "ERROR") {
+      let emptyLogType = [];
       for (let error of message.errors) {
         if (error.includes("guard event type")) {
           const logType = error.split(" ")[3];
@@ -220,14 +264,25 @@ function checkWellFormedness(protocol: string): wellFormednessCheck {
             transitions: findRoleTransition(transition, protocolObject),
             nodes: [],
           };
+        } else if (error.includes("log type must not be empty")) {
+          let transition = error.split(" ")[6];
+          emptyLogType.push(findRoleTransition(transition, protocolObject)[0]);
+        } else {
+          vscode.window.showErrorMessage(error);
         }
-        vscode.window.showErrorMessage(error);
       }
-      return {
-        name: "error",
-        transitions: [],
-        nodes: [],
-      };
+
+      if (emptyLogType.length > 0) {
+        vscode.window.showErrorMessage("NOT WELL-FORMED", {
+          modal: true,
+          detail: `Some edges have an empty log type. Affected edges are highlighted in the visual editor.`,
+        });
+        return {
+          name: "highlightEdges",
+          transitions: emptyLogType,
+          nodes: [],
+        };
+      }
     } else {
       vscode.window.showInformationMessage("Protocol is well-formed");
     }
@@ -255,6 +310,51 @@ function checkWellFormedness(protocol: string): wellFormednessCheck {
       nodes: [],
     };
   }
+}
+
+function checkUnconnectedNodes(protocol: SwarmProtocol): string[] {
+  let unconnectedNodes = [];
+  protocol.layout.nodes.map((node) => {
+    if (
+      !protocol.transitions.some(
+        (transition) =>
+          transition.source === node.name || transition.target === node.name
+      )
+    ) {
+      unconnectedNodes.push(node.name);
+    }
+  });
+
+  return unconnectedNodes;
+}
+
+function checkDuplicatedEdgeLabels(protocol: SwarmProtocol): Transition[] {
+  // Create a list of unique edges
+  let uniqueLabels: string[] = [];
+  let duplicatedLabels: string[] = [];
+  let duplicatedEdges: Transition[] = [];
+
+  // Check for duplicated edges
+  for (let transition of protocol.transitions) {
+    let label = transition.label.cmd + "@" + transition.label.role;
+    if (!uniqueLabels.includes(label)) {
+      uniqueLabels.push(label);
+    } else {
+      // Check if the duplicated label was already found
+      if (!duplicatedLabels.includes(label)) {
+        duplicatedLabels.push(label);
+        // Add all transitions with the same label to the duplicatedEdges array
+        protocol.transitions.map((t) => {
+          if (t.label.cmd + "@" + t.label.role === label) {
+            duplicatedEdges.push(t);
+          }
+        });
+      }
+    }
+  }
+
+  // If the length of the edges array is not equal to the size of the set, there are duplicates
+  return duplicatedEdges;
 }
 
 function findMultipleGuardEvents(
