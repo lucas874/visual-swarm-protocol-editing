@@ -10,7 +10,7 @@ export default function SelfConnecting(props: EdgeProps) {
   }
 
   // Split props to match the following values
-  const { sourceX, sourceY, targetX, targetY, markerEnd, label } = props;
+  const { sourceX, sourceY, targetX, targetY, markerEnd, label, style } = props;
 
   // Set radius (switched from the example, to use top and bottom instead of left and right)
   const radiusX = 75;

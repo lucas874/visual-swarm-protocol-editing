@@ -1,6 +1,14 @@
 import * as vscode from "vscode";
 import JSON5 from "json5";
 import path from "path";
+import { checkSwarmProtocol, SwarmProtocolType } from "@actyx/machine-check";
+import { SwarmProtocol, Transition } from "./webview/types";
+
+interface wellFormednessCheck {
+  name: string;
+  transitions: Transition[];
+  nodes: string[];
+}
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -56,60 +64,73 @@ export function activate(context: vscode.ExtensionContext) {
       // Get messages from child component
       panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
-          // Editor might have been closed or tabbed away from, so make sure it's visible
-          const editor = await vscode.window.showTextDocument(
-            activeEditor.document.uri
-          );
-
-          // Create list of all SwarmProtocolType occurrences
-          let helperArray;
-
-          // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-          // Find all occurrences of the SwarmProtocolType
-          while (
-            (helperArray = typeRegex.exec(editor.document.getText())) !== null
-          ) {
-            // Find the name of the protocol
-            const occurrenceName = helperArray[0].substring(
-              0,
-              helperArray[0].indexOf(":")
+          // Only save if protocol is well-formed
+          let wellFormedness = checkWellFormedness(message.data.protocol);
+          if (wellFormedness.name === "highlightEdges") {
+            panel.webview.postMessage({
+              command: "highlightEdges",
+              data: {
+                protocol: JSON5.stringify(message.data.protocol),
+                transitions: wellFormedness.transitions,
+              },
+            });
+          }
+          if (wellFormedness.name === "OK") {
+            // Editor might have been closed or tabbed away from, so make sure it's visible
+            const editor = await vscode.window.showTextDocument(
+              activeEditor.document.uri
             );
 
-            // Find the correct occurrence based on the data from the child component
-            if (occurrenceName === message.data.name) {
-              // Replace text in the active editor with the new data
-              editor
-                .edit((editBuilder) => {
-                  editBuilder.replace(
-                    new vscode.Range(
-                      activeEditor.document.positionAt(typeRegex.lastIndex),
-                      activeEditor.document.positionAt(
-                        getLastIndex(
-                          editor.document.getText(),
-                          typeRegex.lastIndex
+            // Create list of all SwarmProtocolType occurrences
+            let helperArray;
+
+            // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
+            // Find all occurrences of the SwarmProtocolType
+            while (
+              (helperArray = typeRegex.exec(editor.document.getText())) !== null
+            ) {
+              // Find the name of the protocol
+              const occurrenceName = helperArray[0].substring(
+                0,
+                helperArray[0].indexOf(":")
+              );
+
+              // Find the correct occurrence based on the data from the child component
+              if (occurrenceName === message.data.name) {
+                // Replace text in the active editor with the new data
+                editor
+                  .edit((editBuilder) => {
+                    editBuilder.replace(
+                      new vscode.Range(
+                        activeEditor.document.positionAt(typeRegex.lastIndex),
+                        activeEditor.document.positionAt(
+                          getLastIndex(
+                            editor.document.getText(),
+                            typeRegex.lastIndex
+                          )
                         )
-                      )
-                    ),
-                    `${message.data.protocol}`
-                  );
-                })
-                // Wait until the editor has been updated
-                .then(() => {
-                  // Get the updated occurrences
-                  occurrences = getAllProtocolOccurrences(
-                    editor.document.getText(),
-                    typeRegex
-                  );
+                      ),
+                      `${message.data.protocol}`
+                    );
+                  })
+                  // Wait until the editor has been updated
+                  .then(() => {
+                    // Get the updated occurrences
+                    occurrences = getAllProtocolOccurrences(
+                      editor.document.getText(),
+                      typeRegex
+                    );
 
-                  // Open the webview again with the new data
-                  panel.webview.postMessage({
-                    command: "buildProtocol",
-                    data: occurrences,
+                    // Open the webview again with the new data
+                    panel.webview.postMessage({
+                      command: "buildProtocol",
+                      data: occurrences,
+                    });
+
+                    // Make sure the panel is visible again
+                    panel.reveal();
                   });
-
-                  // Make sure the panel is visible again
-                  panel.reveal();
-                });
+              }
             }
           }
         } else if (message === "noEdgeLabel") {
@@ -126,6 +147,140 @@ export function activate(context: vscode.ExtensionContext) {
       });
     })
   );
+}
+
+// Method to check if the protocol is well-formed and show messages to the user
+function checkWellFormedness(protocol: string): wellFormednessCheck {
+  // Parse the protocol
+  let protocolObject = JSON5.parse(protocol);
+
+  // Transform custom type to SwarmProtocolType
+  let swarmProtocol: SwarmProtocolType = {
+    initial: protocolObject.initial.name,
+    transitions: [],
+  };
+
+  // Add transitions to the swarm protocol
+  for (let transition of protocolObject.transitions) {
+    swarmProtocol.transitions.push({
+      source: transition.source,
+      target: transition.target,
+      label: {
+        cmd: transition.label.cmd,
+        role: transition.label.role,
+        logType: transition.label.logType ?? [],
+      },
+    });
+  }
+
+  // Check if the protocol is well-formed
+  try {
+    const message = checkSwarmProtocol(
+      swarmProtocol,
+      protocolObject.subscriptions
+    );
+
+    if (message.type === "ERROR") {
+      for (let error of message.errors) {
+        if (error.includes("guard event type")) {
+          const logType = error.split(" ")[3];
+
+          vscode.window.showErrorMessage("NOT WELL-FORMED", {
+            modal: true,
+            detail: `Protocol has multiple transitions with the log type \"${logType}\". Affected edges are highlighted in the visual editor.`,
+          });
+          return {
+            name: "hightlightEdges",
+            transitions: findMultipleGuardEvents(logType, protocolObject),
+            nodes: [],
+          };
+        } else if (error.includes("active role does not subscribe")) {
+          let transition = error.split(" ")[14];
+          let role = transition.split("@")[1].split("<")[0];
+
+          vscode.window.showErrorMessage("NOT WELL-FORMED", {
+            modal: true,
+            detail: `Active role (${role}) does not subscribe to guard event. Affected edges are highlighted in the visual editor.`,
+          });
+          return {
+            name: "highlightEdges",
+            transitions: findRoleTransition(transition, protocolObject),
+            nodes: [],
+          };
+        } else if (error.includes("subsequently involved role")) {
+          let transition = error.split(" ")[11];
+          let role = transition.split("@")[1].split("<")[0];
+
+          vscode.window.showErrorMessage("NOT WELL-FORMED", {
+            modal: true,
+            detail: `Subsequently involved role (${role}) does not subscribe to a guard event. Affected edges are highlighted in the visual editor.`,
+          });
+          return {
+            name: "highlightEdges",
+            transitions: findRoleTransition(transition, protocolObject),
+            nodes: [],
+          };
+        }
+        vscode.window.showErrorMessage(error);
+      }
+      return {
+        name: "error",
+        transitions: [],
+        nodes: [],
+      };
+    } else {
+      vscode.window.showInformationMessage("Protocol is well-formed");
+    }
+  } catch (error) {
+    // If no subscriptions are defined, show a warning message, but save protocol
+    if (
+      protocolObject.subscriptions === undefined ||
+      protocolObject.subscriptions.length === 0
+    ) {
+      vscode.window.showWarningMessage(
+        "Well-formedness not checked. Protocol must have subscriptions to perform check."
+      );
+      return {
+        name: "OK",
+        transitions: [],
+        nodes: [],
+      };
+    }
+
+    // In all other cases, show the error message
+    vscode.window.showErrorMessage(error.message);
+    return {
+      name: "error",
+      transitions: [],
+      nodes: [],
+    };
+  }
+}
+
+function findMultipleGuardEvents(
+  logType: string,
+  protocol: SwarmProtocol
+): Transition[] {
+  let guardEvents = protocol.transitions.filter((transition) =>
+    transition.label.logType.includes(logType)
+  );
+
+  return guardEvents;
+}
+
+function findRoleTransition(
+  transition: string,
+  protocol: SwarmProtocol
+): Transition[] {
+  let split = transition.split("--");
+  let source = split[0].slice(1, -1);
+  let target = split[2].slice(2, -1);
+
+  let RoleTransition = protocol.transitions.find(
+    (transition) => transition.source === source && transition.target === target
+  );
+
+  return [RoleTransition];
 }
 
 function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {

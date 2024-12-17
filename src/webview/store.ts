@@ -20,7 +20,7 @@ export type RFState = {
   addEdge: (edge: Edge) => void;
   addNode: (node: Node) => void;
   updateNodeLabel: (nodeId: string, label: string) => void;
-  updateEdgeLabel: (edgeId: string, label: string) => void;
+  updateEdgeLabel: (edgeId: string, label: string, logType: string[]) => void;
   deleteNodes: (nodeIds: string[]) => void;
   deleteEdges: (edgeIds: string[]) => void;
   setNodes: (nodes: Node[]) => void;
@@ -88,15 +88,18 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
       }),
     });
   },
-  updateEdgeLabel: (edgeId: string, label: string) => {
+  updateEdgeLabel: (edgeId: string, label: string, logType: string[]) => {
+    console.log("updateEdgeLabel", edgeId, label, logType);
     set({
       edges: get().edges.map((edge) => {
         if (edge.id === edgeId) {
-          return { ...edge, label: label };
+          return { ...edge, label: label, data: { ...edge.data, logType } };
         }
         return edge;
       }),
     });
+
+    console.log(get().edges);
   },
   deleteNodes: (nodeIds: string[]) => {
     set({

@@ -102,6 +102,7 @@ const LayoutFlow = ({
   const edgeLabelRef = useRef("");
   const commandRef = useRef("");
   const roleRef = useRef("");
+  const logTypeRef = useRef("");
   const selectedNodeRef = useRef(null);
   const selectedEdgeRef = useRef(null);
   const onDeleteRef = useRef(null);
@@ -333,7 +334,8 @@ const LayoutFlow = ({
             </div>
             <div className="row">
               <label className="label">
-                Change the current command and/or role of the transition
+                Change the current command and/or role of the transition. A log
+                type can optionally be added.
               </label>
             </div>
             <div className="row">
@@ -364,6 +366,20 @@ const LayoutFlow = ({
                 defaultValue={roleRef.current}
               />
             </div>
+            <div className="row">
+              <label className="label">Log type (comma separated)</label>
+              <input
+                className="input"
+                type="text"
+                placeholder="Add log type"
+                onChange={(e) => {
+                  logTypeRef.current = e.target.value;
+                  edgeLabelRef.current =
+                    commandRef.current + "@" + roleRef.current;
+                }}
+                defaultValue={logTypeRef.current}
+              />
+            </div>
             <div className="row float-right">
               <button className="button-cancel" onClick={closeEdgeDialog}>
                 Cancel
@@ -372,16 +388,15 @@ const LayoutFlow = ({
                 className="button-dialog"
                 onClick={(e) => {
                   if (!commandRef.current) {
-                    console.log(commandRef.current);
                     sendErrorToParent("noCommand");
                   } else if (!roleRef.current) {
-                    console.log(roleRef.current);
                     sendErrorToParent("noRole");
                   } else {
                     closeEdgeDialog();
                     updateEdgeLabel(
                       selectedEdgeRef.current.id,
-                      edgeLabelRef.current
+                      edgeLabelRef.current,
+                      logTypeRef.current.split(",")
                     );
                   }
                 }}
@@ -409,6 +424,9 @@ const LayoutFlow = ({
             selectedEdgeRef.current = edge;
             commandRef.current = edge.label?.toString().split("@")[0] ?? "";
             roleRef.current = edge.label?.toString().split("@")[1] ?? "";
+            logTypeRef.current =
+              (edge.data.logType as string[])?.join(",") ?? "";
+            edgeLabelRef.current = commandRef.current + "@" + roleRef.current;
             openEdgeDialog();
           }}
           onBeforeDelete={(onBeforeDelete) => {
