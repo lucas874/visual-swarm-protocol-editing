@@ -1,13 +1,10 @@
 import * as vscode from "vscode";
 import JSON5 from "json5";
 import path from "path";
-import { checkSwarmProtocol, SwarmProtocolType } from "@actyx/machine-check";
-import { SwarmProtocol, Transition } from "./types";
+import { SwarmProtocolType } from "@actyx/machine-check";
 import {
   checkUnconnectedNodes,
   checkDuplicatedEdgeLabels,
-  findMultipleGuardEvents,
-  findRoleTransition,
   WellFormednessCheck,
   checkWellFormedness,
 } from "./error-utils";
@@ -68,7 +65,6 @@ export function activate(context: vscode.ExtensionContext) {
         if (message.command === "changeProtocol") {
           // Only save if protocol is well-formed
           let wellFormedness = errorChecks(message.data.protocol);
-          console.log(wellFormedness);
           if (wellFormedness.name === "highlightEdges") {
             panel.webview.postMessage({
               command: "highlightEdges",
@@ -186,6 +182,7 @@ function errorChecks(protocol: string): WellFormednessCheck {
   // Check if the protocol is well-formed
   let swarmCheck: { check: WellFormednessCheck; detail: string } =
     checkWellFormedness(swarmProtocol, protocolObject);
+
   if (swarmCheck.check.name !== "OK") {
     vscode.window.showErrorMessage("NOT WELL-FORMED", {
       modal: true,
@@ -222,6 +219,13 @@ function errorChecks(protocol: string): WellFormednessCheck {
       nodes: unconnectedNodes,
     };
   }
+
+  vscode.window.showInformationMessage("Protocol is well-formed");
+  return {
+    name: "OK",
+    transitions: [],
+    nodes: [],
+  };
 }
 
 function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {

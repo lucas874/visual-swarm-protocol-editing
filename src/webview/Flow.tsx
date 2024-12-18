@@ -10,6 +10,9 @@ import "@xyflow/react/dist/style.css";
 import "./style.css";
 import useStore, { RFState } from "./store";
 import { shallow } from "zustand/shallow";
+import DeleteDialog from "./modals/DeleteDialog";
+import NodeLabelDialog from "./modals/ChangeNodeLabelDialog";
+import EdgeLabelDialog from "./modals/ChangeEdgeLabelDialog";
 
 const nodeWidth = 175;
 const nodeHeight = 75;
@@ -52,6 +55,9 @@ const getLayoutedElements = (nodes, edges) => {
 const selector = (state: RFState) => ({
   nodes: state.nodes,
   edges: state.edges,
+  isDeleteDialogOpen: state.isDeleteDialogOpen,
+  isNodeDialogOpen: state.isNodeDialogOpen,
+  isEdgeDialogOpen: state.isEdgeDialogOpen,
   setInitialElements: state.setInitialElements,
   setNodes: state.setNodes,
   setEdges: state.setEdges,
@@ -59,10 +65,9 @@ const selector = (state: RFState) => ({
   onEdgesChange: state.onEdgesChange,
   addEdge: state.addEdge,
   addNode: state.addNode,
-  updateNodeLabel: state.updateNodeLabel,
-  updateEdgeLabel: state.updateEdgeLabel,
-  deleteNodes: state.deleteNodes,
-  deleteEdges: state.deleteEdges,
+  setIsNodeDialogOpen: state.setIsNodeDialogOpen,
+  setIsEdgeDialogOpen: state.setIsEdgeDialogOpen,
+  setIsDeleteDialogOpen: state.setIsDeleteDialogOpen,
 });
 
 // Create flow from values given
@@ -77,6 +82,12 @@ const LayoutFlow = ({
   const {
     nodes,
     edges,
+    isDeleteDialogOpen,
+    isNodeDialogOpen,
+    isEdgeDialogOpen,
+    setIsDeleteDialogOpen,
+    setIsNodeDialogOpen,
+    setIsEdgeDialogOpen,
     setInitialElements,
     setNodes,
     setEdges,
@@ -84,16 +95,7 @@ const LayoutFlow = ({
     onEdgesChange,
     addEdge,
     addNode,
-    updateNodeLabel,
-    updateEdgeLabel,
-    deleteNodes,
-    deleteEdges,
   } = useStore(selector, shallow);
-
-  // TODO: Custom hooks?
-  const [isNodeDialogOpen, setIsNodeDialogOpen] = React.useState(false);
-  const [isEdgeDialogOpen, setIsEdgeDialogOpen] = React.useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // https://react.dev/reference/react/useRef
   const nodesRef = useRef([]);
@@ -106,14 +108,6 @@ const LayoutFlow = ({
   const selectedNodeRef = useRef(null);
   const selectedEdgeRef = useRef(null);
   const onDeleteRef = useRef(null);
-
-  // Open and close the dialogs
-  const openNodeDialog = () => setIsNodeDialogOpen(true);
-  const closeNodeDialog = () => setIsNodeDialogOpen(false);
-  const openEdgeDialog = () => setIsEdgeDialogOpen(true);
-  const closeEdgeDialog = () => setIsEdgeDialogOpen(false);
-  const openDeleteDialog = () => setIsDeleteDialogOpen(true);
-  const closeDeleteDialog = () => setIsDeleteDialogOpen(false);
 
   // From https://medium.com/@ozhanli/passing-data-from-child-to-parent-components-in-react-e347ea60b1bb
   function saveChanges() {
@@ -250,162 +244,24 @@ const LayoutFlow = ({
         </button>
       </div>
       {/* Create a dialog trying to delete */}
-      {isDeleteDialogOpen && (
-        <div className="overlay" onClick={closeNodeDialog}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="row">
-              <h2 className="label">Are you sure you want to delete?</h2>
-            </div>
-            <div className="row">
-              <label className="label">This action cannot be undone</label>
-            </div>
-            <div className="row float-right">
-              <button
-                className="button-cancel float-right"
-                onClick={closeDeleteDialog}
-              >
-                Cancel
-              </button>
-              <button
-                className="button-dialog-delete float-right"
-                onClick={(e) => {
-                  deleteEdges(onDeleteRef.current.edges.map((edge) => edge.id));
-                  deleteNodes(onDeleteRef.current.nodes.map((node) => node.id));
-                  closeDeleteDialog();
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {isDeleteDialogOpen && <DeleteDialog onDeleteRef={onDeleteRef.current} />}
       {/* Create a dialog when double clicking on a node */}
       {isNodeDialogOpen && (
-        <div className="overlay" onClick={closeNodeDialog}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="row">
-              <h2 className="label">Rename state</h2>
-            </div>
-            <div className="row">
-              <label className="label">
-                Change the current name of the state
-              </label>
-            </div>
-            <div className="row">
-              <label className="label">Label</label>
-              <input
-                className="input float-right"
-                type="text"
-                placeholder="Add label"
-                onChange={(e) => (nodeLabelRef.current = e.target.value)}
-                defaultValue={nodeLabelRef.current}
-              />
-            </div>
-            <div className="row float-right">
-              <button
-                className="button-cancel float-right"
-                onClick={closeNodeDialog}
-              >
-                Cancel
-              </button>
-              <button
-                className="button-dialog float-right"
-                onClick={(e) => {
-                  closeNodeDialog();
-                  updateNodeLabel(
-                    selectedNodeRef.current.id,
-                    nodeLabelRef.current
-                  );
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+        <NodeLabelDialog
+          nodeLabelRef={nodeLabelRef.current}
+          selectedNodeRef={selectedNodeRef.current}
+        />
       )}
       {/* Create a dialog when double clicking on an edge */}
       {isEdgeDialogOpen && (
-        <div className="overlay" onClick={closeEdgeDialog}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="row">
-              <h2 className="label">Rename transition</h2>
-            </div>
-            <div className="row">
-              <label className="label">
-                Change the current command and/or role of the transition. A log
-                type can optionally be added.
-              </label>
-            </div>
-            <div className="row">
-              <label className="label">Command</label>
-              <input
-                className="input float-right"
-                type="text"
-                placeholder="Add command"
-                onChange={(e) => {
-                  commandRef.current = e.target.value;
-                  edgeLabelRef.current =
-                    commandRef.current + "@" + roleRef.current;
-                }}
-                defaultValue={commandRef.current}
-              />
-            </div>
-            <div className="row">
-              <label className="label">Role</label>
-              <input
-                className="input"
-                type="text"
-                placeholder="Add role"
-                onChange={(e) => {
-                  roleRef.current = e.target.value;
-                  edgeLabelRef.current =
-                    commandRef.current + "@" + roleRef.current;
-                }}
-                defaultValue={roleRef.current}
-              />
-            </div>
-            <div className="row">
-              <label className="label">Log type (comma separated)</label>
-              <input
-                className="input"
-                type="text"
-                placeholder="Add log type"
-                onChange={(e) => {
-                  logTypeRef.current = e.target.value;
-                  edgeLabelRef.current =
-                    commandRef.current + "@" + roleRef.current;
-                }}
-                defaultValue={logTypeRef.current}
-              />
-            </div>
-            <div className="row float-right">
-              <button className="button-cancel" onClick={closeEdgeDialog}>
-                Cancel
-              </button>
-              <button
-                className="button-dialog"
-                onClick={(e) => {
-                  if (!commandRef.current) {
-                    sendErrorToParent("noCommand");
-                  } else if (!roleRef.current) {
-                    sendErrorToParent("noRole");
-                  } else {
-                    closeEdgeDialog();
-                    updateEdgeLabel(
-                      selectedEdgeRef.current.id,
-                      edgeLabelRef.current,
-                      logTypeRef.current.split(",")
-                    );
-                  }
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+        <EdgeLabelDialog
+          commandRef={commandRef.current}
+          roleRef={roleRef.current}
+          logTypeRef={logTypeRef.current}
+          edgeLabelRef={edgeLabelRef.current}
+          selectedEdgeRef={selectedEdgeRef.current}
+          sendErrorToParent={sendErrorToParent}
+        />
       )}
       <div className="react-flow__container-div">
         {/* https://reactflow.dev/api-reference/react-flow#nodeorigin */}
@@ -418,7 +274,7 @@ const LayoutFlow = ({
           onNodeDoubleClick={(_, node) => {
             selectedNodeRef.current = node;
             nodeLabelRef.current = node.data.label?.toString() ?? "";
-            openNodeDialog();
+            setIsNodeDialogOpen(true);
           }}
           onEdgeDoubleClick={(_, edge) => {
             selectedEdgeRef.current = edge;
@@ -427,11 +283,11 @@ const LayoutFlow = ({
             logTypeRef.current =
               (edge.data.logType as string[])?.join(",") ?? "";
             edgeLabelRef.current = commandRef.current + "@" + roleRef.current;
-            openEdgeDialog();
+            setIsEdgeDialogOpen(true);
           }}
           onBeforeDelete={(onBeforeDelete) => {
             onDeleteRef.current = onBeforeDelete;
-            openDeleteDialog();
+            setIsDeleteDialogOpen(true);
             return Promise.resolve(false);
           }}
           edgeTypes={edgesTypes}
