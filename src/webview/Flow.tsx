@@ -162,12 +162,12 @@ const LayoutFlow = ({
     (isLayouted) => {
       if (!isLayouted) {
         let layouted;
-        if (nodes.length > 0 && edges.length > 0) {
-          layouted = getLayoutedElements(nodes, edges);
-        } else if (nodes.length > 0) {
-          layouted = getLayoutedElements(nodes, initialEdges);
-        } else if (edges.length > 0) {
-          layouted = getLayoutedElements(initialNodes, edges);
+        if (nodesRef.current.length > 0 && edgesRef.current.length > 0) {
+          layouted = getLayoutedElements(nodesRef.current, edgesRef.current);
+        } else if (nodesRef.current.length > 0) {
+          layouted = getLayoutedElements(nodesRef.current, initialEdges);
+        } else if (edgesRef.current.length > 0) {
+          layouted = getLayoutedElements(initialNodes, edgesRef.current);
         } else {
           layouted = getLayoutedElements(initialNodes, initialEdges);
         }
