@@ -2,13 +2,15 @@ import * as vscode from "vscode";
 import JSON5 from "json5";
 import path from "path";
 import { checkSwarmProtocol, SwarmProtocolType } from "@actyx/machine-check";
-import { SwarmProtocol, Transition } from "./webview/types";
-
-interface wellFormednessCheck {
-  name: string;
-  transitions: Transition[];
-  nodes: string[];
-}
+import { SwarmProtocol, Transition } from "./types";
+import {
+  checkUnconnectedNodes,
+  checkDuplicatedEdgeLabels,
+  findMultipleGuardEvents,
+  findRoleTransition,
+  WellFormednessCheck,
+  checkWellFormedness,
+} from "./error-utils";
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -65,7 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
       panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
           // Only save if protocol is well-formed
-          let wellFormedness = checkWellFormedness(message.data.protocol);
+          let wellFormedness = errorChecks(message.data.protocol);
           console.log(wellFormedness);
           if (wellFormedness.name === "highlightEdges") {
             panel.webview.postMessage({
@@ -158,7 +160,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // Method to check if the protocol is well-formed and show messages to the user
-function checkWellFormedness(protocol: string): wellFormednessCheck {
+function errorChecks(protocol: string): WellFormednessCheck {
   // Parse the protocol
   let protocolObject = JSON5.parse(protocol);
 
@@ -179,6 +181,17 @@ function checkWellFormedness(protocol: string): wellFormednessCheck {
         logType: transition.label.logType ?? [],
       },
     });
+  }
+
+  // Check if the protocol is well-formed
+  let swarmCheck: { check: WellFormednessCheck; detail: string } =
+    checkWellFormedness(swarmProtocol, protocolObject);
+  if (swarmCheck.check.name !== "OK") {
+    vscode.window.showErrorMessage("NOT WELL-FORMED", {
+      modal: true,
+      detail: swarmCheck.detail,
+    });
+    return swarmCheck.check;
   }
 
   // Check for duplicated edges
@@ -209,178 +222,6 @@ function checkWellFormedness(protocol: string): wellFormednessCheck {
       nodes: unconnectedNodes,
     };
   }
-  // Check if the protocol is well-formed
-  try {
-    const message = checkSwarmProtocol(
-      swarmProtocol,
-      protocolObject.subscriptions
-    );
-
-    if (message.type === "OK") {
-      vscode.window.showInformationMessage("Protocol is well-formed");
-      return {
-        name: "OK",
-        transitions: [],
-        nodes: [],
-      };
-    } else if (message.type === "ERROR") {
-      let emptyLogType = [];
-      for (let error of message.errors) {
-        if (error.includes("guard event type")) {
-          const logType = error.split(" ")[3];
-
-          vscode.window.showErrorMessage("NOT WELL-FORMED", {
-            modal: true,
-            detail: `Protocol has multiple transitions with the log type \"${logType}\". Affected edges are highlighted in the visual editor.`,
-          });
-          return {
-            name: "hightlightEdges",
-            transitions: findMultipleGuardEvents(logType, protocolObject),
-            nodes: [],
-          };
-        } else if (error.includes("active role does not subscribe")) {
-          let transition = error.split(" ")[14];
-          let role = transition.split("@")[1].split("<")[0];
-
-          vscode.window.showErrorMessage("NOT WELL-FORMED", {
-            modal: true,
-            detail: `Active role (${role}) does not subscribe to guard event. Affected edges are highlighted in the visual editor.`,
-          });
-          return {
-            name: "highlightEdges",
-            transitions: findRoleTransition(transition, protocolObject),
-            nodes: [],
-          };
-        } else if (error.includes("subsequently involved role")) {
-          let transition = error.split(" ")[11];
-          let role = transition.split("@")[1].split("<")[0];
-
-          vscode.window.showErrorMessage("NOT WELL-FORMED", {
-            modal: true,
-            detail: `Subsequently involved role (${role}) does not subscribe to a guard event. Affected edges are highlighted in the visual editor.`,
-          });
-          return {
-            name: "highlightEdges",
-            transitions: findRoleTransition(transition, protocolObject),
-            nodes: [],
-          };
-        } else if (error.includes("log type must not be empty")) {
-          let transition = error.split(" ")[6];
-          emptyLogType.push(findRoleTransition(transition, protocolObject)[0]);
-        } else {
-          vscode.window.showErrorMessage(error);
-        }
-      }
-
-      if (emptyLogType.length > 0) {
-        vscode.window.showErrorMessage("NOT WELL-FORMED", {
-          modal: true,
-          detail: `Some edges have an empty log type. Affected edges are highlighted in the visual editor.`,
-        });
-        return {
-          name: "highlightEdges",
-          transitions: emptyLogType,
-          nodes: [],
-        };
-      }
-    } else {
-      vscode.window.showInformationMessage("Protocol is well-formed");
-    }
-  } catch (error) {
-    // If no subscriptions are defined, show a warning message, but save protocol
-    if (
-      protocolObject.subscriptions === undefined ||
-      protocolObject.subscriptions.length === 0
-    ) {
-      vscode.window.showWarningMessage(
-        "Well-formedness not checked. Protocol must have subscriptions to perform check."
-      );
-      return {
-        name: "OK",
-        transitions: [],
-        nodes: [],
-      };
-    }
-
-    // In all other cases, show the error message
-    vscode.window.showErrorMessage(error.message);
-    return {
-      name: "error",
-      transitions: [],
-      nodes: [],
-    };
-  }
-}
-
-function checkUnconnectedNodes(protocol: SwarmProtocol): string[] {
-  let unconnectedNodes = [];
-  protocol.layout.nodes.map((node) => {
-    if (
-      !protocol.transitions.some(
-        (transition) =>
-          transition.source === node.name || transition.target === node.name
-      )
-    ) {
-      unconnectedNodes.push(node.name);
-    }
-  });
-
-  return unconnectedNodes;
-}
-
-function checkDuplicatedEdgeLabels(protocol: SwarmProtocol): Transition[] {
-  // Create a list of unique edges
-  let uniqueLabels: string[] = [];
-  let duplicatedLabels: string[] = [];
-  let duplicatedEdges: Transition[] = [];
-
-  // Check for duplicated edges
-  for (let transition of protocol.transitions) {
-    let label = transition.label.cmd + "@" + transition.label.role;
-    if (!uniqueLabels.includes(label)) {
-      uniqueLabels.push(label);
-    } else {
-      // Check if the duplicated label was already found
-      if (!duplicatedLabels.includes(label)) {
-        duplicatedLabels.push(label);
-        // Add all transitions with the same label to the duplicatedEdges array
-        protocol.transitions.map((t) => {
-          if (t.label.cmd + "@" + t.label.role === label) {
-            duplicatedEdges.push(t);
-          }
-        });
-      }
-    }
-  }
-
-  // If the length of the edges array is not equal to the size of the set, there are duplicates
-  return duplicatedEdges;
-}
-
-function findMultipleGuardEvents(
-  logType: string,
-  protocol: SwarmProtocol
-): Transition[] {
-  let guardEvents = protocol.transitions.filter((transition) =>
-    transition.label.logType.includes(logType)
-  );
-
-  return guardEvents;
-}
-
-function findRoleTransition(
-  transition: string,
-  protocol: SwarmProtocol
-): Transition[] {
-  let split = transition.split("--");
-  let source = split[0].slice(1, -1);
-  let target = split[2].slice(2, -1);
-
-  let RoleTransition = protocol.transitions.find(
-    (transition) => transition.source === source && transition.target === target
-  );
-
-  return [RoleTransition];
 }
 
 function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {

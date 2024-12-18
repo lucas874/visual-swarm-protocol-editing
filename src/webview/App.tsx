@@ -3,7 +3,7 @@ import Flow from "./Flow";
 import JSON5 from "json5";
 import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
-import { LayoutType, SwarmProtocol, Transition } from "./types";
+import { LayoutType, SwarmProtocol, Transition } from "../types";
 import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
 import DownloadButton from "./custom-elements/DownloadButton";

@@ -9,7 +9,7 @@ import { shallow } from "zustand/shallow";
 import useStore, { RFState } from "../store";
 import ClickableBaseEdge from "./ClickableBaseEdge";
 import "./PositionableEdge.css";
-import { PositionHandler } from "../types";
+import { PositionHandler } from "../../types";
 
 const selector = (state: RFState) => ({
   edges: state.edges,
