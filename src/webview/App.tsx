@@ -6,6 +6,7 @@ import { MarkerType } from "@xyflow/react";
 import { LayoutType, SwarmProtocol, Transition } from "./types";
 import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
+import DownloadButton from "./custom-elements/DownloadButton";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
@@ -158,6 +159,7 @@ const App: React.FC = () => {
 
   return (
     <>
+      <DownloadButton />
       <button className="button" onClick={openDialog}>
         Subscriptions
       </button>
