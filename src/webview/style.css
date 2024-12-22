@@ -51,10 +51,8 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 1vh;
-  padding: 1vh;
-  width: 10vw;
-  height: 5vh;
+  margin: 0.5rem;
+  padding: 0.5rem;
 }
 
 .button-dialog {
@@ -62,9 +60,8 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 1vh;
-  padding: 1vh;
-  width: 50px;
+  margin: 0.5rem;
+  padding: 0.5rem;
 }
 
 .button-dialog-delete {
@@ -72,9 +69,8 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 1vh;
-  padding: 1vh;
-  width: 50px;
+  margin: 0.5rem;
+  padding: 0.5rem;
 }
 
 .button-cancel {
@@ -83,9 +79,8 @@
   text-decoration: underline;
   border: none;
   border-radius: 4px;
-  margin: 1vh;
-  padding: 1vh;
-  width: 50px;
+  margin: 0.5rem;
+  padding: 0.5rem;
 }
 
 .input {
@@ -93,9 +88,9 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 1vh;
+  margin: 0.5rem;
   padding: 1vh;
-  width: 25vw;
+  width: 50%;
 }
 
 .subscription-input {
@@ -103,9 +98,9 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 1vh;
-  padding: 1vh;
-  width: 25vw;
+  margin: 0.5rem;
+  padding: 0.5rem;
+  width: 70%;
 }
 
 .dropdown {
@@ -113,19 +108,9 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 1vh;
-  padding: 1vh;
-  width: 10vw;
-}
-
-.subscription-dropdown {
-  background-color: #d6dce1;
-  color: #000;
-  border: none;
-  border-radius: 4px;
-  margin: 1vh;
-  padding: 1vh;
-  width: 25vw;
+  margin: 0.5rem;
+  padding: 0.5rem;
+  width: 10%;
 }
 
 .float-right {

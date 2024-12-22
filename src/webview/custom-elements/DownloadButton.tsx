@@ -40,8 +40,8 @@ function DownloadButton() {
 
   return (
     // <Panel position="top-right">
-    <button onClick={onClick} className="button float-right">
-      Download
+    <button onClick={onClick} className="button float-right" type="button">
+      Export to PNG
     </button>
     // </Panel>
   );

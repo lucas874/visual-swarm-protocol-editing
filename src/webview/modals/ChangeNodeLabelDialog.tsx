@@ -51,12 +51,14 @@ function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
         <div className="row float-right">
           <button
             className="button-cancel float-right"
+            type="button"
             onClick={(event) => setIsNodeDialogOpen(false)}
           >
             Cancel
           </button>
           <button
             className="button-dialog float-right"
+            type="button"
             onClick={(e) => {
               if (!nodeLabelRef) {
                 sendErrorToParent("noNodeLabel");

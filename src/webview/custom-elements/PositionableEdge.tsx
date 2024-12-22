@@ -25,7 +25,7 @@ export default function PositionableEdge(props: EdgeProps) {
     targetY,
     sourcePosition,
     targetPosition,
-    style = {},
+    style,
     markerEnd,
     data,
     label,
@@ -75,7 +75,7 @@ export default function PositionableEdge(props: EdgeProps) {
     <>
       {edgeSegments.map((segment, index) => (
         <ClickableBaseEdge
-          key={`edge${id}_segments${index}`}
+          key={`edge${id}_segments${segment.name}`}
           id={id}
           path={segment.edgePath}
           markerEnd={markerEnd}
@@ -127,7 +127,7 @@ export default function PositionableEdge(props: EdgeProps) {
         </EdgeLabelRenderer>
       )}
       {positionHandlers.map((handler, handlerIndex) => (
-        <EdgeLabelRenderer key={`edge${id}_label${handlerIndex}`}>
+        <EdgeLabelRenderer key={`edge${id}_label${handler.x}_${handler.y}`}>
           {!handler.isLabel && (
             <div
               className="nopan positionHandlerContainer"
@@ -183,6 +183,7 @@ export default function PositionableEdge(props: EdgeProps) {
               >
                 <button
                   className="positionHandler"
+                  type="button"
                   data-active={handler.active ?? -1}
                   onMouseDown={() => {
                     const edgeIndex = edges.findIndex((edge) => edge.id === id);
@@ -267,6 +268,7 @@ export default function PositionableEdge(props: EdgeProps) {
                 }}
               >
                 <button
+                  type="button"
                   style={{
                     position: "absolute",
                     background: "white",

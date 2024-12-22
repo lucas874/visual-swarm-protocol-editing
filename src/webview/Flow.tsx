@@ -209,14 +209,19 @@ const LayoutFlow = ({
   return (
     <>
       <div className="button-container-div">
-        <button className="button" onClick={saveChanges}>
+        <button className="button" type="button" onClick={saveChanges}>
           Save changes
         </button>
-        <button className="button" onClick={() => onLayout(false)}>
+        <button
+          className="button"
+          type="button"
+          onClick={() => onLayout(false)}
+        >
           Auto Layout
         </button>
         <button
           className="button"
+          type="button"
           onClick={() => {
             const newNode: Node = {
               id: `Node ${nodes.length + 1}`,

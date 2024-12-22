@@ -26,12 +26,14 @@ function DeleteDialog({ onDeleteRef }) {
         <div className="row float-right">
           <button
             className="button-cancel float-right"
+            type="button"
             onClick={(event) => setIsDeleteDialogOpen(false)}
           >
             Cancel
           </button>
           <button
             className="button-dialog-delete float-right"
+            type="button"
             onClick={(e) => {
               deleteEdges(onDeleteRef.edges.map((edge) => edge.id));
               deleteNodes(onDeleteRef.nodes.map((node) => node.id));

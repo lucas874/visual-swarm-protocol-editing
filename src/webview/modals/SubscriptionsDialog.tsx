@@ -24,7 +24,7 @@ function SubscriptionsDialog(props: SubscriptionsDialogProps) {
           </label>
         </div>
         {Object.keys(subs).map((role) => (
-          <div className="row">
+          <div className="row" key={role}>
             <label className="label">{role}</label>
             <input
               className="subscription-input float-right"
@@ -38,12 +38,14 @@ function SubscriptionsDialog(props: SubscriptionsDialogProps) {
         <div className="row float-right">
           <button
             className="button-cancel float-right"
+            type="button"
             onClick={(event) => setIsDialogOpen(false)}
           >
             Cancel
           </button>
           <button
             className="button-dialog float-right"
+            type="button"
             onClick={(e) => {
               setSubscriptions(subs);
               setIsDialogOpen(false);

@@ -29,8 +29,7 @@ const App: React.FC = () => {
   const selectedProtocolRef = React.useRef("");
 
   useEffect(() => {
-    // Listen for messages from the VS Code extension
-    window.addEventListener("message", (event) => {
+    const buildProtocol = (event: MessageEvent) => {
       const message = event.data;
 
       if (message.command === "buildProtocol") {
@@ -61,10 +60,13 @@ const App: React.FC = () => {
         let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
         setNodes(createNodes(tempProtocol, message.data.nodes));
       }
-    });
+    };
+
+    // Listen for messages from the VS Code extension
+    window.addEventListener("message", buildProtocol);
 
     return () => {
-      window.removeEventListener("message", () => {});
+      window.removeEventListener("message", buildProtocol);
     };
   }, []);
 
@@ -129,7 +131,6 @@ const App: React.FC = () => {
     };
 
     let initialNode = changedNodes.find((node) => node.data.initial);
-    console.log(initialNode);
 
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
@@ -158,7 +159,11 @@ const App: React.FC = () => {
   return (
     <>
       <DownloadButton />
-      <button className="button" onClick={(event) => setIsDialogOpen(true)}>
+      <button
+        className="button"
+        type="button"
+        onClick={(event) => setIsDialogOpen(true)}
+      >
         Subscriptions
       </button>
       {/* Create a dialog to show subscriptions */}

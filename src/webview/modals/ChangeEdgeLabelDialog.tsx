@@ -71,12 +71,14 @@ function EdgeLabelDialog({
         <div className="row float-right">
           <button
             className="button-cancel"
+            type="button"
             onClick={(event) => setIsEdgeDialogOpen(false)}
           >
             Cancel
           </button>
           <button
             className="button-dialog"
+            type="button"
             onClick={(e) => {
               if (!commandRef) {
                 sendErrorToParent("noCommand");
