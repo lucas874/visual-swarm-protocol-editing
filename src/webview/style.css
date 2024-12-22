@@ -20,8 +20,8 @@
 }
 
 .react-flow__node.selected {
-  border-color: #8a8a8b;
-  border-width: 2px;
+  border-color: #8a8a8b !important;
+  border-width: 2px !important;
 }
 
 .react-flow__handle-top {
@@ -36,7 +36,12 @@
   border-color: #000;
 }
 
-.label {
+.react-flow__edge.selectable.selected .react-flow__edge-path {
+  stroke: #5e5e5e !important;
+  stroke-width: 2px !important;
+}
+
+.react-flow__edge .label {
   color: #000;
   margin-right: 10px;
 }

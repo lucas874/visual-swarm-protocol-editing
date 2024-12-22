@@ -304,7 +304,7 @@ function createNodes(
         y: nodeLayout?.y ?? 0,
       },
       style: {
-        border: highlighted.includes(nodeName) ? "2px solid red" : "#000",
+        border: highlighted.includes(nodeName) ? "2px solid red" : null,
       },
       type: "default",
     };
