@@ -9,6 +9,8 @@ export interface SubscriptionsDialogProps {
 
 function SubscriptionsDialog(props: SubscriptionsDialogProps) {
   const { setIsDialogOpen, setSubscriptions, subRef } = props;
+
+  const subs = JSON.parse(JSON.stringify(subRef));
   return (
     <div className="overlay" onClick={(event) => setIsDialogOpen(false)}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
@@ -21,15 +23,15 @@ function SubscriptionsDialog(props: SubscriptionsDialogProps) {
             separated.
           </label>
         </div>
-        {Object.keys(subRef).map((role) => (
+        {Object.keys(subs).map((role) => (
           <div className="row">
             <label className="label">{role}</label>
             <input
               className="subscription-input float-right"
               type="text"
               placeholder="No subscriptions"
-              onChange={(e) => (subRef[role] = e.target.value.split(", "))}
-              defaultValue={subRef[role].join(", ")}
+              onChange={(e) => (subs[role] = e.target.value.split(", "))}
+              defaultValue={subs[role].join(", ")}
             />
           </div>
         ))}
@@ -43,7 +45,7 @@ function SubscriptionsDialog(props: SubscriptionsDialogProps) {
           <button
             className="button-dialog float-right"
             onClick={(e) => {
-              setSubscriptions(subRef);
+              setSubscriptions(subs);
               setIsDialogOpen(false);
             }}
           >

@@ -49,7 +49,8 @@ const App: React.FC = () => {
         setNodes(createNodes(tempProtocol));
 
         // Set subscriptions
-        subRef.current = tempProtocol.subscriptions;
+        subRef.current =
+          tempProtocol.subscriptions ?? createSubscriptions(tempProtocol);
 
         // Set the selected protocol to the first occurrence
         selectedProtocolRef.current = message.data[0].name;
@@ -201,6 +202,18 @@ function parseObjects(occurrences: any[]): any[] {
   });
 
   return occurrences2;
+}
+
+function createSubscriptions(protocol): Record<string, string[]> {
+  let subscriptions = {};
+
+  protocol.transitions.map((transition) => {
+    if (!Object.keys(subscriptions).includes(transition.label.role)) {
+      subscriptions[transition.label.role] = [];
+    }
+  });
+
+  return subscriptions;
 }
 
 function createEdges(
