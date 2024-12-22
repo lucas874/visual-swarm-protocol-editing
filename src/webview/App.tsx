@@ -150,7 +150,6 @@ const App: React.FC = () => {
   }
 
   function updateSubscriptions(subs: Record<string, string[]>) {
-    console.log(subs);
     subRef.current = subs;
   }
 

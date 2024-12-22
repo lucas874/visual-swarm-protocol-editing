@@ -63,8 +63,8 @@ export function activate(context: vscode.ExtensionContext) {
       // Get messages from child component
       panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
-          // Only save if protocol is well-formed
-          let wellFormedness = errorChecks(message.data.protocol);
+          // Only save if protocol is well-formed. Await answer from error check.
+          let wellFormedness = await errorChecks(message.data.protocol);
           if (wellFormedness.name === "highlightEdges") {
             panel.webview.postMessage({
               command: "highlightEdges",
@@ -140,15 +140,13 @@ export function activate(context: vscode.ExtensionContext) {
             }
           }
         } else if (message === "noEdgeLabel") {
-          vscode.window.showErrorMessage("All edges must have a label");
-        } else if (message === "edgeLabelWrongFormat") {
-          vscode.window.showErrorMessage(
-            "The edge label must be in the format 'command@role'"
-          );
+          vscode.window.showErrorMessage("All transitions must have a label");
         } else if (message === "noCommand") {
-          vscode.window.showErrorMessage("All edges must have a command");
+          vscode.window.showErrorMessage("All transitions must have a command");
         } else if (message === "noRole") {
-          vscode.window.showErrorMessage("All edges must have a role");
+          vscode.window.showErrorMessage("All transitions must have a role");
+        } else if (message === "noNodeLabel") {
+          vscode.window.showErrorMessage("All states must have a label");
         }
       });
     })
@@ -156,7 +154,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // Method to check if the protocol is well-formed and show messages to the user
-function errorChecks(protocol: string): WellFormednessCheck {
+async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
   // Parse the protocol
   let protocolObject = JSON5.parse(protocol);
 
@@ -191,33 +189,70 @@ function errorChecks(protocol: string): WellFormednessCheck {
     return swarmCheck.check;
   }
 
-  // Check for duplicated edges
+  // Check for duplicated edges and unconnected nodes
   let duplicatedEdges = checkDuplicatedEdgeLabels(protocolObject);
+  let unconnectedNodes = checkUnconnectedNodes(protocolObject);
+  let val = {
+    name: "OK",
+    transitions: [],
+    nodes: [],
+  };
+
+  // Return appropriate message to the user
   if (duplicatedEdges.length > 0) {
-    vscode.window.showErrorMessage("DUPLICATED LABELS", {
-      modal: true,
-      detail:
-        "Protocol has duplicated edges. Affected edges are highlighted in the visual editor.",
-    });
-    return {
-      name: "highlightEdges",
-      transitions: duplicatedEdges,
-      nodes: [],
-    };
+    val = await vscode.window
+      .showErrorMessage(
+        "DUPLICATED LABELS",
+        {
+          modal: true,
+          detail:
+            "Protocol has duplicated transitions. Affected transitions are highlighted in the visual editor.",
+        },
+        { title: "Save anyway" }
+      )
+      .then((value) => {
+        if (!value) {
+          return {
+            name: "highlightEdges",
+            transitions: duplicatedEdges,
+            nodes: [],
+          };
+        } else {
+          return val;
+        }
+      });
+
+    if (val.name !== "OK") {
+      return val;
+    }
   }
 
-  let unconnectedNodes = checkUnconnectedNodes(protocolObject);
   if (unconnectedNodes.length > 0) {
-    vscode.window.showErrorMessage("UNCONNECTED STATES", {
-      modal: true,
-      detail:
-        "Protocol has unconnected states. Affected nodes are highlighted in the visual editor.",
-    });
-    return {
-      name: "highlightNodes",
-      transitions: [],
-      nodes: unconnectedNodes,
-    };
+    val = await vscode.window
+      .showErrorMessage(
+        "UNCONNECTED STATES",
+        {
+          modal: true,
+          detail:
+            "Protocol has unconnected states. Affected states are highlighted in the visual editor.",
+        },
+        { title: "Save anyway" }
+      )
+      .then((value) => {
+        if (!value) {
+          return {
+            name: "highlightNodes",
+            transitions: [],
+            nodes: unconnectedNodes,
+          };
+        } else {
+          return val;
+        }
+      });
+
+    if (val.name !== "OK") {
+      return val;
+    }
   }
 
   vscode.window.showInformationMessage("Protocol is well-formed");

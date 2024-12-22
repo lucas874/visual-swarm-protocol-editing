@@ -76,7 +76,6 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
     });
   },
   updateNodeLabel: (nodeId: string, label: string) => {
-    console.log(label);
     set({
       nodes: get().nodes.map((node) => {
         if (node.id === nodeId) {
@@ -104,7 +103,6 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
     set({ isNodeDialogOpen: open });
   },
   updateEdgeLabel: (edgeId: string, label: string, logType: string[]) => {
-    console.log("updateEdgeLabel", edgeId, label, logType);
     set({
       edges: get().edges.map((edge) => {
         if (edge.id === edgeId) {

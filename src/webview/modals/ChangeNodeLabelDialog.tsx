@@ -1,13 +1,14 @@
 import React from "react";
 import useStore, { RFState } from "../store";
 import { shallow } from "zustand/shallow";
+import { send } from "process";
 
 const selector = (state: RFState) => ({
   updateNodeLabel: state.updateNodeLabel,
   setIsNodeDialogOpen: state.setIsNodeDialogOpen,
 });
 
-function NodeLabelDialog({ nodeLabelRef, selectedNodeRef }) {
+function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
   const { updateNodeLabel, setIsNodeDialogOpen } = useStore(selector, shallow);
 
   return (
@@ -39,8 +40,12 @@ function NodeLabelDialog({ nodeLabelRef, selectedNodeRef }) {
           <button
             className="button-dialog float-right"
             onClick={(e) => {
-              setIsNodeDialogOpen(false);
-              updateNodeLabel(selectedNodeRef.id, nodeLabelRef);
+              if (!nodeLabelRef) {
+                sendErrorToParent("noNodeLabel");
+              } else {
+                setIsNodeDialogOpen(false);
+                updateNodeLabel(selectedNodeRef.id, nodeLabelRef);
+              }
             }}
           >
             Save

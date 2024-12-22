@@ -37,7 +37,7 @@ export function checkWellFormedness(
         if (error.includes("guard event type")) {
           const logType = error.split(" ")[3];
 
-          errorText = `Protocol has multiple transitions with the log type \"${logType}\". Affected edges are highlighted in the visual editor.`;
+          errorText = `Protocol has multiple transitions with the log type \"${logType}\". Affected transitions are highlighted in the visual editor.`;
           errorMessage.transitions = findMultipleGuardEvents(logType, protocol);
 
           break;
@@ -45,7 +45,7 @@ export function checkWellFormedness(
           let transition = error.split(" ")[14];
           let role = transition.split("@")[1].split("<")[0];
 
-          errorText = `Active role (${role}) does not subscribe to guard event. Affected edges are highlighted in the visual editor.`;
+          errorText = `Active role (${role}) does not subscribe to guard event. Affected transitions are highlighted in the visual editor.`;
           errorMessage.transitions = findRoleTransition(transition, protocol);
 
           break;
@@ -53,7 +53,7 @@ export function checkWellFormedness(
           let transition = error.split(" ")[11];
           let role = transition.split("@")[1].split("<")[0];
 
-          errorText = `Subsequently involved role (${role}) does not subscribe to a guard event. Affected edges are highlighted in the visual editor.`;
+          errorText = `Subsequently involved role (${role}) does not subscribe to a guard event. Affected transitions are highlighted in the visual editor.`;
           errorMessage.transitions = findRoleTransition(transition, protocol);
 
           break;
@@ -66,7 +66,7 @@ export function checkWellFormedness(
       }
 
       if (emptyLogType.length > 0) {
-        errorText = `Some edges have an empty log type. Affected edges are highlighted in the visual editor.`;
+        errorText = `Some transitions have an empty log type. Affected transitions are highlighted in the visual editor.`;
         errorMessage.transitions = emptyLogType;
       }
 

@@ -111,17 +111,10 @@ const LayoutFlow = ({
 
   // From https://medium.com/@ozhanli/passing-data-from-child-to-parent-components-in-react-e347ea60b1bb
   function saveChanges() {
-    // Check that all edges have a label
-    if (edges.some((edge) => !edge.label)) {
+    // Check that all nodes have a label
+    if (edgesRef.current.some((edge) => !edge.label)) {
+      // Check that all edges have a label
       sendErrorToParent("noEdgeLabel");
-      return;
-    } else if (
-      // Check that all edges have a label in the format "command@role"
-      edges.some(
-        (edge) => typeof edge.label === "string" && !edge.label.match(/\S+@\S+/)
-      )
-    ) {
-      sendErrorToParent("edgeLabelWrongFormat");
       return;
     } else {
       const fixNodeNames = nodesRef.current.map((node) => {
@@ -191,7 +184,6 @@ const LayoutFlow = ({
         (event.metaKey && event.key === "s") ||
         (event.ctrlKey && event.key === "s")
       ) {
-        console.log("Save changes");
         saveChanges();
       }
     };
@@ -250,6 +242,7 @@ const LayoutFlow = ({
         <NodeLabelDialog
           nodeLabelRef={nodeLabelRef.current}
           selectedNodeRef={selectedNodeRef.current}
+          sendErrorToParent={sendErrorToParent}
         />
       )}
       {/* Create a dialog when double clicking on an edge */}
