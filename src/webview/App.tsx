@@ -24,14 +24,11 @@ const App: React.FC = () => {
   const [protocol, setProtocol] = useState<SwarmProtocol>();
   const [subscriptions, setSubscriptions] =
     useState<Record<string, string[]>>();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const subRef = useRef<Record<string, string[]>>({});
   const selectedProtocolRef = React.useRef("");
 
-  // Dialog control
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const openDialog = () => setIsDialogOpen(true);
-  const closeDialog = () => setIsDialogOpen(false);
   const roleRef = React.useRef("");
   const roleSubRef = React.useRef("");
 
@@ -160,56 +157,15 @@ const App: React.FC = () => {
   return (
     <>
       <DownloadButton />
-      <button className="button" onClick={openDialog}>
+      <button className="button" onClick={(event) => setIsDialogOpen(true)}>
         Subscriptions
       </button>
-      {/* Create a dialog trying to delete */}
-      {isDialogOpen && (
-        <div className="overlay" onClick={closeDialog}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="row">
-              <h2 className="label">Update subscriptions</h2>
-            </div>
-            <div className="row">
-              <label className="label">
-                Choose a role to see its subscriptions. Subscriptions are comma
-                separated.
-              </label>
-            </div>
-            {Object.keys(subRef.current).map((role) => (
-              <div className="row">
-                <label className="label">{role}</label>
-                <input
-                  className="subscription-input float-right"
-                  type="text"
-                  placeholder="No subscriptions"
-                  onChange={(e) =>
-                    (subRef.current[role] = e.target.value.split(", "))
-                  }
-                  defaultValue={subRef.current[role].join(", ")}
-                />
-              </div>
-            ))}
-            <div className="row float-right">
-              <button
-                className="button-cancel float-right"
-                onClick={closeDialog}
-              >
-                Cancel
-              </button>
-              <button
-                className="button-dialog float-right"
-                onClick={(e) => {
-                  setSubscriptions(subRef.current);
-                  closeDialog();
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create a dialog to show subscriptions */}
+      <SubscriptionsDialog
+        setIsDialogOpen={setIsDialogOpen}
+        setSubscriptions={setSubscriptions}
+        subRef={subRef.current}
+      />
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
       {occurrences.length > 1 && (
         <select className="dropdown" onChange={handleSelect}>
