@@ -128,11 +128,13 @@ const App: React.FC = () => {
       }),
     };
 
+    let initialNode = changedNodes.find((node) => node.data.initial);
+    console.log(initialNode);
+
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
       initial: {
-        // FIXME: Change to the correct initial node
-        name: changedNodes[0].id,
+        name: initialNode ? initialNode.data.label : "unknown",
       },
       layout: layout,
       subscriptions: subRef.current,
@@ -310,7 +312,7 @@ function createNodes(
     );
     return {
       id: nodeName,
-      data: { label: nodeName },
+      data: { label: nodeName, initial: nodeName === protocol.initial?.name },
       position: {
         x: nodeLayout?.x ?? 0,
         y: nodeLayout?.y ?? 0,

@@ -5,11 +5,17 @@ import { send } from "process";
 
 const selector = (state: RFState) => ({
   updateNodeLabel: state.updateNodeLabel,
+  updateInitialNode: state.updateInitialNode,
   setIsNodeDialogOpen: state.setIsNodeDialogOpen,
 });
 
 function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
-  const { updateNodeLabel, setIsNodeDialogOpen } = useStore(selector, shallow);
+  const { updateNodeLabel, updateInitialNode, setIsNodeDialogOpen } = useStore(
+    selector,
+    shallow
+  );
+
+  let isInitial = selectedNodeRef.data.initial;
 
   return (
     <div className="overlay" onClick={(event) => setIsNodeDialogOpen(false)}>
@@ -30,6 +36,18 @@ function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
             defaultValue={nodeLabelRef}
           />
         </div>
+        <div className="row">
+          <input
+            type="checkbox"
+            id="initial"
+            name="initial"
+            defaultChecked={isInitial}
+            onChange={(e) => (isInitial = e.target.checked)}
+          />
+          <label htmlFor="initial" className="label">
+            Set as initial state
+          </label>
+        </div>
         <div className="row float-right">
           <button
             className="button-cancel float-right"
@@ -45,6 +63,11 @@ function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
               } else {
                 setIsNodeDialogOpen(false);
                 updateNodeLabel(selectedNodeRef.id, nodeLabelRef);
+                if (isInitial) {
+                  updateInitialNode(selectedNodeRef.id);
+                } else {
+                  selectedNodeRef.data.initial = false;
+                }
               }
             }}
           >

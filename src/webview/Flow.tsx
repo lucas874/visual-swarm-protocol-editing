@@ -177,7 +177,6 @@ const LayoutFlow = ({
   }, [setInitialElements, initialNodes, initialEdges]);
 
   // Inspiration from https://medium.com/@harshsinghatz/key-bindings-in-react-bb1e8da265f9
-  // TODO: Create a custom hook for this
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (
@@ -221,7 +220,7 @@ const LayoutFlow = ({
           onClick={() => {
             const newNode: Node = {
               id: `Node ${nodes.length + 1}`,
-              data: { label: `Node ${nodes.length + 1}` },
+              data: { label: `Node ${nodes.length + 1}`, initial: false },
               position: {
                 x: nodes[Math.floor((nodes.length - 1) / 2)]?.position.x + 20,
                 y: nodes[Math.floor((nodes.length - 1) / 2)]?.position.y + 20,

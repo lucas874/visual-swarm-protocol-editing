@@ -7,6 +7,7 @@ import {
   checkDuplicatedEdgeLabels,
   WellFormednessCheck,
   checkWellFormedness,
+  hasInitial,
 } from "./error-utils";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -175,6 +176,15 @@ async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
         logType: transition.label.logType ?? [],
       },
     });
+  }
+
+  if (!hasInitial(protocolObject)) {
+    vscode.window.showErrorMessage("No initial state found");
+    return {
+      name: "error",
+      transitions: [],
+      nodes: [],
+    };
   }
 
   // Check if the protocol is well-formed

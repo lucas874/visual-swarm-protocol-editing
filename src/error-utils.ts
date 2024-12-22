@@ -151,6 +151,10 @@ export function checkDuplicatedEdgeLabels(
   return duplicatedEdges;
 }
 
+export function hasInitial(protocol: SwarmProtocol): boolean {
+  return protocol.initial.name !== "unknown";
+}
+
 export function findMultipleGuardEvents(
   logType: string,
   protocol: SwarmProtocol

@@ -78,7 +78,6 @@ function EdgeLabelDialog({
           <button
             className="button-dialog"
             onClick={(e) => {
-              // TODO: Move error to extension?
               if (!commandRef) {
                 sendErrorToParent("noCommand");
               } else if (!roleRef) {

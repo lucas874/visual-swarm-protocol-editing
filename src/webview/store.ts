@@ -23,6 +23,7 @@ export type RFState = {
   addEdge: (edge: Edge) => void;
   addNode: (node: Node) => void;
   updateNodeLabel: (nodeId: string, label: string) => void;
+  updateInitialNode: (nodeId: string) => void;
   setIsNodeDialogOpen: (open: boolean) => void;
   updateEdgeLabel: (edgeId: string, label: string, logType: string[]) => void;
   setIsEdgeDialogOpen: (open: boolean) => void;
@@ -96,6 +97,17 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
           return { ...edge, target: label };
         }
         return edge;
+      }),
+    });
+  },
+  updateInitialNode: (nodeId: string) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === nodeId) {
+          return { ...node, data: { ...node.data, initial: true } };
+        } else {
+          return { ...node, data: { ...node.data, initial: false } };
+        }
       }),
     });
   },
