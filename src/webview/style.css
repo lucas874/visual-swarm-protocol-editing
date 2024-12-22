@@ -4,7 +4,7 @@
 }
 
 .react-flow__container-div {
-  height: 94vh;
+  height: 86vh;
   width: 100%;
 }
 
@@ -13,15 +13,15 @@
 }
 
 .react-flow__node {
-  background-color: #fff;
+  background-color: #ffffff;
   border-color: #000;
   color: #000;
-  border-radius: 60px;
+  border-radius: 80px;
 }
 
 .react-flow__node.selected {
-  border-color: #8a8a8b;
-  border-width: 2px;
+  border-color: #8a8a8b !important;
+  border-width: 2px !important;
 }
 
 .react-flow__handle-top {
@@ -36,17 +36,12 @@
   border-color: #000;
 }
 
-.react-flow__custom-edge {
-  background-color: "white";
-  padding: "3px";
-  border: "solid #000";
-  border-width: "thin";
-  border-radius: "4px";
-  /* fontsize: "10px"; */
-  color: "black";
+.react-flow__edge.selectable.selected .react-flow__edge-path {
+  stroke: #5e5e5e !important;
+  stroke-width: 2px !important;
 }
 
-.label {
+.react-flow__edge .label {
   color: #000;
   margin-right: 10px;
 }
@@ -56,10 +51,8 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 1vh;
-  padding: 1vh;
-  width: 100px;
-  height: 4vh;
+  margin: 0.5rem;
+  padding: 0.5rem;
 }
 
 .button-dialog {
@@ -67,9 +60,8 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 15px 5px 5px 5px;
-  padding: 5px;
-  width: 50px;
+  margin: 0.5rem;
+  padding: 0.5rem;
 }
 
 .button-dialog-delete {
@@ -77,9 +69,8 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 15px 5px 5px 5px;
-  padding: 5px;
-  width: 50px;
+  margin: 0.5rem;
+  padding: 0.5rem;
 }
 
 .button-cancel {
@@ -88,9 +79,8 @@
   text-decoration: underline;
   border: none;
   border-radius: 4px;
-  margin: 15px 5px 5px 5px;
-  padding: 5px;
-  width: 50px;
+  margin: 0.5rem;
+  padding: 0.5rem;
 }
 
 .input {
@@ -98,9 +88,19 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 15px 5px 5px 5px;
-  padding: 5px;
-  width: 100px;
+  margin: 0.5rem;
+  padding: 1vh;
+  width: 50%;
+}
+
+.subscription-input {
+  background-color: #d6dce1;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  margin: 0.5rem;
+  padding: 0.5rem;
+  width: 70%;
 }
 
 .dropdown {
@@ -108,9 +108,9 @@
   color: #000;
   border: none;
   border-radius: 4px;
-  margin: 15px 0px 0px 5px;
-  padding: 5px;
-  width: 100px;
+  margin: 0.5rem;
+  padding: 0.5rem;
+  width: 10%;
 }
 
 .float-right {
@@ -145,4 +145,8 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   position: relative;
   z-index: 1001;
+}
+
+.label {
+  color: #000;
 }

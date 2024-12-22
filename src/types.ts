@@ -1,8 +1,4 @@
 // Define types of nodes and transitions for protocols
-export type InitialNode = {
-  name: string;
-};
-
 export type Transition = {
   source: string;
   target: string;
@@ -39,7 +35,8 @@ export type LayoutType = {
 };
 
 export interface SwarmProtocol {
-  initial: InitialNode;
+  initial: string;
   layout?: LayoutType;
+  subscriptions?: Record<string, string[]>;
   transitions: Transition[];
 }

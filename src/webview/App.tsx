@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Flow from "./Flow";
 import JSON5 from "json5";
 import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
-import { LayoutType, SwarmProtocol, Transition } from "./types";
+import { LayoutType, SwarmProtocol, Transition } from "../types";
 import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
+import DownloadButton from "./custom-elements/DownloadButton";
+import SubscriptionsDialog from "./modals/SubscriptionsDialog";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
@@ -21,41 +23,56 @@ const App: React.FC = () => {
   const [edges, setEdges] = useState<any[]>([]);
   const [occurrences, setOccurrences] = useState<any[]>([]);
   const [protocol, setProtocol] = useState<SwarmProtocol>();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const subRef = useRef<Record<string, string[]>>({});
   const selectedProtocolRef = React.useRef("");
 
   useEffect(() => {
-    // Listen for messages from the VS Code extension
-    window.addEventListener("message", (event) => {
+    const buildProtocol = (event: MessageEvent) => {
       const message = event.data;
-      setOccurrences(parseObjects(message.data));
 
       if (message.command === "buildProtocol") {
-        // For the first render, not ensured to know occurrences, so message.data is used
+        setOccurrences(parseObjects(message.data));
+
+        // Message data is used to set values, occurrences not updated this rendering
         let tempProtocol = JSON5.parse(message.data[0].jsonObject);
 
         // Save protocol to state
-        setProtocol(JSON5.parse(message.data[0].jsonObject));
+        setProtocol(tempProtocol);
 
-        // Create edges for the flowchart with the first occurence
+        // Create edges for the flowchart with the first occurrence
         setEdges(createEdges(tempProtocol));
 
-        // Create nodes for the flowchart with the first occurence
+        // Create nodes for the flowchart with the first occurrence
         setNodes(createNodes(tempProtocol));
 
-        // Set the selected protocol to the first occurence
+        // Set subscriptions
+        subRef.current =
+          tempProtocol.subscriptions ?? createSubscriptions(tempProtocol);
+
+        // Set the selected protocol to the first occurrence
         selectedProtocolRef.current = message.data[0].name;
+      } else if (message.command === "highlightEdges") {
+        let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+        setEdges(createEdges(tempProtocol, message.data.transitions));
+      } else if (message.command === "highlightNodes") {
+        let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+        setNodes(createNodes(tempProtocol, message.data.nodes));
       }
-    });
+    };
+
+    // Listen for messages from the VS Code extension
+    window.addEventListener("message", buildProtocol);
 
     return () => {
-      window.removeEventListener("message", () => {});
+      window.removeEventListener("message", buildProtocol);
     };
   }, []);
 
   // For selection of protocol
   const handleSelect = (e: any) => {
-    // Find the occurence that corresponds to the selected protocol
+    // Find the occurrence that corresponds to the selected protocol
     let occurrence = occurrences.find(
       (occurrence) => occurrence.name === e.target.value
     );
@@ -66,10 +83,13 @@ const App: React.FC = () => {
     // Set edges to correspond to the selected protocol
     setEdges(createEdges(occurrence.json));
 
-    // Set the protocol to the selected occurence
+    // Set the protocol to the selected occurrence
     setProtocol(occurrence.json);
 
-    // Set the selected protocol to the selected occurence
+    // Set subscriptions
+    subRef.current = occurrence.json.subscriptions;
+
+    // Set the selected protocol to the selected occurrence
     selectedProtocolRef.current = e.target.value;
   };
 
@@ -83,6 +103,7 @@ const App: React.FC = () => {
         label: {
           cmd: edge.label?.split("@")[0],
           role: edge.label?.split("@")[1],
+          logType: edge.data.logType,
         },
       };
     });
@@ -109,13 +130,13 @@ const App: React.FC = () => {
       }),
     };
 
+    let initialNode = changedNodes.find((node) => node.data.initial);
+
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
-      initial: {
-        // FIXME: Change to the correct initial node
-        name: changedNodes[0].id,
-      },
+      initial: initialNode ? initialNode.data.label : "unknown",
       layout: layout,
+      subscriptions: subRef.current,
       transitions: newTransitions,
     };
 
@@ -129,14 +150,34 @@ const App: React.FC = () => {
     });
   }
 
+  function updateSubscriptions(subs: Record<string, string[]>) {
+    subRef.current = subs;
+  }
+
   return (
     <>
+      <DownloadButton />
+      <button
+        className="button"
+        type="button"
+        onClick={(event) => setIsDialogOpen(true)}
+      >
+        Subscriptions
+      </button>
+      {/* Create a dialog to show subscriptions */}
+      {isDialogOpen && (
+        <SubscriptionsDialog
+          setIsDialogOpen={setIsDialogOpen}
+          setSubscriptions={updateSubscriptions}
+          subRef={subRef.current}
+        />
+      )}
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
       {occurrences.length > 1 && (
         <select className="dropdown" onChange={handleSelect}>
-          {occurrences.map((occurence) => (
-            <option value={occurence.name} key={occurence.name}>
-              {occurence.name}
+          {occurrences.map((occurrence) => (
+            <option value={occurrence.name} key={occurrence.name}>
+              {occurrence.name}
             </option>
           ))}
         </select>
@@ -167,10 +208,34 @@ function parseObjects(occurrences: any[]): any[] {
   return occurrences2;
 }
 
-// Created partly using coPilot
-function createEdges(protocol: SwarmProtocol): any[] {
+function createSubscriptions(protocol): Record<string, string[]> {
+  let subscriptions = {};
+
+  protocol.transitions.map((transition) => {
+    if (!Object.keys(subscriptions).includes(transition.label.role)) {
+      subscriptions[transition.label.role] = [];
+    }
+  });
+
+  return subscriptions;
+}
+
+function createEdges(
+  protocol: SwarmProtocol,
+  highlighted: Transition[] = []
+): any[] {
   // Take the values from transitions, and create edges that correspond to ReactFlow
   const edges = protocol.transitions.map((transition) => {
+    let highlight =
+      highlighted.length > 0
+        ? highlighted?.find((elem) => {
+            return (
+              elem.source === transition.source &&
+              elem.target === transition.target
+            );
+          })
+        : undefined;
+
     if (transition.source === transition.target) {
       return {
         id: `${transition.source}-${transition.target}`,
@@ -179,11 +244,16 @@ function createEdges(protocol: SwarmProtocol): any[] {
         label: transition.label.cmd + "@" + transition.label.role,
         data: {
           positionHandlers: [],
+          logType: transition.label.logType,
         },
         type: "selfconnecting",
-        markerEnd: { type: MarkerType.ArrowClosed },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: highlight === undefined ? "#b1b1b6" : "red",
+        },
         style: {
           strokeWidth: 1.7,
+          stroke: highlight === undefined ? "#b1b1b6" : "red",
         },
       };
     } else {
@@ -197,11 +267,16 @@ function createEdges(protocol: SwarmProtocol): any[] {
         label: transition.label.cmd + "@" + transition.label.role,
         data: {
           positionHandlers: edgeLayout?.positionHandlers ?? [],
+          logType: transition.label.logType,
         },
         type: "positionable",
-        markerEnd: { type: MarkerType.ArrowClosed },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: highlight === undefined ? "#b1b1b6" : "red",
+        },
         style: {
           strokeWidth: 1.7,
+          stroke: highlight === undefined ? "#b1b1b6" : "red",
         },
       };
     }
@@ -210,7 +285,10 @@ function createEdges(protocol: SwarmProtocol): any[] {
   return edges;
 }
 
-function createNodes(protocol: SwarmProtocol): any[] {
+function createNodes(
+  protocol: SwarmProtocol,
+  highlighted: string[] = []
+): any[] {
   const nodeNames = new Set<string>();
 
   // Find all unique nodes from transitions
@@ -237,10 +315,13 @@ function createNodes(protocol: SwarmProtocol): any[] {
     );
     return {
       id: nodeName,
-      data: { label: nodeName },
+      data: { label: nodeName, initial: nodeName === protocol.initial },
       position: {
         x: nodeLayout?.x ?? 0,
         y: nodeLayout?.y ?? 0,
+      },
+      style: {
+        border: highlighted.includes(nodeName) ? "2px solid red" : null,
       },
       type: "default",
     };

@@ -9,7 +9,7 @@ import { shallow } from "zustand/shallow";
 import useStore, { RFState } from "../store";
 import ClickableBaseEdge from "./ClickableBaseEdge";
 import "./PositionableEdge.css";
-import { PositionHandler } from "../types";
+import { PositionHandler } from "../../types";
 
 const selector = (state: RFState) => ({
   edges: state.edges,
@@ -25,7 +25,7 @@ export default function PositionableEdge(props: EdgeProps) {
     targetY,
     sourcePosition,
     targetPosition,
-    style = {},
+    style,
     markerEnd,
     data,
     label,
@@ -75,13 +75,13 @@ export default function PositionableEdge(props: EdgeProps) {
     <>
       {edgeSegments.map((segment, index) => (
         <ClickableBaseEdge
-          key={`edge${id}_segments${index}`}
+          key={`edge${id}_segments${segment.name}`}
           id={id}
           path={segment.edgePath}
           markerEnd={markerEnd}
           markerStart={props.markerStart}
           style={style}
-          onMouseDown={(event) => {
+          onClick={(event) => {
             const position = reactFlowInstance.screenToFlowPosition({
               x: event.clientX,
               y: event.clientY,
@@ -117,7 +117,7 @@ export default function PositionableEdge(props: EdgeProps) {
               padding: "3px",
               border: "solid #000",
               borderWidth: "thin",
-              borderRadius: "4px",
+              borderRadius: "2px",
               fontSize: "10px",
               color: "black",
             }}
@@ -127,7 +127,7 @@ export default function PositionableEdge(props: EdgeProps) {
         </EdgeLabelRenderer>
       )}
       {positionHandlers.map((handler, handlerIndex) => (
-        <EdgeLabelRenderer key={`edge${id}_label${handlerIndex}`}>
+        <EdgeLabelRenderer key={`edge${id}_label${handler.x}_${handler.y}`}>
           {!handler.isLabel && (
             <div
               className="nopan positionHandlerContainer"
@@ -156,7 +156,6 @@ export default function PositionableEdge(props: EdgeProps) {
                   setEdges(
                     edges.map((edge) => {
                       if (edge.id === id) {
-                        //   edge.id = Math.random().toString();
                         edge.data.positionHandlers[handlerIndex] = {
                           x: position.x,
                           y: position.y,
@@ -184,6 +183,7 @@ export default function PositionableEdge(props: EdgeProps) {
               >
                 <button
                   className="positionHandler"
+                  type="button"
                   data-active={handler.active ?? -1}
                   onMouseDown={() => {
                     const edgeIndex = edges.findIndex((edge) => edge.id === id);
@@ -202,7 +202,6 @@ export default function PositionableEdge(props: EdgeProps) {
                     setEdges(
                       edges.map((edge) => {
                         if (edge.id === id) {
-                          //   edge.id = Math.random().toString();
                           (
                             edge.data.positionHandlers as PositionHandler[]
                           ).splice(handlerIndex, 1);
@@ -269,13 +268,14 @@ export default function PositionableEdge(props: EdgeProps) {
                 }}
               >
                 <button
+                  type="button"
                   style={{
                     position: "absolute",
                     background: "white",
                     padding: "3px",
                     border: "solid #000",
                     borderWidth: "thin",
-                    borderRadius: "4px",
+                    borderRadius: "2px",
                     fontSize: "10px",
                     color: "black",
                   }}
