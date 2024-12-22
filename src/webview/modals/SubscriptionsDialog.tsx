@@ -1,6 +1,16 @@
-function SubscriptionsDialog({ setIsDialogOpen, setSubscriptions, subRef }) {
+import React, { Dispatch, SetStateAction } from "react";
+
+// https://stackoverflow.com/questions/64729482/typescript-usestate-setstate-in-child-with-argument
+export interface SubscriptionsDialogProps {
+  setIsDialogOpen: (value: boolean) => void;
+  setSubscriptions: (value: Record<string, string[]>) => void;
+  subRef: Record<string, string[]>;
+}
+
+function SubscriptionsDialog(props: SubscriptionsDialogProps) {
+  const { setIsDialogOpen, setSubscriptions, subRef } = props;
   return (
-    <div className="overlay" onClick={setIsDialogOpen(false)}>
+    <div className="overlay" onClick={(event) => setIsDialogOpen(false)}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="row">
           <h2 className="label">Update subscriptions</h2>
@@ -18,9 +28,7 @@ function SubscriptionsDialog({ setIsDialogOpen, setSubscriptions, subRef }) {
               className="subscription-input float-right"
               type="text"
               placeholder="No subscriptions"
-              onChange={(e) =>
-                (subRef.current[role] = e.target.value.split(", "))
-              }
+              onChange={(e) => (subRef[role] = e.target.value.split(", "))}
               defaultValue={subRef[role].join(", ")}
             />
           </div>
@@ -28,7 +36,7 @@ function SubscriptionsDialog({ setIsDialogOpen, setSubscriptions, subRef }) {
         <div className="row float-right">
           <button
             className="button-cancel float-right"
-            onClick={setIsDialogOpen(false)}
+            onClick={(event) => setIsDialogOpen(false)}
           >
             Cancel
           </button>
@@ -46,3 +54,5 @@ function SubscriptionsDialog({ setIsDialogOpen, setSubscriptions, subRef }) {
     </div>
   );
 }
+
+export default SubscriptionsDialog;

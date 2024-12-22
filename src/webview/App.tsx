@@ -7,6 +7,7 @@ import { LayoutType, SwarmProtocol, Transition } from "../types";
 import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
 import DownloadButton from "./custom-elements/DownloadButton";
+import SubscriptionsDialog from "./modals/SubscriptionsDialog";
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
@@ -22,15 +23,10 @@ const App: React.FC = () => {
   const [edges, setEdges] = useState<any[]>([]);
   const [occurrences, setOccurrences] = useState<any[]>([]);
   const [protocol, setProtocol] = useState<SwarmProtocol>();
-  const [subscriptions, setSubscriptions] =
-    useState<Record<string, string[]>>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const subRef = useRef<Record<string, string[]>>({});
   const selectedProtocolRef = React.useRef("");
-
-  const roleRef = React.useRef("");
-  const roleSubRef = React.useRef("");
 
   useEffect(() => {
     // Listen for messages from the VS Code extension
@@ -53,7 +49,6 @@ const App: React.FC = () => {
         setNodes(createNodes(tempProtocol));
 
         // Set subscriptions
-        setSubscriptions(tempProtocol.subscriptions);
         subRef.current = tempProtocol.subscriptions;
 
         // Set the selected protocol to the first occurrence
@@ -90,7 +85,6 @@ const App: React.FC = () => {
 
     // Set subscriptions
     subRef.current = occurrence.json.subscriptions;
-    setSubscriptions(occurrence.json.subscriptions);
 
     // Set the selected protocol to the selected occurrence
     selectedProtocolRef.current = e.target.value;
@@ -154,6 +148,11 @@ const App: React.FC = () => {
     });
   }
 
+  function updateSubscriptions(subs: Record<string, string[]>) {
+    console.log(subs);
+    subRef.current = subs;
+  }
+
   return (
     <>
       <DownloadButton />
@@ -161,11 +160,13 @@ const App: React.FC = () => {
         Subscriptions
       </button>
       {/* Create a dialog to show subscriptions */}
-      <SubscriptionsDialog
-        setIsDialogOpen={setIsDialogOpen}
-        setSubscriptions={setSubscriptions}
-        subRef={subRef.current}
-      />
+      {isDialogOpen && (
+        <SubscriptionsDialog
+          setIsDialogOpen={setIsDialogOpen}
+          setSubscriptions={updateSubscriptions}
+          subRef={subRef.current}
+        />
+      )}
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
       {occurrences.length > 1 && (
         <select className="dropdown" onChange={handleSelect}>
@@ -303,9 +304,7 @@ function createNodes(
         y: nodeLayout?.y ?? 0,
       },
       style: {
-        border: highlighted.includes(nodeName)
-          ? "2px solid red"
-          : "2px solid #b1b1b6",
+        border: highlighted.includes(nodeName) ? "2px solid red" : "#000",
       },
       type: "default",
     };
