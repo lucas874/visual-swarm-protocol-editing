@@ -13,6 +13,22 @@ export function checkWellFormedness(
 ): { check: WellFormednessCheck; detail: string } {
   // Check if the protocol is well-formed
   try {
+    // If no subscriptions are defined, show a warning message, but save protocol
+    if (
+      protocol.subscriptions === undefined ||
+      (protocol.subscriptions?.length ?? 0) === 0
+    ) {
+      return {
+        check: {
+          name: "OK",
+          transitions: [],
+          nodes: [],
+        },
+        detail:
+          "Well-formedness not checked. Protocol must have subscriptions to perform check.",
+      };
+    }
+
     const message = checkSwarmProtocol(swarmProtocol, protocol.subscriptions);
 
     let errorMessage: WellFormednessCheck = {
@@ -76,22 +92,6 @@ export function checkWellFormedness(
       };
     }
   } catch (error) {
-    // If no subscriptions are defined, show a warning message, but save protocol
-    if (
-      protocol.subscriptions === undefined ||
-      (protocol.subscriptions?.length ?? 0) === 0
-    ) {
-      return {
-        check: {
-          name: "OK",
-          transitions: [],
-          nodes: [],
-        },
-        detail:
-          "Well-formedness not checked. Protocol must have subscriptions to perform check.",
-      };
-    }
-
     // In all other cases, show the error message
     return {
       check: {
@@ -152,7 +152,7 @@ export function checkDuplicatedEdgeLabels(
 }
 
 export function hasInitial(protocol: SwarmProtocol): boolean {
-  return protocol.initial.name !== "unknown";
+  return protocol.initial !== "unknown";
 }
 
 export function findMultipleGuardEvents(

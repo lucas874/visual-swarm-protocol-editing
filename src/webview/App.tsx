@@ -134,9 +134,7 @@ const App: React.FC = () => {
 
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
-      initial: {
-        name: initialNode ? initialNode.data.label : "unknown",
-      },
+      initial: initialNode ? initialNode.data.label : "unknown",
       layout: layout,
       subscriptions: subRef.current,
       transitions: newTransitions,
@@ -317,7 +315,7 @@ function createNodes(
     );
     return {
       id: nodeName,
-      data: { label: nodeName, initial: nodeName === protocol.initial?.name },
+      data: { label: nodeName, initial: nodeName === protocol.initial },
       position: {
         x: nodeLayout?.x ?? 0,
         y: nodeLayout?.y ?? 0,

@@ -161,7 +161,7 @@ async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
 
   // Transform custom type to SwarmProtocolType
   let swarmProtocol: SwarmProtocolType = {
-    initial: protocolObject.initial.name,
+    initial: protocolObject.initial,
     transitions: [],
   };
 
@@ -265,7 +265,7 @@ async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
     }
   }
 
-  vscode.window.showInformationMessage("Protocol is well-formed");
+  vscode.window.showInformationMessage(swarmCheck.detail);
   return {
     name: "OK",
     transitions: [],
