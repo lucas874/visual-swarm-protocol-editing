@@ -111,9 +111,6 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
       }),
     });
   },
-  setIsNodeDialogOpen: (open: boolean) => {
-    set({ isNodeDialogOpen: open });
-  },
   updateEdgeLabel: (edgeId: string, label: string, logType: string[]) => {
     set({
       edges: get().edges.map((edge) => {
@@ -124,9 +121,6 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
       }),
     });
   },
-  setIsEdgeDialogOpen: (open: boolean) => {
-    set({ isEdgeDialogOpen: open });
-  },
   deleteNodes: (nodeIds: string[]) => {
     set({
       nodes: get().nodes.filter((node) => !nodeIds.includes(node.id)),
@@ -136,6 +130,12 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
     set({
       edges: get().edges.filter((edge) => !edgeIds.includes(edge.id)),
     });
+  },
+  setIsNodeDialogOpen: (open: boolean) => {
+    set({ isNodeDialogOpen: open });
+  },
+  setIsEdgeDialogOpen: (open: boolean) => {
+    set({ isEdgeDialogOpen: open });
   },
   setIsDeleteDialogOpen: (open: boolean) => {
     set({ isDeleteDialogOpen: open });

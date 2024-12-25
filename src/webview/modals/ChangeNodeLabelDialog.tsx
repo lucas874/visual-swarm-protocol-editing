@@ -37,16 +37,17 @@ function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
           />
         </div>
         <div className="row">
+          <label htmlFor="initial" className="label">
+            Set as initial state
+          </label>
           <input
+            className="float-right"
             type="checkbox"
             id="initial"
             name="initial"
             defaultChecked={isInitial}
             onChange={(e) => (isInitial = e.target.checked)}
           />
-          <label htmlFor="initial" className="label">
-            Set as initial state
-          </label>
         </div>
         <div className="row float-right">
           <button

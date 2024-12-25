@@ -5,6 +5,7 @@ import {
   ReactFlowProvider,
   MarkerType,
   type Node,
+  Controls,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
@@ -26,7 +27,7 @@ const getLayoutedElements = (nodes, edges) => {
   nodes.forEach((node) =>
     g.setNode(node.id, {
       ...node,
-      // Change to standard values other than 0, if no measurements found
+      // Change to standard values other than 0, if no measurements are found
       // Helps collision detection from dagre
       width: node.measured?.width ?? nodeWidth,
       height: node.measured?.height ?? nodeHeight,
@@ -291,7 +292,9 @@ const LayoutFlow = ({
           fitView
           attributionPosition="top-right"
           selectNodesOnDrag={false}
-        ></ReactFlow>
+        >
+          <Controls />
+        </ReactFlow>
       </div>
     </>
   );

@@ -11,13 +11,16 @@ export function checkWellFormedness(
   swarmProtocol: SwarmProtocolType,
   protocol: SwarmProtocol
 ): { check: WellFormednessCheck; detail: string } {
+  let hasSubscriptions = false;
+  Object.keys(protocol.subscriptions).map((role) => {
+    if (protocol.subscriptions[role].length > 0) {
+      hasSubscriptions = true;
+    }
+  });
   // Check if the protocol is well-formed
   try {
     // If no subscriptions are defined, show a warning message, but save protocol
-    if (
-      protocol.subscriptions === undefined ||
-      (protocol.subscriptions?.length ?? 0) === 0
-    ) {
+    if (!hasSubscriptions) {
       return {
         check: {
           name: "OK",
@@ -28,6 +31,8 @@ export function checkWellFormedness(
           "Well-formedness not checked. Protocol must have subscriptions to perform check.",
       };
     }
+
+    console.log(protocol.subscriptions);
 
     const message = checkSwarmProtocol(swarmProtocol, protocol.subscriptions);
 

@@ -24,6 +24,8 @@ function DownloadButton() {
   const { nodes } = useStore(selector, shallow);
   const onClick = () => {
     const bounds = getNodesBounds(nodes);
+    bounds.height += 20;
+    bounds.width += 20;
     const viewPort = getViewportForBounds(bounds, width, height, 1, 2, 2);
 
     toPng(document.querySelector(".react-flow__viewport") as HTMLElement, {

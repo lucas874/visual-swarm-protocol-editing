@@ -75,7 +75,7 @@ export default function PositionableEdge(props: EdgeProps) {
     <>
       {edgeSegments.map((segment, index) => (
         <ClickableBaseEdge
-          key={`edge${id}_segments${segment.name}`}
+          key={`edge${id}_segments${segment.edgePath}`}
           id={id}
           path={segment.edgePath}
           markerEnd={markerEnd}
