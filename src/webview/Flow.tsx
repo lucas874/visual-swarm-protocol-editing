@@ -41,9 +41,6 @@ const getLayoutedElements = (nodes, edges) => {
   return {
     nodes: nodes.map((node) => {
       const position = g.node(node.id);
-      // We are shifting the dagre node position (anchor=center center) to the top left
-      // so it matches the React Flow node anchor point (top left).
-      // Still using the same standard measurements from above
       const x = position.x;
       const y = position.y;
 
