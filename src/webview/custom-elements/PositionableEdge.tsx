@@ -81,7 +81,8 @@ export default function PositionableEdge(props: EdgeProps) {
           markerEnd={markerEnd}
           markerStart={props.markerStart}
           style={style}
-          onClick={(event) => {
+          onContextMenu={(event) => {
+            event.preventDefault();
             const position = reactFlowInstance.screenToFlowPosition({
               x: event.clientX,
               y: event.clientY,

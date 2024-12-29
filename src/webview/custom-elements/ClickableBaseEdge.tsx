@@ -7,7 +7,7 @@ const ClickableBaseEdge = ({
   markerEnd,
   markerStart,
   interactionWidth = 20,
-  onClick,
+  onContextMenu,
 }) => {
   return (
     <>
@@ -18,7 +18,7 @@ const ClickableBaseEdge = ({
         style={style}
         markerEnd={markerEnd}
         markerStart={markerStart}
-        onClick={onClick}
+        onContextMenu={onContextMenu}
         fill="none"
       />
       {interactionWidth && (
@@ -28,7 +28,7 @@ const ClickableBaseEdge = ({
           fill="none"
           strokeOpacity={0}
           strokeWidth={interactionWidth}
-          onClick={onClick}
+          onContextMenu={onContextMenu}
         />
       )}
     </>
