@@ -12,8 +12,11 @@ export default function SelfConnecting(props: EdgeProps) {
   // Split props to match the following values
   const { sourceX, sourceY, targetX, targetY, markerEnd, label, style } = props;
 
+  // Approximate width of the label
+  const labelWidth = label.toString().length * 2.25;
+
   // Set radius (switched from the example, to use top and bottom instead of left and right)
-  const radiusX = 75;
+  const radiusX = Math.max(100, 2 * labelWidth);
   const radiusY = (sourceY - targetY) * 0.7;
 
   // Create a path for the edge that loops back to same node
@@ -31,9 +34,9 @@ export default function SelfConnecting(props: EdgeProps) {
           <div
             style={{
               position: "absolute",
-              transform: `translate(${sourceX - 175}px, ${
-                (targetY + sourceY) / 2 - 10
-              }px)`,
+              transform: `translate(-50%, -50%) translate(${
+                sourceX - 1.75 * radiusX
+              }px, ${(targetY + sourceY) / 2}px)`,
               background: "white",
               padding: "3px",
               border: "solid #000",
