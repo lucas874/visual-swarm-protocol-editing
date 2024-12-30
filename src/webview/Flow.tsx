@@ -235,7 +235,7 @@ const LayoutFlow = ({
           type="button"
           onClick={() => {
             const newNode: Node = {
-              id: `Node ${nodes.length + 1}`,
+              id: `Node${nodes.length + 1}`,
               data: { label: `Node ${nodes.length + 1}`, initial: false },
               position: {
                 x: nodes[Math.floor((nodes.length - 1) / 2)]?.position.x + 20,
