@@ -1,4 +1,4 @@
-d# Visual Swarm Protocol Editing
+# Visual Swarm Protocol Editing
 
 This Visual Studio Code extension is used as a way to visualise, edit and verify elements of the type `SwarmProtocolType` from the [@actyx/machine-runner](https://github.com/Actyx/machines/tree/master/machine-runner) library. This library is part of the GitHub repository from Actyx called [machines](https://github.com/Actyx/machines).
 
