@@ -126,6 +126,17 @@ const LayoutFlow = ({
   }
 
   const onConnect = useCallback((connection) => {
+    // Check if the edge already exists
+    const existingEdge = edgesRef.current.find(
+      (edge) =>
+        edge.source === connection.source && edge.target === connection.target
+    );
+    if (existingEdge) {
+      sendErrorToParent("edgeExists");
+      return;
+    }
+
+    // Update edge information
     connection.markerEnd = { type: MarkerType.ArrowClosed };
     connection.style = {
       strokeWidth: 1.7,

@@ -148,6 +148,10 @@ export function activate(context: vscode.ExtensionContext) {
           vscode.window.showErrorMessage("All transitions must have a role");
         } else if (message === "noNodeLabel") {
           vscode.window.showErrorMessage("All states must have a label");
+        } else if (message === "edgeExists") {
+          vscode.window.showWarningMessage(
+            "Multiple edges cannot exist between the same states"
+          );
         }
       });
     })
