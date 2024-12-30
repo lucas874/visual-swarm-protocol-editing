@@ -113,6 +113,10 @@ const protocol: SwarmProtocolType = {
 };
 ```
 
+### Exporting the diagram
+
+It is possible to export the diagram as a .png file. By pressing the button "Export to PNG", the image will be downloaded to the user's computer.
+
 ## Requirements
 
 Visual Studio Code v. 1.93.0 or later.
