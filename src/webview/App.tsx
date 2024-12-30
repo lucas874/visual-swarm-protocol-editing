@@ -48,17 +48,37 @@ const App: React.FC = () => {
         setNodes(createNodes(tempProtocol));
 
         // Set subscriptions
-        subRef.current =
-          tempProtocol.subscriptions ?? createSubscriptions(tempProtocol);
+        subRef.current = createSubscriptions(tempProtocol);
 
         // Set the selected protocol to the first occurrence
         selectedProtocolRef.current = message.data[0].name;
       } else if (message.command === "highlightEdges") {
         let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+
+        // Save protocol to state
+        setProtocol(tempProtocol);
+
+        // Create edges for the flowchart with the first occurrence
         setEdges(createEdges(tempProtocol, message.data.transitions));
+
+        // Create nodes for the flowchart with the first occurrence
+        setNodes(createNodes(tempProtocol));
+
+        // Set subscriptions
+        subRef.current = createSubscriptions(tempProtocol);
       } else if (message.command === "highlightNodes") {
         let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+        // Save protocol to state
+        setProtocol(tempProtocol);
+
+        // Create edges for the flowchart with the first occurrence
+        setEdges(createEdges(tempProtocol));
+
+        // Create nodes for the flowchart with the first occurrence
         setNodes(createNodes(tempProtocol, message.data.nodes));
+
+        // Set subscriptions
+        subRef.current = createSubscriptions(tempProtocol);
       }
     };
 
@@ -92,6 +112,14 @@ const App: React.FC = () => {
     // Set the selected protocol to the selected occurrence
     selectedProtocolRef.current = e.target.value;
   };
+
+  // Add new role to subscriptions
+  function handleNewRoleInFlow(newRole: string) {
+    let newSubscriptions = subRef.current;
+    newSubscriptions[newRole] = [];
+
+    subRef.current = newSubscriptions;
+  }
 
   // Pass data back to extension
   function handleChangesFromFlow(changedNodes, changedEdges) {
@@ -160,7 +188,9 @@ const App: React.FC = () => {
       <button
         className="button"
         type="button"
-        onClick={(event) => setIsDialogOpen(true)}
+        onClick={(event) => {
+          setIsDialogOpen(true);
+        }}
       >
         Subscriptions
       </button>
@@ -189,6 +219,7 @@ const App: React.FC = () => {
         edgesTypes={edgesTypes}
         sendDataToParent={handleChangesFromFlow}
         sendErrorToParent={(error) => vscode.postMessage(error)}
+        sendNewRoleToParent={handleNewRoleInFlow}
       />
     </>
   );
@@ -209,7 +240,7 @@ function parseObjects(occurrences: any[]): any[] {
 }
 
 function createSubscriptions(protocol): Record<string, string[]> {
-  let subscriptions = {};
+  let subscriptions = protocol.subscriptions ?? {};
 
   protocol.transitions.map((transition) => {
     if (!Object.keys(subscriptions).includes(transition.label.role)) {

@@ -76,6 +76,7 @@ const LayoutFlow = ({
   edgesTypes,
   sendDataToParent,
   sendErrorToParent,
+  sendNewRoleToParent,
 }) => {
   const {
     nodes,
@@ -150,6 +151,7 @@ const LayoutFlow = ({
     connection.data = {
       positionHandlers: [],
     };
+
     addEdge(connection);
   }, []);
 
@@ -267,6 +269,7 @@ const LayoutFlow = ({
           edgeLabelRef={edgeLabelRef.current}
           selectedEdgeRef={selectedEdgeRef.current}
           sendErrorToParent={sendErrorToParent}
+          sendNewRoleToParent={sendNewRoleToParent}
         />
       )}
       <div className="react-flow__container-div">
@@ -316,6 +319,7 @@ function Flow({
   edgesTypes,
   sendDataToParent,
   sendErrorToParent,
+  sendNewRoleToParent,
 }) {
   return (
     <>
@@ -327,6 +331,7 @@ function Flow({
           edgesTypes={edgesTypes}
           sendDataToParent={sendDataToParent}
           sendErrorToParent={sendErrorToParent}
+          sendNewRoleToParent={sendNewRoleToParent}
         />
       </ReactFlowProvider>
     </>

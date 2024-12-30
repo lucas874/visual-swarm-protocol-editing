@@ -3,6 +3,7 @@ import useStore, { RFState } from "../store";
 import { shallow } from "zustand/shallow";
 
 const selector = (state: RFState) => ({
+  edges: state.edges,
   updateEdgeLabel: state.updateEdgeLabel,
   setIsEdgeDialogOpen: state.setIsEdgeDialogOpen,
 });
@@ -14,8 +15,12 @@ function EdgeLabelDialog({
   edgeLabelRef,
   selectedEdgeRef,
   sendErrorToParent,
+  sendNewRoleToParent,
 }) {
-  const { updateEdgeLabel, setIsEdgeDialogOpen } = useStore(selector, shallow);
+  const { edges, updateEdgeLabel, setIsEdgeDialogOpen } = useStore(
+    selector,
+    shallow
+  );
 
   return (
     <div className="overlay" onClick={(event) => setIsEdgeDialogOpen(false)}>
@@ -91,6 +96,17 @@ function EdgeLabelDialog({
                   edgeLabelRef,
                   logTypeRef.split(",")
                 );
+
+                // Check if role already exists in protocol, otherwise add it to subscriptions
+                if (
+                  !edges.find((edge) => {
+                    console.log("Checking edge: ", edge);
+                    edge.label?.toString().split("@")[1] === roleRef;
+                  })
+                ) {
+                  console.log("Adding new role to subscriptions");
+                  sendNewRoleToParent(roleRef);
+                }
               }
             }}
           >
