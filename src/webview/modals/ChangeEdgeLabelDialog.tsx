@@ -99,12 +99,10 @@ function EdgeLabelDialog({
 
                 // Check if role already exists in protocol, otherwise add it to subscriptions
                 if (
-                  !edges.find((edge) => {
-                    console.log("Checking edge: ", edge);
-                    edge.label?.toString().split("@")[1] === roleRef;
-                  })
+                  !edges.some(
+                    (edge) => edge.label?.toString().split("@")[1] === roleRef
+                  )
                 ) {
-                  console.log("Adding new role to subscriptions");
                   sendNewRoleToParent(roleRef);
                 }
               }
