@@ -13,7 +13,7 @@ export default function SelfConnecting(props: EdgeProps) {
   const { sourceX, sourceY, targetX, targetY, markerEnd, label, style } = props;
 
   // Approximate width of the label
-  const labelWidth = label.toString().length * 2.25;
+  const labelWidth = (label?.toString().length ?? 0) * 2.25;
 
   // Set radius (switched from the example, to use top and bottom instead of left and right)
   const radiusX = Math.max(100, 2 * labelWidth);
