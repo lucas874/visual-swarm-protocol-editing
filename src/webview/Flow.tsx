@@ -103,7 +103,7 @@ const LayoutFlow = ({
   const edgeLabelRef = useRef("");
   const commandRef = useRef("");
   const roleRef = useRef("");
-  const logTypeRef = useRef("");
+  const logTypeRef = useRef(null);
   const selectedNodeRef = useRef(null);
   const selectedEdgeRef = useRef(null);
   const onDeleteRef = useRef(null);
@@ -235,7 +235,7 @@ const LayoutFlow = ({
           type="button"
           onClick={() => {
             const newNode: Node = {
-              id: `Node${nodes.length + 1}`,
+              id: `Node ${nodes.length + 1}`,
               data: { label: `Node ${nodes.length + 1}`, initial: false },
               position: {
                 x: nodes[Math.floor((nodes.length - 1) / 2)]?.position.x + 20,
@@ -290,7 +290,7 @@ const LayoutFlow = ({
             commandRef.current = edge.label?.toString().split("@")[0] ?? "";
             roleRef.current = edge.label?.toString().split("@")[1] ?? "";
             logTypeRef.current =
-              (edge.data.logType as string[])?.join(",") ?? "";
+              (edge.data.logType as string[])?.join(",") ?? null;
             edgeLabelRef.current = commandRef.current + "@" + roleRef.current;
             setIsEdgeDialogOpen(true);
           }}

@@ -94,7 +94,7 @@ function EdgeLabelDialog({
                 updateEdgeLabel(
                   selectedEdgeRef.id,
                   edgeLabelRef,
-                  logTypeRef.split(",")
+                  logTypeRef === "" ? [] : logTypeRef.split(",")
                 );
 
                 // Check if role already exists in protocol, otherwise add it to subscriptions

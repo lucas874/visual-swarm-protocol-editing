@@ -131,7 +131,7 @@ const App: React.FC = () => {
         label: {
           cmd: edge.label?.split("@")[0],
           role: edge.label?.split("@")[1],
-          logType: edge.data.logType,
+          logType: edge.data.logType ?? [],
         },
       };
     });

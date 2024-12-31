@@ -32,8 +32,6 @@ export function checkWellFormedness(
       };
     }
 
-    console.log(protocol.subscriptions);
-
     const message = checkSwarmProtocol(swarmProtocol, protocol.subscriptions);
 
     let errorMessage: WellFormednessCheck = {
@@ -62,16 +60,24 @@ export function checkWellFormedness(
           errorMessage.transitions = findMultipleGuardEvents(logType, protocol);
 
           break;
-        } else if (error.includes("active role does not subscribe")) {
-          let transition = error.split(" ")[14];
+        } else if (
+          error.includes(
+            "active role does not subscribe to any of its emitted event types"
+          )
+        ) {
+          let transition = error.replace(
+            "active role does not subscribe to any of its emitted event types in transition ",
+            ""
+          );
           let role = transition.split("@")[1].split("<")[0];
 
-          errorText = `Active role (${role}) does not subscribe to guard event. Affected transitions are highlighted in the visual editor.`;
+          errorText = `Active role (${role}) does not subscribe to its own emitted events. Affected transitions are highlighted in the visual editor.`;
           errorMessage.transitions = findRoleTransition(transition, protocol);
-
-          break;
         } else if (error.includes("subsequently involved role")) {
-          let transition = error.split(" ")[11];
+          let transition = error.replace(
+            "subsequently involved role Control does not subscribe to guard in transition ",
+            ""
+          );
           let role = transition.split("@")[1].split("<")[0];
 
           errorText = `Subsequently involved role (${role}) does not subscribe to a guard event. Affected transitions are highlighted in the visual editor.`;
@@ -79,7 +85,7 @@ export function checkWellFormedness(
 
           break;
         } else if (error.includes("log type must not be empty")) {
-          let transition = error.split(" ")[6];
+          let transition = error.replace("log type must not be empty ", "");
           emptyLogType.push(findRoleTransition(transition, protocol)[0]);
         } else {
           errorText = error;
