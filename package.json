@@ -3,7 +3,7 @@
   "displayName": "Visual Swarm Protocol Editing",
   "publisher": "CarolineFallesen",
   "repository": "https://github.com/cbfallesen/visual-swarm-protocol-editing",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "engines": {
     "vscode": "^1.93.0"
   },
