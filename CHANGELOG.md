@@ -2,6 +2,10 @@
 
 This version is only meant for testing
 
+## [0.3.1] - 01.01.2025
+
+- Fixed bug that removed initial node if label changed
+
 ## [0.3.0] - 01.01.2025
 
 - Added possibility to read and edit subscriptions
