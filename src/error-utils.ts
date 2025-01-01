@@ -88,10 +88,13 @@ export function checkWellFormedness(
           errorText = `Subsequently involved role (${subsequentRole}) subscribes to more events than active role (${activeRole}). Affected transitions are highlighted in the visual editor.`;
           errorMessage.transitions = findRoleTransition(transition, protocol);
         } else if (error.includes("subsequently involved role")) {
-          let transition = error.split(" ")[11];
-          let role = transition.split("@")[1].split("<")[0];
+          let subsequentRole = error.split(" ")[3];
+          let transition = error.replace(
+            `subsequently involved role ${subsequentRole} does not subscribe to guard in transition `,
+            ""
+          );
 
-          errorText = `Subsequently involved role (${role}) does not subscribe to a guard event. Affected transitions are highlighted in the visual editor.`;
+          errorText = `Subsequently involved role (${subsequentRole}) does not subscribe to a guard event. Affected transitions are highlighted in the visual editor.`;
           errorMessage.transitions = findRoleTransition(transition, protocol);
 
           break;

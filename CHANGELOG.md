@@ -2,7 +2,7 @@
 
 This version is only meant for testing
 
-## [0.3.0] - 31.12.2024
+## [0.3.0] - 01.01.2025
 
 - Added possibility to read and edit subscriptions
 - Added possibility to change log type
