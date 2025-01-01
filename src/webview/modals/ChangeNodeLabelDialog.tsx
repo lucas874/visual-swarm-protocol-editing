@@ -67,7 +67,7 @@ function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
                 setIsNodeDialogOpen(false);
                 updateNodeLabel(selectedNodeRef.id, nodeLabelRef);
                 if (isInitial) {
-                  updateInitialNode(selectedNodeRef.id);
+                  updateInitialNode(nodeLabelRef);
                 } else {
                   selectedNodeRef.data.initial = false;
                 }
