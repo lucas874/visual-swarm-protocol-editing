@@ -107,7 +107,7 @@ const App: React.FC = () => {
     setProtocol(occurrence.json);
 
     // Set subscriptions
-    subRef.current = occurrence.json.subscriptions;
+    subRef.current = createSubscriptions(occurrence.json);
 
     // Set the selected protocol to the selected occurrence
     selectedProtocolRef.current = e.target.value;

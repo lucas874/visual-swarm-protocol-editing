@@ -8,7 +8,11 @@ import {
 } from "@actyx/machine-check";
 
 const swarmProtocol: SwarmProtocolType = {
-  initial: "Closed",
+  initial: "Initial",
+  subscriptions: {
+    Control: ["closing", "closed", "opening", "opened", "opening2", "closing2"],
+    Door: ["closing", "closed", "opening", "opened", "opening2", "closing2"],
+  },
   transitions: [
     {
       source: "Closed",
