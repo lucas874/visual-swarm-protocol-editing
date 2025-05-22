@@ -1,6 +1,6 @@
 # Visual Swarm Protocol Editing
 
-This Visual Studio Code extension is used as a way to visualise, edit and verify elements of the type `SwarmProtocolType` from the [@actyx/machine-runner](https://github.com/Actyx/machines/tree/master/machine-runner) library. This library is part of the GitHub repository from Actyx called [machines](https://github.com/Actyx/machines).
+This Visual Studio Code extension is a fork of [Visual Swarm Protocol Editing](https://marketplace.visualstudio.com/items?itemName=CarolineFallesen.visual-swarm-protocol-editing), used for visualizing, editing and verifying elements of the type `SwarmProtocolType` from the [@actyx/machine-runner](https://github.com/Actyx/machines/tree/master/machine-runner) library. This library is part of the GitHub repository from Actyx called [machines](https://github.com/Actyx/machines).
 
 The extension allows the user to visualise a protocol by using the VS Code command palette and using the command `Visualise protocol`. The extension can also be opened using the keybinding Ctrl + Shift + E (Cmd + Shift + E for Mac). The extension will show the flow described in the file, and from here, it is possible to make and save changes. When the protocol is saved, the program will perform a well-formedness check.
 
@@ -18,7 +18,7 @@ New edges are created by dragging from the input handle of a state to the output
 
 ### Renaming states and transitions
 
-By double-clicking either a state or a transition, it is possible to rename the label of the element. For states, the name of the label can be changed, and it is possible to select this state as the initial state. This will discard any other states as initial states. 
+By double-clicking either a state or a transition, it is possible to rename the label of the element. For states, the name of the label can be changed, and it is possible to select this state as the initial state. This will discard any other states as initial states.
 
 For transitions it is possible to change the command, role or log type of the transition. The command and role are required to follow the syntax of swarm protocols, where transitions are named in the format "command"@"role".
 
@@ -69,7 +69,7 @@ const protocol: SwarmProtocolType = {
 
 ### Saving changes
 
-Changes can be saved by pressing the "Save changes" button or by pressing Ctrl + S on the keyboard (Cmd + S on Mac). The changes will then be reflected in the protocol, but the changes to the file are not saved automatically; this is up to the user. 
+Changes can be saved by pressing the "Save changes" button or by pressing Ctrl + S on the keyboard (Cmd + S on Mac). The changes will then be reflected in the protocol, but the changes to the file are not saved automatically; this is up to the user.
 
 When the protocol is saved, a well-formedness check is automatically performed, if subscriptions are included in the protocol. Here, both the well-formedness and other minor formatting errors are checked. If any issues are found, the user is informed, and given the opportunity to fix these issues. Affected elements are highlighted by a red colour. The changes will not be saved if the protocol is not well-formed.
 If the protocol does not contain any subscriptions, the well-formedness is not checked. The user will only be warned about duplicated transition labels and unconnected states.
