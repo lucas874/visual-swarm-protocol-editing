@@ -1,8 +1,8 @@
 {
   "name": "visual-swarm-protocol-editing",
   "displayName": "Visual Swarm Protocol Editing",
-  "publisher": "CarolineFallesen",
-  "repository": "https://github.com/cbfallesen/visual-swarm-protocol-editing",
+  "publisher": "dtu-sse",
+  "repository": "https://github.com/lucas874/visual-swarm-protocol-editing",
   "version": "0.3.1",
   "engines": {
     "vscode": "^1.93.0"
