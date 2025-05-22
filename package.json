@@ -1,6 +1,6 @@
 {
-  "name": "visual-swarm-protocol-editing",
-  "displayName": "Visual Swarm Protocol Editing",
+  "name": "visual-swarm-protocol-editor",
+  "displayName": "Visual Swarm Protocol Editor",
   "description": "Visualise, edit and verify swarm protocols.",
   "publisher": "dtu-sse",
   "repository": "https://github.com/lucas874/visual-swarm-protocol-editing",
