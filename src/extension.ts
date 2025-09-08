@@ -9,6 +9,7 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
+import { parseProtocols } from "./parse-protocols";
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -28,8 +29,13 @@ export function activate(context: vscode.ExtensionContext) {
       // Set regex string to search for the SwarmProtocolType
       const typeRegex = /\S*:\s*SwarmProtocolType\s*=\s*/gm;
 
-      let occurrences = getAllProtocolOccurrences(text, typeRegex);
+      /* let occurrences = getAllProtocolOccurrences(text, typeRegex);
       if (occurrences.length === 0) {
+        return;
+      } */
+      let occurrences = []
+      const occurrences1 = getProtocolOccurrences(activeEditor.document.fileName)
+      if (occurrences1.length === 0) {
         return;
       }
 
@@ -313,6 +319,14 @@ function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
     vscode.window.showErrorMessage("No swarm protocol found");
     return [];
   }
+}
+
+function getProtocolOccurrences(fileName: string): any[] {
+  const occurrences = parseProtocols(fileName)
+  if (occurrences.length === 0) {
+    vscode.window.showErrorMessage("No swarm protocol found");
+  }
+  return occurrences
 }
 
 function getNestedJSONObject(text: string, index: number) {
