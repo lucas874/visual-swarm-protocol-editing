@@ -1,4 +1,4 @@
-import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts } from "ts-morph";
+import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression } from "ts-morph";
 import { SwarmProtocolType } from "@actyx/machine-check";
 type Occurrence = { name: string, jsonObject: SwarmProtocolType}
 
@@ -27,7 +27,7 @@ export const getValue = <T>(optionValue: Some<T>): T => {
 }
 
 export function parseProtocols(fileName: string): any[] {
-  const project = new Project({tsConfigFilePath: "/home/luccl/Git/visual-swarm-protocol-editing/tsconfig.json"});
+  const project = new Project();
   const sourceFile = project.addSourceFileAtPath(fileName);
   visitVariableDeclarations(sourceFile)
   throw Error("Not implemented")
@@ -45,7 +45,6 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
             if (initial) {
                 const expandedInitializer = getInitializerInitial(initial)
                 if (isSome(expandedInitializer)) {
-                    console.log("hej hej okkkk: ", expandedInitializer)
                     properties.set("initial", getValue(expandedInitializer))
                 }
             }
@@ -59,8 +58,11 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
 
   }
 
+// Used to turn the 'initial' and 'transitions' fields of a SwarmProtocolType
+// into literal values -- something that can not be evaluated any further and
+// does not refer to literal values in other files.
 function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
-    basicVisit(node)
+    //basicVisit(node)
     switch (node.getKind()) {
         case SyntaxKind.StringLiteral:
         case SyntaxKind.NumericLiteral:
@@ -69,7 +71,6 @@ function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
         case SyntaxKind.FalseKeyword:
             return some(node)
         case SyntaxKind.Identifier:
-            console.log(node)
             const definitionNodes = (node as Identifier).getDefinitionNodes()
             for (const node of definitionNodes) {
                 console.log(node)
@@ -81,12 +82,70 @@ function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
                 return none
             }
         case SyntaxKind.VariableDeclaration:
-            console.log("encountered a variable declaration: ")
-            console.log("initializer is: ", (node as VariableDeclaration).getInitializer())
             return literalInitializer((node as VariableDeclaration).getInitializer())
-    }
+        case SyntaxKind.ArrayLiteralExpression:
+            /* const elements = (node as ArrayLiteralExpression).getElements().map(e => literalInitializer(e));
+            (node as ArrayLiteralExpression).getElements().forEach(e => e.re)
+            elements.forEach((element, index) => {
+                if (isSome(element)) {
+                    (node as ArrayLiteralExpression).insertElement(index, getValue(element).getText())
+                } else {
+                    return none
+                }
 
-    return none
+            }) */
+            console.log("array: ", node.getText());
+            (node as ArrayLiteralExpression).getElements().forEach(e => {
+                const literal = literalInitializer(e)
+                console.log("literal: ", literal)
+                if (isSome(literal)) {
+                    console.log("getValue(literal).getText()", getValue(literal).getText())
+                    console.log("e.getText(): ", e.getText())
+                    e.replaceWithText(getValue(literal).getText())
+                    console.log("e.getText(): ", e.getText())
+                } else {
+                    return none
+                }
+            })
+
+            console.log("array after: ", node.getText());
+            return some(node)
+        case SyntaxKind.ObjectLiteralExpression:
+            // Transform properties to literal.
+            // Remove the properties
+            // Add the literal properties
+            console.log("object: ", node.getText());
+            //basicVisit(node)
+            const properties = (node as ObjectLiteralExpression)
+                .getProperties()
+                .map(p => {
+                    const property = (p as PropertyAssignment)
+                    if (property.getName() === "logType") {
+                        console.log("GOBLIINNNNN!")
+                        basicVisit(property.getInitializer())
+                    }
+                    return {name: property.getName(), initializer: literalInitializer(property.getInitializer())}
+                });
+            console.log("properties: ", properties);
+            (node as ObjectLiteralExpression).getProperties().forEach(p => p.remove())
+            for (const property of properties) {
+                if (isSome(property.initializer)) {
+                    (node as ObjectLiteralExpression).addPropertyAssignment({name: property.name, initializer: getValue(property.initializer).getText()})
+                } else {
+                    return none
+                }
+
+            }
+            console.log("object after: ", node.getText());
+            return some(node)
+        case SyntaxKind.PropertyAccessExpression:
+            console.log((node as PropertyAccessExpression).getName())
+            console.log((node as PropertyAccessExpression).getNameNode())
+            return literalInitializer((node as PropertyAccessExpression).getNameNode())
+
+        default:
+            return none
+    }
 }
 
 function getInitializerInitial(node: PropertyAssignment): Option<PropertyAssignment> {
@@ -101,26 +160,22 @@ function getInitializerInitial(node: PropertyAssignment): Option<PropertyAssignm
             return some(node.setInitializer(literal.getText()))
         }
     }
-    /* switch (initializer.getKind()) {
-        case SyntaxKind.StringLiteral:
-            return some(node)
-        case SyntaxKind.Identifier:
-            console.log(node)
-            const definitionNodes = (initializer as Identifier).getDefinitionNodes()
-            for (const node of definitionNodes) {
-                console.log(node)
-                console.log("Def in: ", node.getSourceFile().getFilePath())
-                basicVisit(node)
-
-            }
-
-
-            return none
-    }
-
-    return none */
-
+    return none
 }
+
+function getInitializerTransitions(node: PropertyAssignment): Option<PropertyAssignment> {
+    const initializer = node.getInitializer()
+    console.log("initializer: ", initializer)
+    const literalOption = literalInitializer(initializer)
+    if (isSome(literalOption)) {
+        const literal = getValue(literalOption)
+        console.log("literal: ", literal)
+        console.log("literal text: ", literal.getText())
+
+    }
+    return none
+}
+
 
 function visitVariableDeclarations(sourceFile: SourceFile) {
     const variableDeclarations = sourceFile.getVariableDeclarations()
