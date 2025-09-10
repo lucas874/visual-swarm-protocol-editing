@@ -26,11 +26,24 @@ export const getValue = <T>(optionValue: Some<T>): T => {
     return optionValue.value
 }
 
+type DefinitionNodeInfo = { sourceFile: string, definitionNodeText: string, definitionNode: Node<ts.Node> }
+
+const EVENT_DESIGN_FUN = "design: <Key extends string>(key: Key) => EventFactoryIntermediate<Key>"
+const EVENT_D_TS = "event.d.ts"
+
 export function parseProtocols(fileName: string): any[] {
     const project = new Project();
     const sourceFile = project.addSourceFileAtPath(fileName);
     visitVariableDeclarations(sourceFile)
     throw Error("Not implemented")
+}
+
+
+function visitVariableDeclarations(sourceFile: SourceFile) {
+    const variableDeclarations = sourceFile.getVariableDeclarations()
+    const swarmProtocols = variableDeclarations.map(variableDeclaration => swarmProtocolDeclaration(variableDeclaration)).filter(o => isSome(o))
+    return swarmProtocols
+
 }
 
 function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence> {
@@ -72,7 +85,14 @@ function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
             return some(node)
         case SyntaxKind.Identifier:
             const definitionNodes = (node as Identifier).getDefinitionNodes()
-            // Assume there is just one definition of this name
+            for (const node of definitionNodes) {
+                console.log(node)
+                console.log("Def in: ", node.getSourceFile().getFilePath())
+            }
+            // Assume there is just one definition of this name. At defnitionNodes[0]
+            // https://ts-morph.com/details/identifiers:
+            // 'Gets the definitions of the identifier.
+            // This is similar to "go to definition" functionality that exists with TypeScript in most IDEs.'
             return definitionNodes.length > 0 ? literalInitializer(definitionNodes[0]) : none
         case SyntaxKind.ArrayLiteralExpression:
             return arrayLiteralInitializer(node as ArrayLiteralExpression, literalInitializer)
@@ -167,12 +187,17 @@ function getInitializerTransitions(node: PropertyAssignment): Option<PropertyAss
  * @returns Option<Node<ts.Node>>
  */
 function handleLogTypeInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
+    console.log(node.getText())
     switch (node.getKind()) {
         case SyntaxKind.StringLiteral:
             return some(node)
         case SyntaxKind.Identifier:
             const definitionNodes = (node as Identifier).getDefinitionNodes()
-            // Assume there is just one definition of this name at defnitionNodes[0]
+            for (const node of definitionNodes) {
+                console.log(node)
+                console.log("Def in: ", node.getSourceFile().getFilePath())
+            }
+            // Assume there is just one definition of this name. At defnitionNodes[0]
             return definitionNodes.length > 0 ? handleLogTypeInitializer(definitionNodes[0]) : none
         case SyntaxKind.PropertyAccessExpression:
             const definitionNodesProperty = (node as PropertyAccessExpression).getNameNode().getDefinitionNodes()
@@ -182,35 +207,115 @@ function handleLogTypeInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
                 if (definitionNode.getSourceFile().getFilePath().endsWith("event.d.ts")
                     && definitionNode.getKind() == SyntaxKind.PropertySignature
                     && (definitionNode as PropertySignature).getName() === "type") {
-                    handleLogTypeInitializer((node as PropertyAccessExpression).getExpression())
+                    console.log("definitionNode.getText(): ", definitionNode.getText())
+                    console.log("definitionNode.getSourceFile().getFilePath(): ", definitionNode.getSourceFile().getFilePath())
+                    // Here we have an property access expression of the form myEvent.type
+                    // pass 'myEvent' to extract event type to get the event type of myEvent
+                    return extractEventType((node as PropertyAccessExpression).getExpression())
+                    //return handleLogTypeInitializer((node as PropertyAccessExpression).getExpression())
 
                 } else {
+                console.log("nameNode: ", (node as PropertyAccessExpression).getNameNode().getText())
+                console.log("expression: ", (node as PropertyAccessExpression).getExpression().getText())
                 return handleLogTypeInitializer((node as PropertyAccessExpression).getNameNode())
                 }
             }
         case SyntaxKind.VariableDeclaration:
+            console.log(node.getText())
             return handleLogTypeInitializer((node as VariableDeclaration).getInitializer())
         case SyntaxKind.CallExpression:
                 // Check if this is a call to withPayload or withoutPayload. If so get parent propertyAccessExpression and go back to call to design.
                 // Do this by resolving files. Should be somewhere in Runner.
                 // Consider removing all of this extraction of argument to design to own function and have argument to this function be Expression<ts.Expression> again.
-             console.log("In call expression: (node as CallExpression).getText(): ", (node as CallExpression).getText())
-             console.log("In call expression: (node as CallExpression): ", (node as CallExpression))
-             console.log((node as CallExpression).getArguments())
+            console.log("In call expression: (node as CallExpression).getText(): ", (node as CallExpression).getText())
+            console.log("In call expression: (node as CallExpression): ", (node as CallExpression))
+            console.log((node as CallExpression).getArguments())
             console.log((node as CallExpression).getExpression().getLastToken().getText())
 
             console.log((node as CallExpression).getExpression().getKindName())
         default:
             return none
     }
-
 }
 
-function visitVariableDeclarations(sourceFile: SourceFile) {
-    const variableDeclarations = sourceFile.getVariableDeclarations()
-    const swarmProtocols = variableDeclarations.map(variableDeclaration => swarmProtocolDeclaration(variableDeclaration)).filter(o => isSome(o))
-    return swarmProtocols
+function extractEventType(node: Node<ts.Node>): Option<Node<ts.Node>> {
+    console.log(node.getText())
+    console.log(node.getKindName())
+    const eventDefFunctions = [
+        "withPayload: <Payload extends utils.SerializableObject>() => Factory<Key, Payload>;",
+        "withoutPayload: () => Factory<Key, Record<never, never>>;",
+        "withZod: <Payload extends utils.SerializableObject>(z: z.ZodType<Payload>) => Factory<Key, Payload>;"
 
+    ]
+    switch (node.getKind()) {
+        case SyntaxKind.PropertyAccessExpression:
+            const definitionNodesProperty = (node as PropertyAccessExpression).getNameNode().getDefinitionNodes()
+            if (definitionNodesProperty.length > 0) {
+                // Assume just one definition
+                const definitionNode = definitionNodesProperty[0]
+                console.log("definitionNode.getText(): ", definitionNode.getText())
+                console.log("definitionNode.getSourceFile().getFilePath(): ", definitionNode.getSourceFile().getFilePath())
+                if (definitionNode.getSourceFile().getFilePath().endsWith(EVENT_D_TS) && eventDefFunctions.some(eventDefFunction => eventDefFunction === definitionNode.getText())) {
+                    console.log(definitionNode)
+                    // At this point we have an expression MachineEvent.design('myEventType').( withoutPayload() + withPayload<...>() + withZod<...>() )
+                    // Recurse wit the 'MachineEvent.design('myEventType')' bit of this expression
+                    return extractEventType((node as PropertyAccessExpression).getExpression())
+                }
+            }
+            // Entered if e.g. event is defined in a namespace Events and we have
+            // Events.myEvent --> getNamenameNode() returns the myEvent bit of this expression.
+            return extractEventType((node as PropertyAccessExpression).getNameNode())
+        case SyntaxKind.Identifier:
+            const definitionNodes = (node as Identifier).getDefinitionNodes()
+            // Assume there is just one definition of this name. At defnitionNodes[0]
+            return definitionNodes.length > 0 ? extractEventType(definitionNodes[0]) : none
+        case SyntaxKind.VariableDeclaration:
+            return extractEventType((node as VariableDeclaration).getInitializer())
+        case SyntaxKind.CallExpression:
+            // Check if this is a call to withPayload or withoutPayload. If so get parent propertyAccessExpression and go back to call to design.
+            // Do this by resolving files. Should be somewhere in Runner.
+            // Consider removing all of this extraction of argument to design to own function and have argument to this function be Expression<ts.Expression> again.
+            console.log("lastToken of call expression: ", (node as CallExpression).getExpression().getLastToken().getText());
+            const expr = (node as CallExpression).getExpression()
+            const callInfoOption = definitionNodeInfo(expr)
+            if (isSome(callInfoOption) && isEventDesign(getValue(callInfoOption))) {
+                // Assume there will be exactly one arguments: a string naming the event type
+                console.log((node as CallExpression).getArguments())
+                console.log((node as CallExpression).getArguments().map(n => n.getText()))
+                return some((node as CallExpression).getArguments()[0])
+            }
+            return extractEventType(expr)
+    }
+
+    return none
+}
+
+function definitionNodeInfo(node: Node<ts.Node>): Option<DefinitionNodeInfo> {
+    //const expr = node.getExpression();
+    switch (node.getKind()) {
+        case SyntaxKind.PropertyAccessExpression:
+            const definitionNodesProperty = (node as PropertyAccessExpression).getNameNode().getDefinitionNodes()
+            if (definitionNodesProperty.length > 0) {
+                // Assume just one definition
+                const definitionNode = definitionNodesProperty[0]
+                return some({ sourceFile: definitionNode.getSourceFile().getFilePath(), definitionNodeText: definitionNode.getText(), definitionNode })
+            }
+            return none
+        case SyntaxKind.Identifier:
+           const definitionNodesIdentifier = (node as Identifier).getDefinitionNodes()
+            if (definitionNodesIdentifier.length > 0) {
+                // Assume just one definition
+                const definitionNode = definitionNodesIdentifier[0]
+                return some({ sourceFile: definitionNode.getSourceFile().getFilePath(), definitionNodeText: definitionNode.getText(), definitionNode })
+            }
+            return none
+        default:
+            throw Error(`Not implemented: definitionNodeInfo(node) where \`node\` is of type ${node.getKindName()}.`)
+        }
+}
+
+function isEventDesign(nodeInfo: DefinitionNodeInfo) {
+    return nodeInfo.sourceFile.endsWith(EVENT_D_TS) && nodeInfo.definitionNodeText === EVENT_DESIGN_FUN
 }
 
 // Nice for debugging
