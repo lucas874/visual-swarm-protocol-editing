@@ -72,11 +72,8 @@ function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
             return some(node)
         case SyntaxKind.Identifier:
             const definitionNodes = (node as Identifier).getDefinitionNodes()
-            if (definitionNodes.length > 0) {
-                return literalInitializer(definitionNodes[0]) // Assume there is just one definition of this name
-            } else {
-                return none
-            }
+            // Assume there is just one definition of this name
+            return definitionNodes.length > 0 ? literalInitializer(definitionNodes[0]) : none
         case SyntaxKind.ArrayLiteralExpression:
             return arrayLiteralInitializer(node as ArrayLiteralExpression, literalInitializer)
         case SyntaxKind.ObjectLiteralExpression:
@@ -175,11 +172,8 @@ function handleLogTypeInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
             return some(node)
         case SyntaxKind.Identifier:
             const definitionNodes = (node as Identifier).getDefinitionNodes()
-            if (definitionNodes.length > 0) {
-                return handleLogTypeInitializer(definitionNodes[0]) // Assume there is just one definition of this name
-            } else {
-                return none
-            }
+            // Assume there is just one definition of this name at defnitionNodes[0]
+            return definitionNodes.length > 0 ? handleLogTypeInitializer(definitionNodes[0]) : none
         case SyntaxKind.PropertyAccessExpression:
             const definitionNodesProperty = (node as PropertyAccessExpression).getNameNode().getDefinitionNodes()
             // Assume one definition
