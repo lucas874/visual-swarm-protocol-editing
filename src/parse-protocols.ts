@@ -44,8 +44,7 @@ const EVENT_DEFINITION_FUNCTIONS = [
 export function parseProtocols(fileName: string): any[] {
     const project = new Project();
     const sourceFile = project.addSourceFileAtPath(fileName);
-    visitVariableDeclarations(sourceFile)
-    throw Error("Not implemented")
+    return visitVariableDeclarations(sourceFile)
 }
 
 
@@ -65,23 +64,41 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
                 .map(p => [p.getName(), p]))
 
             const initial = properties.get(INITIAL_FIELD)
-            if (initial) {
-                const expandedInitializer = getInitializerInitial(initial)
-                if (isSome(expandedInitializer)) {
-                    properties.set(INITIAL_FIELD, getValue(expandedInitializer))
-                }
-            }
             const transitions = properties.get(TRANSITIONS_FIELD)
-            if (transitions) {
-                const expandedInitializer = getInitializerTransitions(transitions)
-                if (isSome(expandedInitializer)) {
-                    properties.set(TRANSITIONS_FIELD, getValue(expandedInitializer))
+            if (initial && transitions) {
+                const expandedInitializerInitial = getInitializerInitial(initial)
+                const expandedInitializerTransitions = getInitializerTransitions(transitions)
+                if (isSome(expandedInitializerInitial) && isSome(expandedInitializerTransitions)) {
+                    properties.set(INITIAL_FIELD, getValue(expandedInitializerInitial))
+                    properties.set(TRANSITIONS_FIELD, getValue(expandedInitializerTransitions))
+                    return some({name: node.getName(), jsonObject: properties_to_json(properties)})
                 }
             }
     }
 
     return none
 
+}
+
+function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmProtocolType {
+    const protocol = new Object()
+    const transitionsInitializer = properties.get(TRANSITIONS_FIELD).getInitializer() as ArrayLiteralExpression
+    const transitions = transitionsInitializer.getElements()
+        .map(element => {
+            const label = new Object();
+            (element as ObjectLiteralExpression)
+                .getProperties()
+                .forEach(property => {
+                    const p = (property as PropertyAssignment)
+                    label[p.getName()] = p.getInitializer().getText()
+                    //return `{ "${p.getName()}": "${p.getInitializer().getText()}" }`
+                })
+            return label
+        })
+    protocol["initial"] = properties.get(INITIAL_FIELD).getInitializer().getText()
+    protocol["transitions"] = transitions
+
+    return protocol as SwarmProtocolType
 }
 
 // Used to turn the 'initial' and 'transitions' fields of a SwarmProtocolType
@@ -95,6 +112,7 @@ function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
         case SyntaxKind.BigIntLiteral:
         case SyntaxKind.TrueKeyword:
         case SyntaxKind.FalseKeyword:
+            console.log(node.getText())
             return some(node)
         case SyntaxKind.Identifier:
             // Assume there is just one definition of this name. At defnitionNodes[0]
@@ -131,12 +149,24 @@ function arrayLiteralInitializer(node: ArrayLiteralExpression, getInitializer: (
     return some(node)
 }
 
+// REDO A LOT OF STUFF: mutability. We actually mutate the ast in the functions -- the values passed to functions are not immutable new instances. So all this returning
+// options and resetting fields may have to be redone.
 function objectLiteralInitializer(node: ObjectLiteralExpression): Option<Node<ts.Node>> {
     // Transform properties to literal.
     // Remove the properties
     // Add the literal properties
     //basicVisit(node)
-    const properties = (node as ObjectLiteralExpression)
+    console.log("before: ", (node as ObjectLiteralExpression).getText());
+    (node as ObjectLiteralExpression)
+        .getProperties()
+        .forEach(property => {
+            if((property as PropertyAssignment).getName() === "logType") {
+                arrayLiteralInitializer((property as PropertyAssignment).getInitializer() as ArrayLiteralExpression, handleLogTypeInitializer)
+            } else {
+                literalInitializer((property as PropertyAssignment).getInitializer())
+            }
+        })
+    /* const properties = (node as ObjectLiteralExpression)
         .getProperties()
         .map(p => {
             const property = (p as PropertyAssignment)
@@ -145,17 +175,26 @@ function objectLiteralInitializer(node: ObjectLiteralExpression): Option<Node<ts
                 initializer: property.getName() === "logType" ? arrayLiteralInitializer(property.getInitializer() as ArrayLiteralExpression, handleLogTypeInitializer) : literalInitializer(property.getInitializer())
             }
         });
+    console.log("after: ", (node as ObjectLiteralExpression).getText())
+    properties.forEach(n =>{
+        if (isSome(n.initializer)) {
+            console.log(getValue(n.initializer).getText())
+        }
+    })
     node.getProperties().forEach(p => p.remove())
     for (const property of properties) {
         if (isSome(property.initializer)) {
             console.log("hey")
-            console.log("new initializer: ", getValue(property.initializer).getText());
+            console.log("new initializer: ", getValue(property.initializer));
+            console.log("what 2")
+            console.log(getValue(property.initializer).getText());
             (node as ObjectLiteralExpression).addPropertyAssignment({ name: property.name, initializer: getValue(property.initializer).getText() })
         } else {
             return none
         }
 
-    }
+    } */
+       console.log("after: ", (node as ObjectLiteralExpression).getText())
     return some(node)
 }
 
@@ -176,6 +215,7 @@ function getInitializerTransitions(node: PropertyAssignment): Option<PropertyAss
     const literalOption = literalInitializer(initializer)
     if (isSome(literalOption)) {
         const literal = getValue(literalOption)
+        return some(node.setInitializer(literal.getText()))
     }
     return none
 }
