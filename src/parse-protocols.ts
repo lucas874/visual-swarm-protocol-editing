@@ -1,6 +1,6 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature } from "ts-morph";
 import { SwarmProtocolType } from "@actyx/machine-check";
-type Occurrence = { name: string, jsonObject: SwarmProtocolType }
+export type Occurrence = { name: string, jsonObject: SwarmProtocolType }
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
 export type Some<T> = { tag: "Some", value: T }
@@ -41,18 +41,17 @@ const EVENT_DEFINITION_FUNCTIONS = [
 
 ]
 
-export function parseProtocols(fileName: string): any[] {
+export function parseProtocols(fileName: string): Option<Occurrence>[] {
     const project = new Project();
     const sourceFile = project.addSourceFileAtPath(fileName);
     return visitVariableDeclarations(sourceFile)
 }
 
 
-function visitVariableDeclarations(sourceFile: SourceFile) {
+function visitVariableDeclarations(sourceFile: SourceFile): Option<Occurrence>[] {
     const variableDeclarations = sourceFile.getVariableDeclarations()
     const swarmProtocols = variableDeclarations.map(variableDeclaration => swarmProtocolDeclaration(variableDeclaration)).filter(o => isSome(o))
     return swarmProtocols
-
 }
 
 function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence> {
@@ -112,7 +111,6 @@ function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
         case SyntaxKind.BigIntLiteral:
         case SyntaxKind.TrueKeyword:
         case SyntaxKind.FalseKeyword:
-            console.log(node.getText())
             return some(node)
         case SyntaxKind.Identifier:
             // Assume there is just one definition of this name. At defnitionNodes[0]
@@ -139,7 +137,6 @@ function arrayLiteralInitializer(node: ArrayLiteralExpression, getInitializer: (
     node.getElements().forEach(e => {
         const literal = getInitializer(e)
         if (isSome(literal)) {
-            console.log(getValue(literal).getText())
             e.replaceWithText(getValue(literal).getText())
         } else {
             return none
@@ -239,7 +236,6 @@ function getInitializerTransitions(node: PropertyAssignment): Option<PropertyAss
  * @returns Option<Node<ts.Node>>
  */
 function handleLogTypeInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
-    console.log(node.getText())
     switch (node.getKind()) {
         case SyntaxKind.StringLiteral:
             return some(node)
@@ -258,27 +254,13 @@ function handleLogTypeInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
             }
 
         case SyntaxKind.VariableDeclaration:
-            console.log(node.getText())
             return handleLogTypeInitializer((node as VariableDeclaration).getInitializer())
-        case SyntaxKind.CallExpression:
-            // Check if this is a call to withPayload or withoutPayload. If so get parent propertyAccessExpression and go back to call to design.
-            // Do this by resolving files. Should be somewhere in Runner.
-            // Consider removing all of this extraction of argument to design to own function and have argument to this function be Expression<ts.Expression> again.
-            console.log("In call expression: (node as CallExpression).getText(): ", (node as CallExpression).getText())
-            console.log("In call expression: (node as CallExpression): ", (node as CallExpression))
-            console.log((node as CallExpression).getArguments())
-            console.log((node as CallExpression).getExpression().getLastToken().getText())
-
-            console.log((node as CallExpression).getExpression().getKindName())
         default:
             return none
     }
 }
 
 function extractEventTypeFromDesign(node: Node<ts.Node>): Option<Node<ts.Node>> {
-    console.log(node.getText())
-    console.log(node.getKindName())
-    console.log()
     switch (node.getKind()) {
         case SyntaxKind.PropertyAccessExpression:
             const definitionNodeProperty = definitionNodeInfo(node)
@@ -299,17 +281,10 @@ function extractEventTypeFromDesign(node: Node<ts.Node>): Option<Node<ts.Node>> 
         case SyntaxKind.CallExpression:
             // Check if this is a call to withPayload or withoutPayload. If so get parent propertyAccessExpression and go back to call to design.
             // Do this by resolving files. Should be somewhere in Runner.
-            // Consider removing all of this extraction of argument to design to own function and have argument to this function be Expression<ts.Expression> again.
-            console.log("lastToken of call expression: ", (node as CallExpression).getExpression().getLastToken().getText());
             const expr = (node as CallExpression).getExpression()
             const callInfoOption = definitionNodeInfo(expr)
             if (isSome(callInfoOption) && isEventDesign(getValue(callInfoOption))) {
                 // Assume there will be exactly one arguments: a string naming the event type
-                console.log("Arguments");
-                (node as CallExpression).getArguments().forEach(node => {
-                    console.log(node.getText())
-                    console.log(node.getKindName())
-                })
                 return some((node as CallExpression).getArguments()[0])
             }
             return extractEventTypeFromDesign(expr)

@@ -9,7 +9,8 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
-import { parseProtocols } from "./parse-protocols";
+import { getValue, isSome, Occurrence, parseProtocols, Some } from "./parse-protocols";
+type SwarmProtocolOccurrence = {name: string, jsonObject: string}
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -33,9 +34,9 @@ export function activate(context: vscode.ExtensionContext) {
       if (occurrences.length === 0) {
         return;
       } */
-      let occurrences = []
-      const occurrences1 = getProtocolOccurrences(activeEditor.document.fileName)
-      if (occurrences1.length === 0) {
+      //let occurrences = []
+      let occurrences = getProtocolOccurrences(activeEditor.document.fileName)
+      if (occurrences.length === 0) {
         return;
       }
 
@@ -321,12 +322,21 @@ function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
   }
 }
 
-function getProtocolOccurrences(fileName: string): any[] {
+function getProtocolOccurrences(fileName: string): SwarmProtocolOccurrence[] {
   const occurrences = parseProtocols(fileName)
   if (occurrences.length === 0) {
     vscode.window.showErrorMessage("No swarm protocol found");
   }
-  return occurrences
+
+  if (!occurrences.every(o => isSome(o))) {
+    vscode.window.showErrorMessage("Error parsing swarm protocols");
+    return []
+  }
+  const mapper = (occurrence: Some<Occurrence>): SwarmProtocolOccurrence => {
+    const value = getValue(occurrence)
+    return {name: value.name, jsonObject: JSON5.stringify(value.jsonObject)}
+  }
+  return occurrences.map(mapper)
 }
 
 function getNestedJSONObject(text: string, index: number) {
