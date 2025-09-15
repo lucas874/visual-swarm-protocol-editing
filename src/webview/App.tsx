@@ -54,7 +54,7 @@ const App: React.FC = () => {
         // Set the selected protocol to the first occurrence
         selectedProtocolRef.current = message.data[0].name;
       } else if (message.command === "highlightEdges") {
-        let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+        let tempProtocol = message.data.protocol;
 
         // Save protocol to state
         setProtocol(tempProtocol);
@@ -68,7 +68,7 @@ const App: React.FC = () => {
         // Set subscriptions
         subRef.current = createSubscriptions(tempProtocol);
       } else if (message.command === "highlightNodes") {
-        let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+        let tempProtocol = message.data.protocol;
         // Save protocol to state
         setProtocol(tempProtocol);
 
@@ -131,7 +131,7 @@ const App: React.FC = () => {
         target: edge.target,
         label: {
           cmd: edge.label?.split("@")[0],
-          role: edge.label?.split("@")[1],
+          role: edge.label?.split("@")[1].split("<")[0],
           logType: edge.data.logType ?? [],
         },
       };
@@ -259,7 +259,7 @@ function createEdges(
         id: `${transition.source}-${transition.target}`,
         source: transition.source,
         target: transition.target,
-        label: transition.label.cmd + "@" + transition.label.role,
+        label: `${transition.label.cmd}@${transition.label.role}<${transition.label.logType.join(", ")}>`,
         data: {
           positionHandlers: [],
           logType: transition.label.logType,
@@ -282,7 +282,7 @@ function createEdges(
         id: `${transition.source}-${transition.target}`,
         source: transition.source,
         target: transition.target,
-        label: transition.label.cmd + "@" + transition.label.role,
+        label: `${transition.label.cmd}@${transition.label.role}<${transition.label.logType.join(", ")}>`,
         data: {
           positionHandlers: edgeLayout?.positionHandlers ?? [],
           logType: transition.label.logType,
