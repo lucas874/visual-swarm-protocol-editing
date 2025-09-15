@@ -83,49 +83,6 @@ function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmP
     const protocol: any = {}
     protocol[INITIAL_FIELD] = extractValue(properties.get(INITIAL_FIELD).getInitializer())
     protocol[TRANSITIONS_FIELD] = extractValue(properties.get(TRANSITIONS_FIELD).getInitializer())
-    /* let transitiions_ = []
-    const transitionsInitializer = properties.get(TRANSITIONS_FIELD).getInitializer() as ArrayLiteralExpression
-    const transitions = transitionsInitializer.getElements()
-        .map(element => {
-            const label = new Object();
-            (element as ObjectLiteralExpression)
-                .getProperties()
-                .forEach(property => {
-                    const p = (property as PropertyAssignment)
-                    console.log("in properties to json, p.initializer", p.getInitializer().getText())
-                    //console.log("in properties to json, p.initializer", JSON.parse(p.getInitializer().getText()))
-                    label[`${p.getName()}`] = p.getInitializer().getText()
-                    //label[p.getName()] = JSON.parse(p.getInitializer().getText())
-                    //return `{ "${p.getName()}": "${p.getInitializer().getText()}" }`
-                })
-            return label
-        })
-    const objectExpressionMapper = (expr: ObjectLiteralExpression): string => {
-        const properties = expr.getProperties() as PropertyAssignment[];
-        return `{${properties.map(p =>
-            p.getInitializer().getKind() === SyntaxKind.ObjectLiteralExpression ?
-                `"${p.getName()}": ${objectExpressionMapper(p.getInitializer() as ObjectLiteralExpression)}`
-                : `"${p.getName()}": ${p.getInitializer().getText().replace(/'/g, "\"")}`
-            ).join(", ")}}`} */
-
-    /* transitionsInitializer.getElements().forEach(element => {
-        let properties = [];
-        (element as ObjectLiteralExpression)
-            .getProperties()
-            .forEach(property => {
-                const p = (property as PropertyAssignment)
-                properties.push(`'${p.getName()}': ${p.getInitializer().getText()}`)
-            })
-        transitiions_.push(`{ ${properties.join(", ")} }`)
-    }) */
-    //const transitionsMapper = ()
-    //let protocol_ = `{ "initial": ${properties.get(INITIAL_FIELD).getInitializer().getText()}, "transitions": [${transitionsInitializer.getElements().map(element => objectExpressionMapper(element as ObjectLiteralExpression)).join(", ")}] }`
-    //console.log(protocol_)
-    //console.log(JSON.parse(protocol_))
-    //protocol["initial"] = properties.get(INITIAL_FIELD).getInitializer().getText().replace(/'/g, "\"")
-    //protocol["transitions"] = transitions
-    console.log(protocol)
-    console.log(JSON.stringify(protocol))
     return protocol as SwarmProtocolType
 }
 
@@ -150,7 +107,7 @@ function extractValue(node: Node): any {
             return obj;
         case SyntaxKind.ArrayLiteralExpression:
             return (node as ArrayLiteralExpression).getElements().map(extractValue);
-        // Add more cases as needed (e.g., null, identifiers, etc.)
+        // Other cases?
         default:
             throw new Error(`Unsupported node kind: ${node.getKindName()}`);
     }
@@ -206,10 +163,6 @@ function arrayLiteralInitializer(node: ArrayLiteralExpression, getInitializer: (
 // options and resetting fields may have to be redone.
 function objectLiteralInitializer(node: ObjectLiteralExpression): Option<Node<ts.Node>> {
     // Transform properties to literal.
-    // Remove the properties
-    // Add the literal properties
-    //basicVisit(node)
-    console.log("before: ", (node as ObjectLiteralExpression).getText());
     (node as ObjectLiteralExpression)
         .getProperties()
         .forEach(property => {
@@ -219,35 +172,6 @@ function objectLiteralInitializer(node: ObjectLiteralExpression): Option<Node<ts
                 literalInitializer((property as PropertyAssignment).getInitializer())
             }
         })
-    /* const properties = (node as ObjectLiteralExpression)
-        .getProperties()
-        .map(p => {
-            const property = (p as PropertyAssignment)
-            return {
-                name: property.getName(),
-                initializer: property.getName() === "logType" ? arrayLiteralInitializer(property.getInitializer() as ArrayLiteralExpression, handleLogTypeInitializer) : literalInitializer(property.getInitializer())
-            }
-        });
-    console.log("after: ", (node as ObjectLiteralExpression).getText())
-    properties.forEach(n =>{
-        if (isSome(n.initializer)) {
-            console.log(getValue(n.initializer).getText())
-        }
-    })
-    node.getProperties().forEach(p => p.remove())
-    for (const property of properties) {
-        if (isSome(property.initializer)) {
-            console.log("hey")
-            console.log("new initializer: ", getValue(property.initializer));
-            console.log("what 2")
-            console.log(getValue(property.initializer).getText());
-            (node as ObjectLiteralExpression).addPropertyAssignment({ name: property.name, initializer: getValue(property.initializer).getText() })
-        } else {
-            return none
-        }
-
-    } */
-       console.log("after: ", (node as ObjectLiteralExpression).getText())
     return some(node)
 }
 
@@ -263,19 +187,13 @@ function getInitializerInitial(node: PropertyAssignment): Option<PropertyAssignm
     return none
 }
 
+// Consider re-designing taking mutability into account. All the option stuff was there assuming
+// we did not mutate, so right now it looks a bit weird.
 function getInitializerTransitions(node: PropertyAssignment): Option<PropertyAssignment> {
-    console.log("node: ", node.getText())
-    console.log("node initializer: ", node.getInitializer().getText())
     const initializer = node.getInitializer()
     const literalOption = literalInitializer(initializer)
     if (isSome(literalOption)) {
-        const literal = getValue(literalOption)
-        console.log("node: ", node.getText())
-        console.log("node initializer: ", node.getInitializer().getText())
-        console.log("literal: ", literal.getText())
-
         return some(node)
-        //return some(node.setInitializer(literal.getText()))
     }
     return none
 }
