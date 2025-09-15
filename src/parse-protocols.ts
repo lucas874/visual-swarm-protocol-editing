@@ -1,4 +1,4 @@
-import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature } from "ts-morph";
+import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind } from "ts-morph";
 import { SwarmProtocolType } from "@actyx/machine-check";
 export type Occurrence = { name: string, jsonObject: SwarmProtocolType }
 
@@ -42,7 +42,7 @@ const EVENT_DEFINITION_FUNCTIONS = [
 ]
 
 export function parseProtocols(fileName: string): Option<Occurrence>[] {
-    const project = new Project();
+    const project = new Project(); //{manipulationSettings: { quoteKind: QuoteKind.Double }}
     const sourceFile = project.addSourceFileAtPath(fileName);
     return visitVariableDeclarations(sourceFile)
 }
@@ -81,6 +81,7 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
 
 function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmProtocolType {
     const protocol = new Object()
+    let transitiions_ = []
     const transitionsInitializer = properties.get(TRANSITIONS_FIELD).getInitializer() as ArrayLiteralExpression
     const transitions = transitionsInitializer.getElements()
         .map(element => {
@@ -89,15 +90,40 @@ function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmP
                 .getProperties()
                 .forEach(property => {
                     const p = (property as PropertyAssignment)
-                    label[p.getName()] = p.getInitializer().getText()
+                    console.log("in properties to json, p.initializer", p.getInitializer().getText())
+                    //console.log("in properties to json, p.initializer", JSON.parse(p.getInitializer().getText()))
+                    label[`${p.getName()}`] = p.getInitializer().getText()
+                    //label[p.getName()] = JSON.parse(p.getInitializer().getText())
                     //return `{ "${p.getName()}": "${p.getInitializer().getText()}" }`
                 })
             return label
         })
-    protocol["initial"] = properties.get(INITIAL_FIELD).getInitializer().getText()
-    protocol["transitions"] = transitions
+    const objectExpressionMapper = (expr: ObjectLiteralExpression): string => {
+        const properties = expr.getProperties() as PropertyAssignment[];
+        return `{${properties.map(p =>
+            p.getInitializer().getKind() === SyntaxKind.ObjectLiteralExpression ?
+                `"${p.getName()}": ${objectExpressionMapper(p.getInitializer() as ObjectLiteralExpression)}`
+                : `"${p.getName()}": ${p.getInitializer().getText().replace(/'/g, "\"")}`
+            ).join(", ")}}`}
 
-    return protocol as SwarmProtocolType
+    /* transitionsInitializer.getElements().forEach(element => {
+        let properties = [];
+        (element as ObjectLiteralExpression)
+            .getProperties()
+            .forEach(property => {
+                const p = (property as PropertyAssignment)
+                properties.push(`'${p.getName()}': ${p.getInitializer().getText()}`)
+            })
+        transitiions_.push(`{ ${properties.join(", ")} }`)
+    }) */
+    //const transitionsMapper = ()
+    let protocol_ = `{ "initial": ${properties.get(INITIAL_FIELD).getInitializer().getText()}, "transitions": [${transitionsInitializer.getElements().map(element => objectExpressionMapper(element as ObjectLiteralExpression)).join(", ")}] }`
+    //console.log(protocol_)
+    //console.log(JSON.parse(protocol_))
+    //protocol["initial"] = properties.get(INITIAL_FIELD).getInitializer().getText().replace(/'/g, "\"")
+    //protocol["transitions"] = transitions
+
+    return JSON.parse(protocol_) as SwarmProtocolType
 }
 
 // Used to turn the 'initial' and 'transitions' fields of a SwarmProtocolType
@@ -208,11 +234,18 @@ function getInitializerInitial(node: PropertyAssignment): Option<PropertyAssignm
 }
 
 function getInitializerTransitions(node: PropertyAssignment): Option<PropertyAssignment> {
+    console.log("node: ", node.getText())
+    console.log("node initializer: ", node.getInitializer().getText())
     const initializer = node.getInitializer()
     const literalOption = literalInitializer(initializer)
     if (isSome(literalOption)) {
         const literal = getValue(literalOption)
-        return some(node.setInitializer(literal.getText()))
+        console.log("node: ", node.getText())
+        console.log("node initializer: ", node.getInitializer().getText())
+        console.log("literal: ", literal.getText())
+
+        return some(node)
+        //return some(node.setInitializer(literal.getText()))
     }
     return none
 }
