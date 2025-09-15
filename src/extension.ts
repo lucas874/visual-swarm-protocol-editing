@@ -10,7 +10,7 @@ import {
   hasInitial,
 } from "./error-utils";
 import { getValue, isSome, Occurrence, parseProtocols, Some } from "./parse-protocols";
-type SwarmProtocolOccurrence = {name: string, jsonObject: string}
+type SwarmProtocolOccurrence = { name: string, jsonObject: string }
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -30,11 +30,6 @@ export function activate(context: vscode.ExtensionContext) {
       // Set regex string to search for the SwarmProtocolType
       const typeRegex = /\S*:\s*SwarmProtocolType\s*=\s*/gm;
 
-      /* let occurrences = getAllProtocolOccurrences(text, typeRegex);
-      if (occurrences.length === 0) {
-        return;
-      } */
-      //let occurrences = []
       let occurrences = getProtocolOccurrences(activeEditor.document.fileName)
       if (occurrences.length === 0) {
         return;
@@ -334,7 +329,7 @@ function getProtocolOccurrences(fileName: string): SwarmProtocolOccurrence[] {
   }
   const mapper = (occurrence: Some<Occurrence>): SwarmProtocolOccurrence => {
     const value = getValue(occurrence)
-    return {name: value.name, jsonObject: JSON5.stringify(value.jsonObject)}
+    return { name: value.name, jsonObject: JSON5.stringify(value.jsonObject) }
   }
   return occurrences.map(mapper)
 }
