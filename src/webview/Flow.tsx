@@ -288,7 +288,7 @@ const LayoutFlow = ({
           onEdgeDoubleClick={(_, edge) => {
             selectedEdgeRef.current = edge;
             commandRef.current = edge.label?.toString().split("@")[0] ?? "";
-            roleRef.current = edge.label?.toString().split("@")[1] ?? "";
+            roleRef.current = edge.label?.toString().split("@")[1].split("<")[0] ?? "";
             logTypeRef.current =
               (edge.data.logType as string[])?.join(",") ?? null;
             edgeLabelRef.current = commandRef.current + "@" + roleRef.current;

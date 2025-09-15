@@ -33,7 +33,7 @@ export namespace Events {
 
 export const TransportOrder = SwarmProtocol.make('warehouse-factory', Events.allEvents)
 
-export const transportOrderProtocol: SwarmProtocolType = {
+export const transportOrderProtocol = {
   initial: 'initial',
   transitions: [
     {source: 'initial', target: 'auction', label: {cmd: 'request', role: 'warehouse', logType: [Events.request.type]}},
@@ -44,7 +44,7 @@ export const transportOrderProtocol: SwarmProtocolType = {
   ]
 }
 
-export const assemblyLineProtocol: SwarmProtocolType = {
+export const assemblyLineProtocol = {
   initial: 'initial',
   transitions: [
     {source: 'initial', target: 'wait', label: { cmd: 'request', role: 'warehouse', logType: [Events.request.type]}},
