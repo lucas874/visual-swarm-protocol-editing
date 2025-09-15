@@ -1,6 +1,6 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind, NumericLiteral } from "ts-morph";
-import { SwarmProtocolType } from "@actyx/machine-check";
-export type Occurrence = { name: string, jsonObject: SwarmProtocolType }
+import { Occurrence, SwarmProtocol } from "./types";
+
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
 export type Some<T> = { tag: "Some", value: T }
@@ -79,11 +79,11 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
 
 }
 
-function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmProtocolType {
+function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmProtocol {
     const protocol: any = {}
     protocol[INITIAL_FIELD] = extractValue(properties.get(INITIAL_FIELD).getInitializer())
     protocol[TRANSITIONS_FIELD] = extractValue(properties.get(TRANSITIONS_FIELD).getInitializer())
-    return protocol as SwarmProtocolType
+    return protocol as SwarmProtocol
 }
 
 // Recursively extract the value from an initializer node

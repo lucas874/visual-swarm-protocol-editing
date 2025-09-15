@@ -40,3 +40,5 @@ export interface SwarmProtocol {
   subscriptions?: Record<string, string[]>;
   transitions: Transition[];
 }
+
+export type Occurrence = { name: string, jsonObject: SwarmProtocol }

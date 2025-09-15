@@ -9,7 +9,8 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
-import { getValue, isSome, Occurrence, parseProtocols, Some } from "./parse-protocols";
+import { getValue, isSome, parseProtocols, Some } from "./parse-protocols";
+import { Occurrence } from "./types";
 type SwarmProtocolOccurrence = { name: string, jsonObject: string }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -106,6 +107,8 @@ export function activate(context: vscode.ExtensionContext) {
 
               // Find the correct occurrence based on the data from the child component
               if (occurrenceName === message.data.name) {
+                console.log(message)
+                console.log()
                 // Replace text in the active editor with the new data
                 editor
                   .edit((editBuilder) => {
@@ -333,6 +336,27 @@ function getProtocolOccurrences(fileName: string): SwarmProtocolOccurrence[] {
   }
   return occurrences.map(mapper)
 }
+
+/*
+function getProtocolOccurrences(fileName: string): Occurrence[] {
+  const occurrences = parseProtocols(fileName)
+  if (occurrences.length === 0) {
+    vscode.window.showErrorMessage("No swarm protocol found");
+  }
+
+  if (!occurrences.every(o => isSome(o))) {
+    vscode.window.showErrorMessage("Error parsing swarm protocols");
+    return []
+  }
+  const mapper = (occurrence: Some<Occurrence>): Occurrence => {
+    const value = getValue(occurrence)
+    return value
+    //return { name: value.name, jsonObject: JSON5.stringify(value.jsonObject) }
+  }
+  return occurrences.map(mapper)
+}
+
+*/
 
 function getNestedJSONObject(text: string, index: number) {
   // Get the index of the opening curly brace
