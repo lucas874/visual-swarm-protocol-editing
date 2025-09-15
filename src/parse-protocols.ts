@@ -1,4 +1,4 @@
-import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind } from "ts-morph";
+import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind, NumericLiteral } from "ts-morph";
 import { SwarmProtocolType } from "@actyx/machine-check";
 export type Occurrence = { name: string, jsonObject: SwarmProtocolType }
 
@@ -80,8 +80,10 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
 }
 
 function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmProtocolType {
-    const protocol = new Object()
-    let transitiions_ = []
+    const protocol: any = {}
+    protocol[INITIAL_FIELD] = extractValue(properties.get(INITIAL_FIELD).getInitializer())
+    protocol[TRANSITIONS_FIELD] = extractValue(properties.get(TRANSITIONS_FIELD).getInitializer())
+    /* let transitiions_ = []
     const transitionsInitializer = properties.get(TRANSITIONS_FIELD).getInitializer() as ArrayLiteralExpression
     const transitions = transitionsInitializer.getElements()
         .map(element => {
@@ -104,7 +106,7 @@ function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmP
             p.getInitializer().getKind() === SyntaxKind.ObjectLiteralExpression ?
                 `"${p.getName()}": ${objectExpressionMapper(p.getInitializer() as ObjectLiteralExpression)}`
                 : `"${p.getName()}": ${p.getInitializer().getText().replace(/'/g, "\"")}`
-            ).join(", ")}}`}
+            ).join(", ")}}`} */
 
     /* transitionsInitializer.getElements().forEach(element => {
         let properties = [];
@@ -117,13 +119,41 @@ function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmP
         transitiions_.push(`{ ${properties.join(", ")} }`)
     }) */
     //const transitionsMapper = ()
-    let protocol_ = `{ "initial": ${properties.get(INITIAL_FIELD).getInitializer().getText()}, "transitions": [${transitionsInitializer.getElements().map(element => objectExpressionMapper(element as ObjectLiteralExpression)).join(", ")}] }`
+    //let protocol_ = `{ "initial": ${properties.get(INITIAL_FIELD).getInitializer().getText()}, "transitions": [${transitionsInitializer.getElements().map(element => objectExpressionMapper(element as ObjectLiteralExpression)).join(", ")}] }`
     //console.log(protocol_)
     //console.log(JSON.parse(protocol_))
     //protocol["initial"] = properties.get(INITIAL_FIELD).getInitializer().getText().replace(/'/g, "\"")
     //protocol["transitions"] = transitions
+    console.log(protocol)
+    console.log(JSON.stringify(protocol))
+    return protocol as SwarmProtocolType
+}
 
-    return JSON.parse(protocol_) as SwarmProtocolType
+// Recursively extract the value from an initializer node
+function extractValue(node: Node): any {
+    switch (node.getKind()) {
+        case SyntaxKind.StringLiteral:
+            return (node as StringLiteral).getLiteralText();
+        case SyntaxKind.NumericLiteral:
+            return Number((node as NumericLiteral).getLiteralText());
+        case SyntaxKind.TrueKeyword:
+            return true;
+        case SyntaxKind.FalseKeyword:
+            return false;
+        case SyntaxKind.ObjectLiteralExpression:
+            const obj: any = {};
+            (node as ObjectLiteralExpression).getProperties().forEach(prop => {
+                if (Node.isPropertyAssignment(prop)) {
+                    obj[prop.getName()] = extractValue(prop.getInitializer());
+                }
+            });
+            return obj;
+        case SyntaxKind.ArrayLiteralExpression:
+            return (node as ArrayLiteralExpression).getElements().map(extractValue);
+        // Add more cases as needed (e.g., null, identifiers, etc.)
+        default:
+            throw new Error(`Unsupported node kind: ${node.getKindName()}`);
+    }
 }
 
 // Used to turn the 'initial' and 'transitions' fields of a SwarmProtocolType
