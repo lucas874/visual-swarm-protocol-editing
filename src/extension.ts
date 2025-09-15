@@ -320,7 +320,7 @@ function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
   }
 }
 
-function getProtocolOccurrences(fileName: string): SwarmProtocolOccurrence[] {
+/* function getProtocolOccurrences(fileName: string): SwarmProtocolOccurrence[] {
   const occurrences = parseProtocols(fileName)
   if (occurrences.length === 0) {
     vscode.window.showErrorMessage("No swarm protocol found");
@@ -335,9 +335,9 @@ function getProtocolOccurrences(fileName: string): SwarmProtocolOccurrence[] {
     return { name: value.name, jsonObject: JSON5.stringify(value.jsonObject) }
   }
   return occurrences.map(mapper)
-}
+} */
 
-/*
+
 function getProtocolOccurrences(fileName: string): Occurrence[] {
   const occurrences = parseProtocols(fileName)
   if (occurrences.length === 0) {
@@ -356,7 +356,7 @@ function getProtocolOccurrences(fileName: string): Occurrence[] {
   return occurrences.map(mapper)
 }
 
-*/
+
 
 function getNestedJSONObject(text: string, index: number) {
   // Get the index of the opening curly brace

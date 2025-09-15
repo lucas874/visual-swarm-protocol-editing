@@ -3,7 +3,7 @@ import Flow from "./Flow";
 import JSON5 from "json5";
 import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
-import { LayoutType, SwarmProtocol, Transition } from "../types";
+import { LayoutType, MessageEventPayload, Occurrence, SwarmProtocol, Transition } from "../types";
 import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
 import DownloadButton from "./custom-elements/DownloadButton";
@@ -19,9 +19,9 @@ const edgesTypes = {
 
 const App: React.FC = () => {
   // Set the initial state of nodes and edges, to ensure rerendering after values are set
-  const [nodes, setNodes] = useState<any[]>([]);
-  const [edges, setEdges] = useState<any[]>([]);
-  const [occurrences, setOccurrences] = useState<any[]>([]);
+  const [nodes, setNodes] = useState<string[]>([]);
+  const [edges, setEdges] = useState<Transition[]>([]);
+  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [protocol, setProtocol] = useState<SwarmProtocol>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -29,14 +29,15 @@ const App: React.FC = () => {
   const selectedProtocolRef = React.useRef("");
 
   useEffect(() => {
-    const buildProtocol = (event: MessageEvent) => {
+    const buildProtocol = (event: MessageEvent<MessageEventPayload>) => {
       const message = event.data;
 
       if (message.command === "buildProtocol") {
-        setOccurrences(parseObjects(message.data));
+        setOccurrences(message.data);
 
         // Message data is used to set values, occurrences not updated this rendering
-        let tempProtocol = JSON5.parse(message.data[0].jsonObject);
+        //let tempProtocol = JSON5.parse(message.data[0].jsonObject);
+        let tempProtocol = message.data[0].jsonObject
 
         // Save protocol to state
         setProtocol(tempProtocol);
@@ -98,16 +99,16 @@ const App: React.FC = () => {
     );
 
     // Set nodes to correspond to the selected protocol
-    setNodes(createNodes(occurrence.json));
+    setNodes(createNodes(occurrence.jsonObject));
 
     // Set edges to correspond to the selected protocol
-    setEdges(createEdges(occurrence.json));
+    setEdges(createEdges(occurrence.jsonObject));
 
     // Set the protocol to the selected occurrence
-    setProtocol(occurrence.json);
+    setProtocol(occurrence.jsonObject);
 
     // Set subscriptions
-    subRef.current = createSubscriptions(occurrence.json);
+    subRef.current = createSubscriptions(occurrence.jsonObject);
 
     // Set the selected protocol to the selected occurrence
     selectedProtocolRef.current = e.target.value;
@@ -225,14 +226,14 @@ const App: React.FC = () => {
   );
 };
 
-function parseObjects(occurrences: any[]): any[] {
+function parseObjects(occurrences: Occurrence[]): any[] {
   let occurrences2 = [];
 
   // Parse the jsonObject to JSON5
   occurrences.forEach((occurrence) => {
     occurrences2.push({
       name: occurrence.name,
-      json: JSON5.parse(occurrence.jsonObject),
+      json: occurrence.jsonObject //JSON5.parse(occurrence.jsonObject),
     });
   });
 

@@ -42,3 +42,8 @@ export interface SwarmProtocol {
 }
 
 export type Occurrence = { name: string, jsonObject: SwarmProtocol }
+
+export type BuildProtocol = { command: "buildProtocol", data: Occurrence[] }
+export type HighLightEdges = { command: "highlightEdges", data: { protocol: string, transitions: Transition[] } }
+export type HighlightNodes = { command: "highlightNodes", data: { protocol: string, nodes: string[] } }
+export type MessageEventPayload = BuildProtocol | HighLightEdges | HighlightNodes
