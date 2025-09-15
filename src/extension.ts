@@ -320,24 +320,6 @@ function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
   }
 }
 
-/* function getProtocolOccurrences(fileName: string): SwarmProtocolOccurrence[] {
-  const occurrences = parseProtocols(fileName)
-  if (occurrences.length === 0) {
-    vscode.window.showErrorMessage("No swarm protocol found");
-  }
-
-  if (!occurrences.every(o => isSome(o))) {
-    vscode.window.showErrorMessage("Error parsing swarm protocols");
-    return []
-  }
-  const mapper = (occurrence: Some<Occurrence>): SwarmProtocolOccurrence => {
-    const value = getValue(occurrence)
-    return { name: value.name, jsonObject: JSON5.stringify(value.jsonObject) }
-  }
-  return occurrences.map(mapper)
-} */
-
-
 function getProtocolOccurrences(fileName: string): Occurrence[] {
   const occurrences = parseProtocols(fileName)
   if (occurrences.length === 0) {
@@ -348,12 +330,8 @@ function getProtocolOccurrences(fileName: string): Occurrence[] {
     vscode.window.showErrorMessage("Error parsing swarm protocols");
     return []
   }
-  const mapper = (occurrence: Some<Occurrence>): Occurrence => {
-    const value = getValue(occurrence)
-    return value
-    //return { name: value.name, jsonObject: JSON5.stringify(value.jsonObject) }
-  }
-  return occurrences.map(mapper)
+
+  return occurrences.map(someOccurrence => getValue(someOccurrence))
 }
 
 

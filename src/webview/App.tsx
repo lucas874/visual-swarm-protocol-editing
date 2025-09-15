@@ -226,20 +226,6 @@ const App: React.FC = () => {
   );
 };
 
-function parseObjects(occurrences: Occurrence[]): any[] {
-  let occurrences2 = [];
-
-  // Parse the jsonObject to JSON5
-  occurrences.forEach((occurrence) => {
-    occurrences2.push({
-      name: occurrence.name,
-      json: occurrence.jsonObject //JSON5.parse(occurrence.jsonObject),
-    });
-  });
-
-  return occurrences2;
-}
-
 function createSubscriptions(protocol): Record<string, string[]> {
   let subscriptions = protocol.subscriptions ?? {};
 
