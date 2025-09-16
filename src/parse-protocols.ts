@@ -64,15 +64,8 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
                 .map(e => (e as PropertyAssignment))
                 .map(p => [p.getName(), p]))
 
-            for (const [name, p] of properties) {
-                console.log("property: ", name)
-            }
-
             const initial = properties.get(INITIAL_FIELD)
             const transitions = properties.get(TRANSITIONS_FIELD)
-            const thing = node.getStartLineNumber()
-            const thingg = node.getStartLinePos()
-            const startPos = node.getStart()
             if (initial && transitions) {
                 const expandedInitializerInitial = getInitializerInitial(initial)
                 const expandedInitializerTransitions = getInitializerTransitions(transitions)

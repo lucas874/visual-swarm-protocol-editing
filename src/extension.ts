@@ -9,9 +9,8 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
-import { getValue, isSome, parseProtocols, Some } from "./parse-protocols";
+import { getValue, isSome, parseProtocols } from "./parse-protocols";
 import { Occurrence } from "./types";
-type SwarmProtocolOccurrence = { name: string, jsonObject: string }
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -25,11 +24,6 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage("No active editor found");
         return;
       }
-
-      // Save text from active editor to a variable
-      const text = activeEditor.document.getText();
-      // Set regex string to search for the SwarmProtocolType
-      const typeRegex = /\S*:\s*SwarmProtocolType\s*=\s*/gm;
 
       let occurrences = getProtocolOccurrences(activeEditor.document.fileName)
       if (occurrences.length === 0) {
@@ -105,10 +99,8 @@ export function activate(context: vscode.ExtensionContext) {
               // Wait until the editor has been updated
               .then(() => {
                 // Get the updated occurrences
-                occurrences = getAllProtocolOccurrences(
-                  editor.document.getText(),
-                  typeRegex
-                );
+                occurrences = getProtocolOccurrences(
+                  editor.document.getText());
 
                 // Open the webview again with the new data
                 panel.webview.postMessage({
@@ -258,44 +250,6 @@ async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
   };
 }
 
-function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
-  let occurrences = [];
-
-  // Check if the file contains a swarm protocol
-  if (text.includes("SwarmProtocolType")) {
-    // Create list of all SwarmProtocolType occurrences
-    let helperArray;
-
-    // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-    // Find all occurrences of the SwarmProtocolType
-    while ((helperArray = typeRegex.exec(text)) !== null) {
-      // Find the name of the protocol
-      const occurrenceName = helperArray[0].substring(
-        0,
-        helperArray[0].indexOf(":")
-      );
-
-      let jsonObject = getNestedJSONObject(text, typeRegex.lastIndex);
-
-      if (jsonObject === "") {
-        // End the process if there are errors
-        return;
-      } else {
-        // Put the occurrence in the occurrences array along with the json code.
-        occurrences.push({
-          name: occurrenceName,
-          jsonObject: jsonObject,
-        });
-      }
-    }
-
-    return occurrences;
-  } else {
-    vscode.window.showErrorMessage("No swarm protocol found");
-    return [];
-  }
-}
-
 function getProtocolOccurrences(fileName: string): Occurrence[] {
   const occurrences = parseProtocols(fileName)
   if (occurrences.length === 0) {
@@ -308,63 +262,6 @@ function getProtocolOccurrences(fileName: string): Occurrence[] {
   }
 
   return occurrences.map(someOccurrence => getValue(someOccurrence))
-}
-
-
-
-function getNestedJSONObject(text: string, index: number) {
-  // Get the index of the opening curly brace
-  let openingCurlyBraceIndex = text.indexOf("{", index);
-  let closingCurlyBraceIndex = getLastIndex(text, index);
-
-  // Get the JSON object from the file
-  const jsonObject = text.substring(
-    openingCurlyBraceIndex,
-    closingCurlyBraceIndex
-  );
-
-  try {
-    JSON5.parse(jsonObject);
-  } catch (error) {
-    vscode.window.showErrorMessage(
-      "The JSON object is not valid. Please check the syntax"
-    );
-    return "";
-  }
-
-  return jsonObject;
-}
-
-function getLastIndex(text: string, index: number): number {
-  // Get the index of the opening curly brace
-  let closingCurlyBraceIndex;
-
-  let counter = 0;
-
-  do {
-    const openIndex = text.indexOf("{", index);
-    const closingIndex = text.indexOf("}", index);
-
-    // Ensure that last curly brace can be found
-    if (closingIndex === -1) {
-      vscode.window.showErrorMessage(
-        "Cannot find the last closing curly brace"
-      );
-      return -1;
-    }
-
-    // Check if the opening curly brace is before the closing curly brace
-    if (openIndex < closingIndex && openIndex !== -1) {
-      index = openIndex + 1;
-      counter++;
-    } else {
-      index = closingIndex + 1;
-      closingCurlyBraceIndex = closingIndex;
-      counter--;
-    }
-  } while (counter !== 0);
-
-  return closingCurlyBraceIndex + 1;
 }
 
 function getReactAppHtml(scriptUri: vscode.Uri): string {
