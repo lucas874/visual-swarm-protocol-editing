@@ -13,7 +13,7 @@ export function checkWellFormedness(
 ): { check: WellFormednessCheck; detail: string } {
   console.log("swarm protocol: ", swarmProtocol)
   console.log("protocol: ", protocol)
-  const hasSubscriptions = Object.entries(protocol.subscriptions)
+  const hasSubscriptions = Object.entries(protocol.metadata.subscriptions)
     .every(([_, eventTypes]) => eventTypes.length > 0)
 
   // Check if the protocol is well-formed
@@ -31,7 +31,7 @@ export function checkWellFormedness(
       };
     }
 
-    const message = checkSwarmProtocol(swarmProtocol, protocol.subscriptions);
+    const message = checkSwarmProtocol(swarmProtocol, protocol.metadata.subscriptions);
 
     let errorMessage: WellFormednessCheck = {
       name: "highlightEdges",
@@ -130,7 +130,7 @@ export function checkWellFormedness(
 
 export function checkUnconnectedNodes(protocol: SwarmProtocol): string[] {
   let unconnectedNodes = [];
-  protocol.layout.nodes.map((node) => {
+  protocol.metadata.layout.nodes.map((node) => {
     if (
       !protocol.transitions.some(
         (transition) =>

@@ -11,8 +11,11 @@ import {
 } from "./error-utils";
 import { getValue, isSome, parseProtocols } from "./parse-protocols";
 import { Occurrence } from "./types";
+import { MetadataStore } from "./handle-metadata";
 
 export function activate(context: vscode.ExtensionContext) {
+  const store = new MetadataStore(context)
+
   context.subscriptions.push(
     // Create the command to open the webview
     vscode.commands.registerCommand("extension.openWebview", () => {
@@ -25,7 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      let occurrences = getProtocolOccurrences(activeEditor.document.fileName)
+      let occurrences = getProtocolOccurrences(activeEditor.document.fileName, store)
       if (occurrences.length === 0) {
         return;
       }
@@ -62,12 +65,12 @@ export function activate(context: vscode.ExtensionContext) {
       panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
           // Only save if protocol is well-formed. Await answer from error check.
-          let wellFormedness = await errorChecks(message.data.protocol);
+          let wellFormedness = await errorChecks(message.data.swarmProtocol);
           if (wellFormedness.name === "highlightEdges") {
             panel.webview.postMessage({
               command: "highlightEdges",
               data: {
-                protocol: JSON5.stringify(message.data.protocol),
+                protocol: JSON5.stringify(message.data.swarmProtocol),
                 transitions: wellFormedness.transitions,
               },
             });
@@ -75,7 +78,7 @@ export function activate(context: vscode.ExtensionContext) {
             panel.webview.postMessage({
               command: "highlightNodes",
               data: {
-                protocol: JSON5.stringify(message.data.protocol),
+                protocol: JSON5.stringify(message.data.swarmProtocol),
                 nodes: wellFormedness.nodes,
               },
             });
@@ -93,14 +96,16 @@ export function activate(context: vscode.ExtensionContext) {
                     activeEditor.document.positionAt(message.data.startPos),
                     activeEditor.document.positionAt(message.data.endPos)
                   ),
-                  `${message.data.protocol}`
+                  `${{ initial: message.data.swarmProtocol.initial, transitions: message.data.swarmProtocol.transitions }}`
                 );
               })
               // Wait until the editor has been updated
               .then(() => {
                 // Get the updated occurrences
                 occurrences = getProtocolOccurrences(
-                  editor.document.getText());
+                  editor.document.getText(),
+                  store
+                );
 
                 // Open the webview again with the new data
                 panel.webview.postMessage({
@@ -111,7 +116,9 @@ export function activate(context: vscode.ExtensionContext) {
                 // Make sure the panel is visible again
                 panel.reveal();
               }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`)
-            );
+              );
+            // await??
+            store.setSwarmProtocolMetaData(activeEditor.document.uri, message.data.name, message.data.metadata)
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All transitions must have a label");
@@ -132,9 +139,9 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // Method to check if the protocol is well-formed and show messages to the user
-async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
+async function errorChecks(protocolObject: SwarmProtocolType): Promise<WellFormednessCheck> {
   // Parse the protocol
-  let protocolObject = JSON5.parse(protocol);
+  //let protocolObject = JSON5.parse(protocol);
 
   // Transform custom type to SwarmProtocolType
   let swarmProtocol: SwarmProtocolType = {
@@ -250,18 +257,29 @@ async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
   };
 }
 
-function getProtocolOccurrences(fileName: string): Occurrence[] {
-  const occurrences = parseProtocols(fileName)
-  if (occurrences.length === 0) {
+function getProtocolOccurrences(fileName: string, store: MetadataStore): Occurrence[] {
+  const occurrencesOption = parseProtocols(fileName)
+  if (occurrencesOption.length === 0) {
     vscode.window.showErrorMessage("No swarm protocol found");
   }
 
-  if (!occurrences.every(o => isSome(o))) {
+  if (!occurrencesOption.every(o => isSome(o))) {
     vscode.window.showErrorMessage("Error parsing swarm protocols");
     return []
   }
+  const occurrences = occurrencesOption
+    .map(someOccurrence => getValue(someOccurrence))
+    .map(occurrence => {
+      return {
+        ...occurrence,
+        swarmProtocol: {
+          ...occurrence.swarmProtocol,
+          metadata: store.getSwarmProtocolMetaData(vscode.Uri.file(fileName), occurrence.name)
+        }
+      }
+    })
 
-  return occurrences.map(someOccurrence => getValue(someOccurrence))
+  return occurrences
 }
 
 function getReactAppHtml(scriptUri: vscode.Uri): string {

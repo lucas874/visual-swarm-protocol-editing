@@ -34,11 +34,15 @@ export type LayoutType = {
   edges?: EdgeLayout[];
 };
 
+export type SwarmProtocolMetadata = {
+    layout: LayoutType;
+    subscriptions: Record<string, string[]>;
+}
+
 export interface SwarmProtocol {
   initial: string;
-  layout?: LayoutType;
-  subscriptions?: Record<string, string[]>;
   transitions: Transition[];
+  metadata?: SwarmProtocolMetadata
 }
 
 // Start and end pos are the source file text positions (in characters from beginning of file) 
@@ -49,4 +53,5 @@ export type Occurrence = { name: string, swarmProtocol: SwarmProtocol, swarmProt
 export type BuildProtocol = { command: "buildProtocol", data: Occurrence[] }
 export type HighLightEdges = { command: "highlightEdges", data: { protocol: SwarmProtocol, transitions: Transition[] } }
 export type HighlightNodes = { command: "highlightNodes", data: { protocol: SwarmProtocol, nodes: string[] } }
-export type MessageEventPayload = BuildProtocol | HighLightEdges | HighlightNodes
+export type ChangeProtocol = { command: "changeProtocol", data: Occurrence }
+export type MessageEventPayload = BuildProtocol | HighLightEdges | HighlightNodes | ChangeProtocol

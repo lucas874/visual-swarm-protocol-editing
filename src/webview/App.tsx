@@ -165,9 +165,8 @@ const App: React.FC = () => {
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
       initial: initialNode ? initialNode.data.label : "unknown",
-      layout: layout,
-      subscriptions: subRef.current,
       transitions: newTransitions,
+      metadata: {layout: layout, subscriptions: subRef.current}
     };
 
     // Send the changes to the extension
@@ -175,7 +174,8 @@ const App: React.FC = () => {
       command: "changeProtocol",
       data: {
         name: selectedProtocolRef.current,
-        protocol: JSON5.stringify(protocol),
+        swarmProtocol: protocol,
+        swarmProtocolOriginal: occurrences.get(selectedProtocolRef.current).swarmProtocolOriginal, 
         startPos: occurrences.get(selectedProtocolRef.current).position.startPos,
         endPos: occurrences.get(selectedProtocolRef.current).position.endPos
       },
@@ -219,7 +219,7 @@ const App: React.FC = () => {
       <Flow
         nodes={nodes}
         edges={edges}
-        hasLayout={protocol?.layout !== undefined}
+        hasLayout={protocol?.metadata?.layout !== undefined}
         edgesTypes={edgesTypes}
         sendDataToParent={handleChangesFromFlow}
         sendErrorToParent={(error) => vscode.postMessage(error)}
@@ -278,7 +278,7 @@ function createEdges(
         },
       };
     } else {
-      const edgeLayout = protocol.layout?.edges?.find(
+      const edgeLayout = protocol.metadata?.layout?.edges?.find(
         (edge) => edge.id === `${transition.source}-${transition.target}`
       );
       return {
@@ -323,7 +323,7 @@ function createNodes(
     }
   });
 
-  protocol.layout?.nodes?.forEach((element) => {
+  protocol.metadata?.layout?.nodes?.forEach((element) => {
     if (!nodeNames.has(element.name)) {
       nodeNames.add(element.name);
     }
@@ -331,7 +331,7 @@ function createNodes(
 
   // Create nodes that correspond to ReactFlow
   const nodes = Array.from(nodeNames).map((nodeName) => {
-    let nodeLayout = protocol.layout?.nodes?.find(
+    let nodeLayout = protocol.metadata?.layout?.nodes?.find(
       (node) => node.name === nodeName
     );
     return {
