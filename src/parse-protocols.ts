@@ -70,18 +70,23 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
 
             const initial = properties.get(INITIAL_FIELD)
             const transitions = properties.get(TRANSITIONS_FIELD)
+            const thing = node.getStartLineNumber()
+            const thingg = node.getStartLinePos()
+            const startPos = node.getStart()
             if (initial && transitions) {
                 const expandedInitializerInitial = getInitializerInitial(initial)
                 const expandedInitializerTransitions = getInitializerTransitions(transitions)
                 if (isSome(expandedInitializerInitial) && isSome(expandedInitializerTransitions)) {
                     properties.set(INITIAL_FIELD, getValue(expandedInitializerInitial))
                     properties.set(TRANSITIONS_FIELD, getValue(expandedInitializerTransitions))
+                    // Not sure about handling of end position. But did not work just using node.getEnd()..., if formatted to have e.g. }]
+                    // these characters would stay messing up the number of open and closed brackets 
                     return some(
                         {
                             name: node.getName(),
                             swarmProtocol: properties_to_json(properties),
                             swarmProtocolOriginal: properties_to_json(properties),
-                            position: { startLineNumber: 0, startCharacter: 0, endLineNumber: 0, endCharacter: 0}
+                            position: { startPos: node.getInitializer().getStart(), endPos: node.getInitializer().getEnd() + node.getInitializer().getFullWidth() }
                         })
                 }
             }

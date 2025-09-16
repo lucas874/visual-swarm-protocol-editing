@@ -21,7 +21,7 @@ const App: React.FC = () => {
   // Set the initial state of nodes and edges, to ensure rerendering after values are set
   const [nodes, setNodes] = useState<string[]>([]);
   const [edges, setEdges] = useState<Transition[]>([]);
-  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
+  const [occurrences, setOccurrences] = useState<Map<string, Occurrence>>(new Map());
   const [protocol, setProtocol] = useState<SwarmProtocol>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -33,7 +33,7 @@ const App: React.FC = () => {
       const message = event.data;
 
       if (message.command === "buildProtocol") {
-        setOccurrences(message.data);
+        setOccurrences(new Map(message.data.map(o => [o.name, o])));
 
         // Message data is used to set values, occurrences not updated this rendering
         //let tempProtocol = JSON5.parse(message.data[0].jsonObject);
@@ -94,9 +94,10 @@ const App: React.FC = () => {
   // For selection of protocol
   const handleSelect = (e: any) => {
     // Find the occurrence that corresponds to the selected protocol
-    let occurrence = occurrences.find(
+    let occurrence = occurrences.get(e.target.value)
+    /* let occurrence = occurrences.find(
       (occurrence) => occurrence.name === e.target.value
-    );
+    ); */
 
     // Set nodes to correspond to the selected protocol
     setNodes(createNodes(occurrence.swarmProtocol));
@@ -158,7 +159,7 @@ const App: React.FC = () => {
         }
       }),
     };
-
+    //selectedProtocolRef
     let initialNode = changedNodes.find((node) => node.data.initial);
 
     // Change swarm protocol to correspond to the changes
@@ -175,6 +176,8 @@ const App: React.FC = () => {
       data: {
         name: selectedProtocolRef.current,
         protocol: JSON5.stringify(protocol),
+        startPos: occurrences.get(selectedProtocolRef.current).position.startPos,
+        endPos: occurrences.get(selectedProtocolRef.current).position.endPos
       },
     });
   }
@@ -204,9 +207,9 @@ const App: React.FC = () => {
         />
       )}
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
-      {occurrences.length > 1 && (
+      {occurrences.size > 1 && (
         <select className="dropdown" onChange={handleSelect}>
-          {occurrences.map((occurrence) => (
+          {Array.from(occurrences).map(([name, occurrence]) => (
             <option value={occurrence.name} key={occurrence.name}>
               {occurrence.name}
             </option>

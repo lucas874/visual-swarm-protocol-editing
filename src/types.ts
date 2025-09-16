@@ -41,7 +41,9 @@ export interface SwarmProtocol {
   transitions: Transition[];
 }
 
-export type Position = { startLineNumber: number, startCharacter: number, endLineNumber: number, endCharacter: number }
+// Start and end pos are the source file text positions (in characters from beginning of file) 
+//of the swarm protocol occurrence.  
+export type Position = { startPos: number, endPos: number }
 export type Occurrence = { name: string, swarmProtocol: SwarmProtocol, swarmProtocolOriginal: SwarmProtocol, position: Position }
 
 export type BuildProtocol = { command: "buildProtocol", data: Occurrence[] }

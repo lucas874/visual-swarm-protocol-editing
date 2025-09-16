@@ -93,10 +93,41 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Create list of all SwarmProtocolType occurrences
             let helperArray;
+            console.log(message)
+            console.log()
+            // Replace text in the active editor with the new data
+            editor
+              .edit((editBuilder) => {
+                editBuilder.replace(
+                  new vscode.Range(
+                    activeEditor.document.positionAt(message.data.startPos),
+                    activeEditor.document.positionAt(message.data.endPos)
+                  ),
+                  `${message.data.protocol}`
+                );
+              })
+              // Wait until the editor has been updated
+              .then(() => {
+                // Get the updated occurrences
+                occurrences = getAllProtocolOccurrences(
+                  editor.document.getText(),
+                  typeRegex
+                );
+
+                // Open the webview again with the new data
+                panel.webview.postMessage({
+                  command: "buildProtocol",
+                  data: occurrences,
+                });
+
+                // Make sure the panel is visible again
+                panel.reveal();
+              }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`)
+            );
 
             // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
             // Find all occurrences of the SwarmProtocolType
-            while (
+/*             while (
               (helperArray = typeRegex.exec(editor.document.getText())) !== null
             ) {
               // Find the name of the protocol
@@ -114,13 +145,8 @@ export function activate(context: vscode.ExtensionContext) {
                   .edit((editBuilder) => {
                     editBuilder.replace(
                       new vscode.Range(
-                        activeEditor.document.positionAt(typeRegex.lastIndex),
-                        activeEditor.document.positionAt(
-                          getLastIndex(
-                            editor.document.getText(),
-                            typeRegex.lastIndex
-                          )
-                        )
+                        activeEditor.document.positionAt(message.data.startPos),
+                        activeEditor.document.positionAt(message.data.endPos)
                       ),
                       `${message.data.protocol}`
                     );
@@ -141,9 +167,10 @@ export function activate(context: vscode.ExtensionContext) {
 
                     // Make sure the panel is visible again
                     panel.reveal();
-                  });
+                  }, (reason) => 
+                    console.log("reason: ", reason) );
               }
-            }
+            } */
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All transitions must have a label");
