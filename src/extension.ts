@@ -90,11 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
             const editor = await vscode.window.showTextDocument(
               activeEditor.document.uri
             );
-
-            // Create list of all SwarmProtocolType occurrences
-            let helperArray;
             console.log(message)
-            console.log()
             // Replace text in the active editor with the new data
             editor
               .edit((editBuilder) => {
@@ -124,53 +120,6 @@ export function activate(context: vscode.ExtensionContext) {
                 panel.reveal();
               }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`)
             );
-
-            // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-            // Find all occurrences of the SwarmProtocolType
-/*             while (
-              (helperArray = typeRegex.exec(editor.document.getText())) !== null
-            ) {
-              // Find the name of the protocol
-              const occurrenceName = helperArray[0].substring(
-                0,
-                helperArray[0].indexOf(":")
-              );
-
-              // Find the correct occurrence based on the data from the child component
-              if (occurrenceName === message.data.name) {
-                console.log(message)
-                console.log()
-                // Replace text in the active editor with the new data
-                editor
-                  .edit((editBuilder) => {
-                    editBuilder.replace(
-                      new vscode.Range(
-                        activeEditor.document.positionAt(message.data.startPos),
-                        activeEditor.document.positionAt(message.data.endPos)
-                      ),
-                      `${message.data.protocol}`
-                    );
-                  })
-                  // Wait until the editor has been updated
-                  .then(() => {
-                    // Get the updated occurrences
-                    occurrences = getAllProtocolOccurrences(
-                      editor.document.getText(),
-                      typeRegex
-                    );
-
-                    // Open the webview again with the new data
-                    panel.webview.postMessage({
-                      command: "buildProtocol",
-                      data: occurrences,
-                    });
-
-                    // Make sure the panel is visible again
-                    panel.reveal();
-                  }, (reason) => 
-                    console.log("reason: ", reason) );
-              }
-            } */
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All transitions must have a label");
