@@ -47,13 +47,15 @@ export function parseProtocols(fileName: string): Option<Occurrence>[] {
     return visitVariableDeclarations(sourceFile)
 }
 
-
+// Get all variable declarations and try to parse them as swarm protocols.
 function visitVariableDeclarations(sourceFile: SourceFile): Option<Occurrence>[] {
     const variableDeclarations = sourceFile.getVariableDeclarations()
     const swarmProtocols = variableDeclarations.map(variableDeclaration => swarmProtocolDeclaration(variableDeclaration)).filter(o => isSome(o))
     return swarmProtocols
 }
 
+// If a variable is declared as an object with the fields 'initial' and 'transitions'
+// try to parse it.
 function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence> {
     switch (node.getInitializer().getKind()) {
         case SyntaxKind.ObjectLiteralExpression:
@@ -61,6 +63,10 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
                 .getProperties()
                 .map(e => (e as PropertyAssignment))
                 .map(p => [p.getName(), p]))
+
+            for (const [name, p] of properties) {
+                console.log("property: ", name)
+            }
 
             const initial = properties.get(INITIAL_FIELD)
             const transitions = properties.get(TRANSITIONS_FIELD)
@@ -70,7 +76,13 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
                 if (isSome(expandedInitializerInitial) && isSome(expandedInitializerTransitions)) {
                     properties.set(INITIAL_FIELD, getValue(expandedInitializerInitial))
                     properties.set(TRANSITIONS_FIELD, getValue(expandedInitializerTransitions))
-                    return some({name: node.getName(), jsonObject: properties_to_json(properties)})
+                    return some(
+                        {
+                            name: node.getName(),
+                            swarmProtocol: properties_to_json(properties),
+                            swarmProtocolOriginal: properties_to_json(properties),
+                            position: { startLineNumber: 0, startCharacter: 0, endLineNumber: 0, endCharacter: 0}
+                        })
                 }
             }
     }
@@ -166,7 +178,7 @@ function objectLiteralInitializer(node: ObjectLiteralExpression): Option<Node<ts
     (node as ObjectLiteralExpression)
         .getProperties()
         .forEach(property => {
-            if((property as PropertyAssignment).getName() === "logType") {
+            if ((property as PropertyAssignment).getName() === "logType") {
                 arrayLiteralInitializer((property as PropertyAssignment).getInitializer() as ArrayLiteralExpression, handleLogTypeInitializer)
             } else {
                 literalInitializer((property as PropertyAssignment).getInitializer())

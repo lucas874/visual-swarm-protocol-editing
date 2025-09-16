@@ -37,7 +37,7 @@ const App: React.FC = () => {
 
         // Message data is used to set values, occurrences not updated this rendering
         //let tempProtocol = JSON5.parse(message.data[0].jsonObject);
-        let tempProtocol = message.data[0].jsonObject
+        let tempProtocol = message.data[0].swarmProtocol
 
         // Save protocol to state
         setProtocol(tempProtocol);
@@ -99,16 +99,16 @@ const App: React.FC = () => {
     );
 
     // Set nodes to correspond to the selected protocol
-    setNodes(createNodes(occurrence.jsonObject));
+    setNodes(createNodes(occurrence.swarmProtocol));
 
     // Set edges to correspond to the selected protocol
-    setEdges(createEdges(occurrence.jsonObject));
+    setEdges(createEdges(occurrence.swarmProtocol));
 
     // Set the protocol to the selected occurrence
-    setProtocol(occurrence.jsonObject);
+    setProtocol(occurrence.swarmProtocol);
 
     // Set subscriptions
-    subRef.current = createSubscriptions(occurrence.jsonObject);
+    subRef.current = createSubscriptions(occurrence.swarmProtocol);
 
     // Set the selected protocol to the selected occurrence
     selectedProtocolRef.current = e.target.value;

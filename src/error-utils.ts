@@ -11,12 +11,11 @@ export function checkWellFormedness(
   swarmProtocol: SwarmProtocolType,
   protocol: SwarmProtocol
 ): { check: WellFormednessCheck; detail: string } {
-  let hasSubscriptions = false;
-  Object.keys(protocol.subscriptions).map((role) => {
-    if (protocol.subscriptions[role].length > 0) {
-      hasSubscriptions = true;
-    }
-  });
+  console.log("swarm protocol: ", swarmProtocol)
+  console.log("protocol: ", protocol)
+  const hasSubscriptions = Object.entries(protocol.subscriptions)
+    .every(([_, eventTypes]) => eventTypes.length > 0)
+
   // Check if the protocol is well-formed
   try {
     // If no subscriptions are defined, show a warning message, but save protocol
