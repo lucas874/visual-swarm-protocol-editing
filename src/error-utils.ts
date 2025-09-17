@@ -8,12 +8,9 @@ export interface WellFormednessCheck {
 }
 
 export function checkWellFormedness(
-  swarmProtocol: SwarmProtocolType,
-  protocol: SwarmProtocol
+  swarmProtocol: SwarmProtocol,
 ): { check: WellFormednessCheck; detail: string } {
-  console.log("swarm protocol: ", swarmProtocol)
-  console.log("protocol: ", protocol)
-  const hasSubscriptions = Object.entries(protocol.metadata.subscriptions)
+  const hasSubscriptions = Object.entries(swarmProtocol.metadata.subscriptions)
     .every(([_, eventTypes]) => eventTypes.length > 0)
 
   // Check if the protocol is well-formed
@@ -30,8 +27,18 @@ export function checkWellFormedness(
           "Well-formedness not checked. Protocol must have subscriptions to perform check.",
       };
     }
-
-    const message = checkSwarmProtocol(swarmProtocol, protocol.metadata.subscriptions);
+    const transitionMapper = (transition: Transition) => {
+      return {
+        source: transition.source,
+        target: transition.target,
+        label: { cmd: transition.label.cmd, logType: transition.label.logType ?? [], role: transition.label.role }
+      }
+    } 
+    const message = checkSwarmProtocol(
+      { 
+        initial: swarmProtocol.initial, 
+        transitions: swarmProtocol.transitions.map(transitionMapper) }, 
+      swarmProtocol.metadata.subscriptions);
 
     let errorMessage: WellFormednessCheck = {
       name: "highlightEdges",
@@ -56,7 +63,7 @@ export function checkWellFormedness(
           const logType = error.split(" ")[3];
 
           errorText = `Protocol has multiple transitions with the log type \"${logType}\". Affected transitions are highlighted in the visual editor.`;
-          errorMessage.transitions = findMultipleGuardEvents(logType, protocol);
+          errorMessage.transitions = findMultipleGuardEvents(logType, swarmProtocol);
 
           break;
         } else if (
@@ -71,7 +78,7 @@ export function checkWellFormedness(
           let role = transition.split("@")[1].split("<")[0];
 
           errorText = `Active role (${role}) does not subscribe to its own emitted events. Affected transitions are highlighted in the visual editor.`;
-          errorMessage.transitions = findRoleTransition(transition, protocol);
+          errorMessage.transitions = findRoleTransition(transition, swarmProtocol);
         } else if (
           error.includes("subscribes to more events than active role")
         ) {
@@ -85,7 +92,7 @@ export function checkWellFormedness(
           transition = transition.replace(`, namely (${command})`, "");
 
           errorText = `Subsequently involved role (${subsequentRole}) subscribes to more events than active role (${activeRole}). Affected transitions are highlighted in the visual editor.`;
-          errorMessage.transitions = findRoleTransition(transition, protocol);
+          errorMessage.transitions = findRoleTransition(transition, swarmProtocol);
         } else if (error.includes("subsequently involved role")) {
           let subsequentRole = error.split(" ")[3];
           let transition = error.replace(
@@ -94,12 +101,12 @@ export function checkWellFormedness(
           );
 
           errorText = `Subsequently involved role (${subsequentRole}) does not subscribe to a guard event. Affected transitions are highlighted in the visual editor.`;
-          errorMessage.transitions = findRoleTransition(transition, protocol);
+          errorMessage.transitions = findRoleTransition(transition, swarmProtocol);
 
           break;
         } else if (error.includes("log type must not be empty")) {
           let transition = error.replace("log type must not be empty ", "");
-          emptyLogType.push(findRoleTransition(transition, protocol)[0]);
+          emptyLogType.push(findRoleTransition(transition, swarmProtocol)[0]);
         } else {
           errorText = error;
         }

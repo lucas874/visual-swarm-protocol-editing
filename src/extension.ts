@@ -10,7 +10,7 @@ import {
   hasInitial,
 } from "./error-utils";
 import { getValue, isSome, parseProtocols } from "./parse-protocols";
-import { Occurrence } from "./types";
+import { Occurrence, SwarmProtocol } from "./types";
 import { MetadataStore } from "./handle-metadata";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -118,7 +118,7 @@ export function activate(context: vscode.ExtensionContext) {
               }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`)
               );
             // await??
-            store.setSwarmProtocolMetaData(activeEditor.document.uri, message.data.name, message.data.metadata)
+            store.setSwarmProtocolMetaData(activeEditor.document.uri, message.data.name, message.data.swarmProtocol.metadata)
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All transitions must have a label");
@@ -139,30 +139,8 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // Method to check if the protocol is well-formed and show messages to the user
-async function errorChecks(protocolObject: SwarmProtocolType): Promise<WellFormednessCheck> {
-  // Parse the protocol
-  //let protocolObject = JSON5.parse(protocol);
-
-  // Transform custom type to SwarmProtocolType
-  let swarmProtocol: SwarmProtocolType = {
-    initial: protocolObject.initial,
-    transitions: [],
-  };
-
-  // Add transitions to the swarm protocol
-  for (let transition of protocolObject.transitions) {
-    swarmProtocol.transitions.push({
-      source: transition.source,
-      target: transition.target,
-      label: {
-        cmd: transition.label.cmd,
-        role: transition.label.role,
-        logType: transition.label.logType ?? [],
-      },
-    });
-  }
-
-  if (!hasInitial(protocolObject)) {
+async function errorChecks(swarmProtocol: SwarmProtocol): Promise<WellFormednessCheck> {
+  if (!hasInitial(swarmProtocol)) {
     vscode.window.showErrorMessage("No initial state found");
     return {
       name: "error",
@@ -173,7 +151,7 @@ async function errorChecks(protocolObject: SwarmProtocolType): Promise<WellForme
 
   // Check if the protocol is well-formed
   let swarmCheck: { check: WellFormednessCheck; detail: string } =
-    checkWellFormedness(swarmProtocol, protocolObject);
+    checkWellFormedness(swarmProtocol);
 
   if (swarmCheck.check.name !== "OK") {
     vscode.window.showErrorMessage("NOT WELL-FORMED", {
@@ -184,8 +162,8 @@ async function errorChecks(protocolObject: SwarmProtocolType): Promise<WellForme
   }
 
   // Check for duplicated edges and unconnected nodes
-  let duplicatedEdges = checkDuplicatedEdgeLabels(protocolObject);
-  let unconnectedNodes = checkUnconnectedNodes(protocolObject);
+  let duplicatedEdges = checkDuplicatedEdgeLabels(swarmProtocol);
+  let unconnectedNodes = checkUnconnectedNodes(swarmProtocol);
   let val = {
     name: "OK",
     transitions: [],

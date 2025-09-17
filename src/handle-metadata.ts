@@ -71,7 +71,7 @@ interface WorkspaceMetadata {
 export class MetadataStore {
     constructor(private context: vscode.ExtensionContext) {}
 
-    // Get workspace metadata, created if non-existent
+    // Get workspace metadata, empty record returned if non-existent
     getAll(): WorkspaceMetadata {
         return this.context.workspaceState.get<WorkspaceMetadata>(METADATA_KEY, {
             files: {}
@@ -83,10 +83,10 @@ export class MetadataStore {
         await this.context.workspaceState.update(METADATA_KEY, data)
     }
 
-    // Get metadata for a single file
-    getFile(uri: vscode.Uri): FileMetadata | undefined {
+    // Get metadata for a single file, empty record returned if entry for file non-existent
+    getFile(uri: vscode.Uri): FileMetadata {
         const all = this.getAll()
-        return all.files[uri.fsPath]
+        return all.files.hasOwnProperty(uri.fsPath) ? all.files[uri.fsPath] : { swarmProtocols: {} }
     }
 
     // Set metadata for file
@@ -106,7 +106,7 @@ export class MetadataStore {
     // Get some swarm protocol in some file
     getSwarmProtocolMetaData(uri: vscode.Uri, name: string): SwarmProtocolMetadata | undefined {
         const file = this.getFile(uri)
-        return file?.swarmProtocols[name]
+        return file.swarmProtocols[name]
     }
 
     // Get some swarm protocol in some file
