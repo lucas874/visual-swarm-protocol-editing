@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
-import { SwarmProtocolMetadata } from "./types";
+import { Occurrence, SwarmProtocolMetadata } from "./types";
 
 const METADATA_KEY = "visual-swarm-protocol-editor.metadata"
 
 // Types representing metadata for workspace
 /* interface NodeData {
-    name: string, 
-    x: number, 
+    name: string,
+    x: number,
     y: number
 }
 
@@ -59,7 +59,7 @@ interface SwarmProtocolMetadata {
     subscriptions: Record<string, string[]>
 } */
 
-interface FileMetadata { 
+interface FileMetadata {
     swarmProtocols: Record<string, SwarmProtocolMetadata>
 }
 
@@ -104,9 +104,9 @@ export class MetadataStore {
     }
 
     // Get some swarm protocol in some file
-    getSwarmProtocolMetaData(uri: vscode.Uri, name: string): SwarmProtocolMetadata | undefined {
+    getSwarmProtocolMetaData(uri: vscode.Uri, name: string): SwarmProtocolMetadata {
         const file = this.getFile(uri)
-        return file.swarmProtocols[name]
+        return file.swarmProtocols.hasOwnProperty(name) ? file.swarmProtocols[name] : { layout: {}, subscriptions: {}}
     }
 
     // Get some swarm protocol in some file
@@ -114,5 +114,33 @@ export class MetadataStore {
         const file = this.getFile(uri)
         file.swarmProtocols[name] = data
         await this.setFile(uri, file)
+    }
+
+    // Aprotocol could have changed since last time visual tool was used and metadata was written
+    // The metadata associated with some swarm protocol could then contain info about e.g. nodes
+    // that do not exist anymore. Update metadata to reflect current state of protocol.
+    async synchronizeStore(uri: vscode.Uri, occurrences: Occurrence[]): Promise<void> {
+        //const file = this.getFile(uri)
+        const newFileMeta = { swarmProtocols: {} }
+        for (const occurrence of occurrences) {
+            const meta = this.getSwarmProtocolMetaData(uri, occurrence.name)
+            const nodes = new Set(occurrence.swarmProtocol.transitions.flatMap(t => [t.source, t.target]))
+            nodes.add(occurrence.swarmProtocol.initial)
+            // This is how edge ids are set in App.tsx e.g. on line 285. TODO: change how ids are generated.
+            // There could be multiple transitions between same pair.
+            const edgeIds = new Set(occurrence.swarmProtocol.transitions.map(t => `${t.source}-${t.target}`))
+
+            const prunedNodes = meta.layout.nodes?.filter(nodeLayout => nodes.has(nodeLayout.name))
+            const prunedEdges = meta.layout.edges?.filter(edgeLayout => edgeIds.has(edgeLayout.id))
+            if (prunedNodes) {
+                meta.layout.nodes = prunedNodes
+            }
+            if (prunedEdges) {
+                meta.layout.edges = prunedEdges
+            }
+            newFileMeta.swarmProtocols[occurrence.name] = meta
+        }
+
+        await this.setFile(uri, newFileMeta)
     }
 }

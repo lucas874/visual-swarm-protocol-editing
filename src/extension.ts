@@ -33,6 +33,10 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      // Text file could have changed since last time meta was written. Synch to avoid drawing states that have been renamed.
+      store.synchronizeStore(activeEditor.document.uri, occurrences)
+      occurrences = updateOccurrenceMeta(activeEditor.document.uri, store, occurrences)
+
       // Create the webview panel
       let panel = vscode.window.createWebviewPanel(
         "webview",
@@ -65,7 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
       panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
           // Only save if protocol is well-formed. Await answer from error check.
-          let wellFormedness = await errorChecks(message.data.swarmProtocol);
+          let wellFormedness =  await errorChecks(message.data.swarmProtocol);
           if (wellFormedness.name === "highlightEdges") {
             panel.webview.postMessage({
               command: "highlightEdges",
@@ -88,15 +92,16 @@ export function activate(context: vscode.ExtensionContext) {
               activeEditor.document.uri
             );
             console.log(message)
+            const updatedProtocol = { initial: message.data.swarmProtocol.initial, transitions: message.data.swarmProtocol.transitions }
             // Replace text in the active editor with the new data
             editor
               .edit((editBuilder) => {
                 editBuilder.replace(
                   new vscode.Range(
                     activeEditor.document.positionAt(message.data.startPos),
-                    activeEditor.document.positionAt(message.data.endPos)
+                    activeEditor.document.positionAt(message.data.startPos + JSON.stringify(updatedProtocol).length)
                   ),
-                  `${{ initial: message.data.swarmProtocol.initial, transitions: message.data.swarmProtocol.transitions }}`
+                  JSON.stringify(updatedProtocol)
                 );
               })
               // Wait until the editor has been updated
@@ -258,6 +263,19 @@ function getProtocolOccurrences(fileName: string, store: MetadataStore): Occurre
     })
 
   return occurrences
+}
+
+function updateOccurrenceMeta(uri: vscode.Uri, store: MetadataStore, occurrences: Occurrence[]): Occurrence[] {
+  return occurrences
+    .map(occurrence => {
+      return {
+        ...occurrence,
+        swarmProtocol: {
+          ...occurrence.swarmProtocol,
+          metadata: store.getSwarmProtocolMetaData(uri, occurrence.name)
+        }
+      }
+    })
 }
 
 function getReactAppHtml(scriptUri: vscode.Uri): string {

@@ -175,7 +175,7 @@ const App: React.FC = () => {
       data: {
         name: selectedProtocolRef.current,
         swarmProtocol: protocol,
-        swarmProtocolOriginal: occurrences.get(selectedProtocolRef.current).swarmProtocolOriginal, 
+        swarmProtocolOriginal: occurrences.get(selectedProtocolRef.current).swarmProtocolOriginal,
         startPos: occurrences.get(selectedProtocolRef.current).position.startPos,
         endPos: occurrences.get(selectedProtocolRef.current).position.endPos
       },
@@ -323,11 +323,15 @@ function createNodes(
     }
   });
 
-  protocol.metadata?.layout?.nodes?.forEach((element) => {
+  // Outcommented this section. We should only draw the nodes
+  // that actually appear in protocol? metadata could contain nodes
+  // that have been renamed or for other reasons do not exist in protocol?
+  // even though protocol synchronized.
+  /* protocol.metadata?.layout?.nodes?.forEach((element) => {
     if (!nodeNames.has(element.name)) {
       nodeNames.add(element.name);
     }
-  });
+  }); */
 
   // Create nodes that correspond to ReactFlow
   const nodes = Array.from(nodeNames).map((nodeName) => {
