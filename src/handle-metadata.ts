@@ -84,46 +84,49 @@ export class MetadataStore {
     }
 
     // Get metadata for a single file, empty record returned if entry for file non-existent
-    getFile(uri: vscode.Uri): FileMetadata {
+    getFile(fileName: string): FileMetadata {
+        const uri = vscode.Uri.file(fileName)
         const all = this.getAll()
         return all.files.hasOwnProperty(uri.fsPath) ? all.files[uri.fsPath] : { swarmProtocols: {} }
     }
 
     // Set metadata for file
-    async setFile(uri: vscode.Uri, data: FileMetadata): Promise<void> {
+    async setFile(fileName: string, data: FileMetadata): Promise<void> {
+        const uri = vscode.Uri.file(fileName)
         const all = this.getAll()
         all.files[uri.fsPath] = data
         await this.setAll(all)
     }
 
     // Delete metadata for a file
-    async deleteFile(uri: vscode.Uri): Promise<void> {
+    async deleteFile(fileName: string): Promise<void> {
+        const uri = vscode.Uri.file(fileName)
         const all = this.getAll()
         delete all.files[uri.fsPath]
         await this.setAll(all)
     }
 
     // Get some swarm protocol in some file
-    getSwarmProtocolMetaData(uri: vscode.Uri, name: string): SwarmProtocolMetadata {
-        const file = this.getFile(uri)
+    getSwarmProtocolMetaData(fileName: string, name: string): SwarmProtocolMetadata {
+        const file = this.getFile(fileName)
         return file.swarmProtocols.hasOwnProperty(name) ? file.swarmProtocols[name] : { layout: {}, subscriptions: {}}
     }
 
     // Get some swarm protocol in some file
-    async setSwarmProtocolMetaData(uri: vscode.Uri, name: string, data: SwarmProtocolMetadata): Promise<void> {
-        const file = this.getFile(uri)
+    async setSwarmProtocolMetaData(fileName: string, name: string, data: SwarmProtocolMetadata): Promise<void> {
+        const file = this.getFile(fileName)
         file.swarmProtocols[name] = data
-        await this.setFile(uri, file)
+        await this.setFile(fileName, file)
     }
 
     // Aprotocol could have changed since last time visual tool was used and metadata was written
     // The metadata associated with some swarm protocol could then contain info about e.g. nodes
     // that do not exist anymore. Update metadata to reflect current state of protocol.
-    async synchronizeStore(uri: vscode.Uri, occurrences: Occurrence[]): Promise<void> {
+    async synchronizeStore(fileName: string, occurrences: Occurrence[]): Promise<void> {
         //const file = this.getFile(uri)
         const newFileMeta = { swarmProtocols: {} }
         for (const occurrence of occurrences) {
-            const meta = this.getSwarmProtocolMetaData(uri, occurrence.name)
+            const meta = this.getSwarmProtocolMetaData(fileName, occurrence.name)
             const nodes = new Set(occurrence.swarmProtocol.transitions.flatMap(t => [t.source, t.target]))
             nodes.add(occurrence.swarmProtocol.initial)
             // This is how edge ids are set in App.tsx e.g. on line 285. TODO: change how ids are generated.
@@ -141,6 +144,6 @@ export class MetadataStore {
             newFileMeta.swarmProtocols[occurrence.name] = meta
         }
 
-        await this.setFile(uri, newFileMeta)
+        await this.setFile(fileName, newFileMeta)
     }
 }

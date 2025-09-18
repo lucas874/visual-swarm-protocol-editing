@@ -34,8 +34,8 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       // Text file could have changed since last time meta was written. Synch to avoid drawing states that have been renamed.
-      store.synchronizeStore(activeEditor.document.uri, occurrences)
-      occurrences = updateOccurrenceMeta(activeEditor.document.uri, store, occurrences)
+      store.synchronizeStore(activeEditor.document.fileName, occurrences)
+      occurrences = updateOccurrenceMeta(activeEditor.document.fileName, store, occurrences)
 
       // Create the webview panel
       let panel = vscode.window.createWebviewPanel(
@@ -123,7 +123,7 @@ export function activate(context: vscode.ExtensionContext) {
               }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`)
               );
             // await??
-            store.setSwarmProtocolMetaData(activeEditor.document.uri, message.data.name, message.data.swarmProtocol.metadata)
+            store.setSwarmProtocolMetaData(activeEditor.document.fileName, message.data.name, message.data.swarmProtocol.metadata)
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All transitions must have a label");
@@ -257,7 +257,7 @@ function getProtocolOccurrences(fileName: string, store: MetadataStore): Occurre
         ...occurrence,
         swarmProtocol: {
           ...occurrence.swarmProtocol,
-          metadata: store.getSwarmProtocolMetaData(vscode.Uri.file(fileName), occurrence.name)
+          metadata: store.getSwarmProtocolMetaData(fileName, occurrence.name)
         }
       }
     })
@@ -265,14 +265,14 @@ function getProtocolOccurrences(fileName: string, store: MetadataStore): Occurre
   return occurrences
 }
 
-function updateOccurrenceMeta(uri: vscode.Uri, store: MetadataStore, occurrences: Occurrence[]): Occurrence[] {
+function updateOccurrenceMeta(fileName: string, store: MetadataStore, occurrences: Occurrence[]): Occurrence[] {
   return occurrences
     .map(occurrence => {
       return {
         ...occurrence,
         swarmProtocol: {
           ...occurrence.swarmProtocol,
-          metadata: store.getSwarmProtocolMetaData(uri, occurrence.name)
+          metadata: store.getSwarmProtocolMetaData(fileName, occurrence.name)
         }
       }
     })

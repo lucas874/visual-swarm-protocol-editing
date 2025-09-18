@@ -73,7 +73,7 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
                     properties.set(INITIAL_FIELD, getValue(expandedInitializerInitial))
                     properties.set(TRANSITIONS_FIELD, getValue(expandedInitializerTransitions))
                     // Not sure about handling of end position. But did not work just using node.getEnd()..., if formatted to have e.g. }]
-                    // these characters would stay messing up the number of open and closed brackets 
+                    // these characters would stay messing up the number of open and closed brackets
                     return some(
                         {
                             name: node.getName(),
