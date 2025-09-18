@@ -9,7 +9,7 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
-import { getValue, isSome, ProtocolReaderWriter } from "./parse-protocols";
+import { getValue, isSome, ProtocolReaderWriter } from "./protocol-reader-writer";
 import { Occurrence, OccurrenceAndAST, SwarmProtocol } from "./types";
 import { MetadataStore } from "./handle-metadata";
 
@@ -103,10 +103,10 @@ export function activate(context: vscode.ExtensionContext) {
               .edit((editBuilder) => {
                 editBuilder.replace(
                   new vscode.Range(
-                    activeEditor.document.positionAt(message.data.startPos),
-                    activeEditor.document.positionAt(message.data.startPos + JSON.stringify(updatedProtocol).length)
+                    activeEditor.document.positionAt(0),
+                    activeEditor.document.positionAt(activeEditor.document.getText().length)
                   ),
-                  JSON.stringify(updatedProtocol)
+                  protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, message.data.name)//JSON.stringify(updatedProtocol)
                 );
               })
               // Wait until the editor has been updated

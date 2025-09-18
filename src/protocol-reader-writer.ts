@@ -75,6 +75,23 @@ export class ProtocolReaderWriter {
         return Array.from(this.files.get(fileName).occurrences.values()).map(oa => oa.occurrence)
     }
 
+    writeOccurrence(filename: string, occurrenceName: string): string {
+        const projectOccurrences = this.files.get(filename)
+        if (projectOccurrences) {
+            const occurrence = projectOccurrences.occurrences.get(occurrenceName)
+            if (occurrence) {
+                //occurrence.swarmProtocolAST.initial.setInitializer("LALALA")
+                try {
+                    return projectOccurrences.project.getSourceFileOrThrow(filename).getFullText()
+                } catch(error) {
+                    throw error
+                }
+            }
+        }
+
+        return ""
+    }
+
     private parseProtocols(fileName: string): void {
         const project = new Project();
         const sourceFile = project.addSourceFileAtPath(fileName);
