@@ -99,7 +99,7 @@ function EdgeLabelDialog({
                     : logTypeRef.split(",")
                 );
 
-                // Check if role already exists in protocol, otherwise add it to subscriptions
+                // Check if role already exists in protocol, otherwise add it to subscriptions. COME BACK HERE.
                 if (
                   !edges.some(
                     (edge) => edge.label?.toString().split("@")[1] === roleRef

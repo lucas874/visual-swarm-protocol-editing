@@ -1,5 +1,5 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind, NumericLiteral } from "ts-morph";
-import { Occurrence, SwarmProtocol } from "./types";
+import { LabelAST, Occurrence, OccurrenceAndAST, SwarmProtocol, SwarmProtocolAST, Transition, TransitionAST } from "./types";
 
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
@@ -38,25 +38,93 @@ const EVENT_DEFINITION_FUNCTIONS = [
     "withPayload: <Payload extends utils.SerializableObject>() => Factory<Key, Payload>;",
     "withoutPayload: () => Factory<Key, Record<never, never>>;",
     "withZod: <Payload extends utils.SerializableObject>(z: z.ZodType<Payload>) => Factory<Key, Payload>;"
-
 ]
+import { MetadataStore } from "./handle-metadata";
 
-export function parseProtocols(fileName: string): Option<Occurrence>[] {
-    const project = new Project(); //{manipulationSettings: { quoteKind: QuoteKind.Double }}
-    const sourceFile = project.addSourceFileAtPath(fileName);
-    return visitVariableDeclarations(sourceFile)
+const ERROR_NONE_FOUND = "No swarm protocol found"
+const ERROR_PARSE = "Error parsing swarm protocols"
+
+type OccurrenceMap = Map<string, OccurrenceAndAST>
+type ProjectOccurrences = {project: Project, occurrences: OccurrenceMap}
+type GetProtocolOptions = { reload?: boolean, updateMeta?: boolean }
+
+export class ProtocolReaderWriter {
+    metadataStore: MetadataStore
+    // Map filenames to swarm protocols occurring in those files
+    files: Map<string, ProjectOccurrences>
+    //occurrences: Map<string, Map>
+
+    constructor(metadataStore: MetadataStore, fileName?: string) {
+        this.metadataStore = metadataStore
+        this.files = new Map()
+        if (fileName) {
+            this.parseProtocols(fileName)
+        }
+    }
+
+    // Return the swarm protocol occurrences in a file. Read file if not present in `files` map.
+    getOccurrences(fileName: string, options: GetProtocolOptions = {}): Occurrence[] {
+        const { reload = false, updateMeta = false } = options
+        if (!this.files.has(fileName) || reload) {
+            this.parseProtocols(fileName)
+        }
+        if (updateMeta) {
+            this.updateOccurrenceMeta(fileName)
+        }
+
+        return Array.from(this.files.get(fileName).occurrences.values()).map(oa => oa.occurrence)
+    }
+
+    private parseProtocols(fileName: string): void {
+        const project = new Project();
+        const sourceFile = project.addSourceFileAtPath(fileName);
+
+        // Read protocols and add metadata
+        const occurrences = new Map(visitVariableDeclarations(sourceFile)
+            .map(oa => this.addMetaDataFromStore(fileName, oa))
+            .map(oa => [oa.occurrence.name, oa]))
+
+        this.files.set(fileName, {occurrences: occurrences, project: project})
+    }
+
+    // Could mutate directly but
+    private updateOccurrenceMeta(fileName: string) {
+        const projectOccurrences = this.files.get(fileName)
+        const updatedOcurrences: [string, OccurrenceAndAST][] = Array.from(projectOccurrences.occurrences.entries())
+            .map(([name, occurrenceAndAst]) => [name, this.addMetaDataFromStore(fileName, occurrenceAndAst)])
+
+        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences)})
+    }
+
+    // Add metadata from workspace state
+    private addMetaDataFromStore(fileName: string, occurrenceAndAst: OccurrenceAndAST): OccurrenceAndAST {
+        return {
+            ...occurrenceAndAst,
+            occurrence: {
+            ...occurrenceAndAst.occurrence,
+            swarmProtocol: {
+                ...occurrenceAndAst.occurrence.swarmProtocol,
+                metadata: this.metadataStore.getSwarmProtocolMetaData(fileName, occurrenceAndAst.occurrence.name)
+                }
+            }
+        }
+    }
 }
 
 // Get all variable declarations and try to parse them as swarm protocols.
-function visitVariableDeclarations(sourceFile: SourceFile): Option<Occurrence>[] {
-    const variableDeclarations = sourceFile.getVariableDeclarations()
-    const swarmProtocols = variableDeclarations.map(variableDeclaration => swarmProtocolDeclaration(variableDeclaration)).filter(o => isSome(o))
-    return swarmProtocols
-}
+function visitVariableDeclarations(sourceFile: SourceFile): OccurrenceAndAST[] {
+        const variableDeclarations = sourceFile.getVariableDeclarations()
+        const swarmProtocols = variableDeclarations
+            .map(variableDeclaration => swarmProtocolDeclaration(variableDeclaration))
+            .filter(o => isSome(o))
+            .map(o => getValue(o))
+        return swarmProtocols
+    }
+
 
 // If a variable is declared as an object with the fields 'initial' and 'transitions'
 // try to parse it.
-function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence> {
+function swarmProtocolDeclaration(node: VariableDeclaration): Option<OccurrenceAndAST> {
     switch (node.getInitializer().getKind()) {
         case SyntaxKind.ObjectLiteralExpression:
             const properties = new Map((node.getInitializer() as ObjectLiteralExpression)
@@ -76,24 +144,18 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
                     // these characters would stay messing up the number of open and closed brackets
                     return some(
                         {
-                            name: node.getName(),
-                            swarmProtocol: properties_to_json(properties),
-                            swarmProtocolOriginal: properties_to_json(properties),
-                            position: { startPos: node.getInitializer().getStart(), endPos: node.getInitializer().getEnd() + node.getInitializer().getFullWidth() }
+                            occurrence: {
+                                name: node.getName(),
+                                swarmProtocol: propertiesToJSON(properties),
+                            },
+                            swarmProtocolAST: propertiesToAstInfo(node.getName(), properties),
                         })
                 }
             }
-    }
+        }
 
     return none
 
-}
-
-function properties_to_json(properties: Map<string, PropertyAssignment>): SwarmProtocol {
-    const protocol: any = {}
-    protocol[INITIAL_FIELD] = extractValue(properties.get(INITIAL_FIELD).getInitializer())
-    protocol[TRANSITIONS_FIELD] = extractValue(properties.get(TRANSITIONS_FIELD).getInitializer())
-    return protocol as SwarmProtocol
 }
 
 // Recursively extract the value from an initializer node
@@ -320,6 +382,59 @@ function isEventDefinition(nodeInfo: DefinitionNodeInfo): boolean {
 
 function isEventDesign(nodeInfo: DefinitionNodeInfo): boolean {
     return nodeInfo.sourceFile.endsWith(EVENT_D_TS) && nodeInfo.definitionNodeText === EVENT_DESIGN_FUNCTION
+}
+
+function setInitializer(node: PropertyAssignment, newInitializer: string) {
+    node.setInitializer(newInitializer)
+}
+
+// These functions make a lot of assumptions on the shape of 'properties' and the ast nodes encountered.
+// They assume that that they represent exactly an instance of SwarmProtocolType.
+// Id of edge is the index of edge in transitions? Does this work if just set here. Might be reordered somewhere...
+// If we do this ids should be the same as indices in propertiesToAstInfo?
+function propertiesToJSON(properties: Map<string, PropertyAssignment>): SwarmProtocol {
+    const protocol: any = {}
+    protocol[INITIAL_FIELD] = extractValue(properties.get(INITIAL_FIELD).getInitializer())
+    protocol[TRANSITIONS_FIELD] = extractValue(properties.get(TRANSITIONS_FIELD).getInitializer())
+    protocol.transitions = (protocol.transitions).map((transition, index) => { return {...transition, edgeId: index} })
+    return protocol as SwarmProtocol
+}
+
+function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssignment>): SwarmProtocolAST {
+    const transitions = transitionsToAstInfo(properties.get(TRANSITIONS_FIELD).getInitializer() as ArrayLiteralExpression)
+    return { name, initial: properties.get(INITIAL_FIELD), transitions: transitions }
+}
+
+function transitionsToAstInfo(transitions: ArrayLiteralExpression): TransitionAST[] {
+    return transitions
+        .getElements()
+        .map(transitionToAstInfo)
+}
+
+function transitionToAstInfo(transition: ObjectLiteralExpression): TransitionAST {
+    const transitionAst: any = {}
+    for (const prop of transition.getProperties()) {
+        if (Node.isPropertyAssignment(prop)) {
+            if (prop.getName() === "label") {
+                transitionAst[prop.getName()] = labelAstInfo(prop.getInitializer() as ObjectLiteralExpression)
+            } else {
+                transitionAst[prop.getName()] = prop
+            }
+        }
+    }
+
+    return transitionAst
+}
+
+function labelAstInfo(label: ObjectLiteralExpression): LabelAST {
+    const labelAst: any = {}
+    for (const prop of label.getProperties()) {
+        if (Node.isPropertyAssignment(prop)) {
+            labelAst[prop.getName()] = prop
+        }
+    }
+
+    return labelAst
 }
 
 // Nice for debugging

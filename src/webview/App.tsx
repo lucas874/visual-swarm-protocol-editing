@@ -175,9 +175,6 @@ const App: React.FC = () => {
       data: {
         name: selectedProtocolRef.current,
         swarmProtocol: protocol,
-        swarmProtocolOriginal: occurrences.get(selectedProtocolRef.current).swarmProtocolOriginal,
-        startPos: occurrences.get(selectedProtocolRef.current).position.startPos,
-        endPos: occurrences.get(selectedProtocolRef.current).position.endPos
       },
     });
   }
@@ -259,7 +256,7 @@ function createEdges(
 
     if (transition.source === transition.target) {
       return {
-        id: `${transition.source}-${transition.target}`,
+        id: transition.edgeId ?? `${transition.source}-${transition.target}`,
         source: transition.source,
         target: transition.target,
         label: `${transition.label.cmd}@${transition.label.role}<${transition.label.logType.join(", ")}>`,

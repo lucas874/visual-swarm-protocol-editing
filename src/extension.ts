@@ -9,8 +9,8 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
-import { getValue, isSome, parseProtocols } from "./parse-protocols";
-import { Occurrence, SwarmProtocol } from "./types";
+import { getValue, isSome, ProtocolReaderWriter } from "./parse-protocols";
+import { Occurrence, OccurrenceAndAST, SwarmProtocol } from "./types";
 import { MetadataStore } from "./handle-metadata";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -28,14 +28,19 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      let occurrences = getProtocolOccurrences(activeEditor.document.fileName, store)
+      const protocolReaderWriter = new ProtocolReaderWriter(store, activeEditor.document.fileName)
+      let occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName)
+
       if (occurrences.length === 0) {
-        return;
+        vscode.window.showErrorMessage("No swarm protocol found");
+        return
       }
 
-      // Text file could have changed since last time meta was written. Synch to avoid drawing states that have been renamed.
+      // Text file could have changed since last time meta was written.
+      // Synch metadata to avoid drawing states that have been renamed.
+      // Then update metadata in occurrence.
       store.synchronizeStore(activeEditor.document.fileName, occurrences)
-      occurrences = updateOccurrenceMeta(activeEditor.document.fileName, store, occurrences)
+      occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName, { updateMeta: true})
 
       // Create the webview panel
       let panel = vscode.window.createWebviewPanel(
@@ -107,10 +112,11 @@ export function activate(context: vscode.ExtensionContext) {
               // Wait until the editor has been updated
               .then(() => {
                 // Get the updated occurrences
-                occurrences = getProtocolOccurrences(
-                  editor.document.getText(),
+                occurrences = protocolReaderWriter.getOccurrences(editor.document.fileName, {reload: true, updateMeta: true} )
+                /* occurrencesAndAsts = getProtocolOccurrences(
+                  editor.document.fileName,
                   store
-                );
+                ); */
 
                 // Open the webview again with the new data
                 panel.webview.postMessage({
@@ -240,7 +246,18 @@ async function errorChecks(swarmProtocol: SwarmProtocol): Promise<WellFormedness
   };
 }
 
-function getProtocolOccurrences(fileName: string, store: MetadataStore): Occurrence[] {
+/* function getProtocolOccurrences(protocolReaderWriter: ProtocolReaderWriter, fileName: string): Occurrence[] {
+  protocolReaderWriter.parseProtocols(fileName)
+  const occurrences = protocolReaderWriter.getOccurrences(fileName)
+
+  if (occurrences.length === 0) {
+    vscode.window.showErrorMessage("No swarm protocol found");
+  }
+
+  return occurrences
+} */
+
+/* function getProtocolOccurrences(fileName: string, store: MetadataStore): OccurrenceAndAST[] {
   const occurrencesOption = parseProtocols(fileName)
   if (occurrencesOption.length === 0) {
     vscode.window.showErrorMessage("No swarm protocol found");
@@ -250,33 +267,37 @@ function getProtocolOccurrences(fileName: string, store: MetadataStore): Occurre
     vscode.window.showErrorMessage("Error parsing swarm protocols");
     return []
   }
-  const occurrences = occurrencesOption
-    .map(someOccurrence => getValue(someOccurrence))
-    .map(occurrence => {
+  return occurrencesOption
+    .map(someOccurrenceAndAst => getValue(someOccurrenceAndAst))
+    .map(occurrenceAndAst => {
       return {
-        ...occurrence,
-        swarmProtocol: {
-          ...occurrence.swarmProtocol,
-          metadata: store.getSwarmProtocolMetaData(fileName, occurrence.name)
-        }
-      }
-    })
-
-  return occurrences
-}
-
-function updateOccurrenceMeta(fileName: string, store: MetadataStore, occurrences: Occurrence[]): Occurrence[] {
-  return occurrences
-    .map(occurrence => {
-      return {
-        ...occurrence,
-        swarmProtocol: {
-          ...occurrence.swarmProtocol,
-          metadata: store.getSwarmProtocolMetaData(fileName, occurrence.name)
+        ...occurrenceAndAst,
+        occurrence: {
+          ...occurrenceAndAst.occurrence,
+          swarmProtocol: {
+            ...occurrenceAndAst.occurrence.swarmProtocol,
+            metadata: store.getSwarmProtocolMetaData(fileName, occurrenceAndAst.occurrence.name)
+          }
         }
       }
     })
 }
+
+function updateOccurrenceMeta(fileName: string, store: MetadataStore, occurrencesAndAsts: OccurrenceAndAST[]): OccurrenceAndAST[] {
+  return occurrencesAndAsts
+    .map(occurrenceAndAst => {
+      return {
+        ...occurrenceAndAst,
+        occurrence: {
+          ...occurrenceAndAst.occurrence,
+          swarmProtocol: {
+            ...occurrenceAndAst.occurrence.swarmProtocol,
+            metadata: store.getSwarmProtocolMetaData(fileName, occurrenceAndAst.occurrence.name)
+          }
+        }
+      }
+    })
+} */
 
 function getReactAppHtml(scriptUri: vscode.Uri): string {
   return `

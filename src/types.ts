@@ -1,8 +1,11 @@
+import { Project, PropertyAssignment } from "ts-morph"
+
 // Define types of nodes and transitions for protocols
 export type Transition = {
   source: string;
   target: string;
   label: TransitionLabel;
+  edgeId: number;
 };
 
 export type TransitionLabel = {
@@ -43,12 +46,23 @@ export interface SwarmProtocol {
   initial: string;
   transitions: Transition[];
   metadata?: SwarmProtocolMetadata
+  nodeIds?: Record<string, number>,
 }
 
-// Start and end pos are the source file text positions (in characters from beginning of file) 
-//of the swarm protocol occurrence.  
+// Start and end pos are the source file text positions (in characters from beginning of file)
+//of the swarm protocol occurrence.
 export type Position = { startPos: number, endPos: number }
-export type Occurrence = { name: string, swarmProtocol: SwarmProtocol, swarmProtocolOriginal: SwarmProtocol, position: Position }
+
+export type LabelAST = { cmd: PropertyAssignment, logType: PropertyAssignment, role: PropertyAssignment }
+// AST nodes representing a tranistion in a SwarmProtocolType.
+export type TransitionAST = { source: PropertyAssignment, target: PropertyAssignment,  label: LabelAST }
+// The AST of a SwarmProtocolType
+export type SwarmProtocolAST = { name: string, initial: PropertyAssignment, transitions: TransitionAST[] }
+
+// We can not use the AST stuff in occurrence, because we pass occurrences around the extension and the webview
+// using postMessage and message argument of postMessage "must be a string or other json serializable object." (from docs).
+export type Occurrence = { name: string, swarmProtocol: SwarmProtocol }
+export type OccurrenceAndAST = { occurrence: Occurrence, swarmProtocolAST: SwarmProtocolAST }
 
 export type BuildProtocol = { command: "buildProtocol", data: Occurrence[] }
 export type HighLightEdges = { command: "highlightEdges", data: { protocol: SwarmProtocol, transitions: Transition[] } }
