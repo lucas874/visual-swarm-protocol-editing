@@ -55,7 +55,7 @@ export type Position = { startPos: number, endPos: number }
 
 export type LabelAST = { cmd: PropertyAssignment, logType: PropertyAssignment, role: PropertyAssignment }
 // AST nodes representing a tranistion in a SwarmProtocolType.
-export type TransitionAST = { source: PropertyAssignment, target: PropertyAssignment,  label: LabelAST }
+export type TransitionAST = { source: PropertyAssignment, target: PropertyAssignment,  label: LabelAST, edgeId?: number }
 // The AST of a SwarmProtocolType
 export type SwarmProtocolAST = { name: string, initial: PropertyAssignment, transitions: TransitionAST[] }
 

@@ -95,23 +95,17 @@ export class ProtocolReaderWriter {
         const projectRead = new Project();
         const sourceFileRead = projectRead.addSourceFileAtPath(fileName);
 
-        // Read protocols and add metadata
-        /* const occurrences = new Map(visitVariableDeclarations(sourceFileRead)
-            .map(o => this.addMetaDataFromStore(fileName, o))
-            .map(o => [o.name, o])) */
-        const occurrenceAndAsts = visitVariableDeclarations(sourceFileRead)
-        const occurrences = new Map(occurrenceAndAsts
-            .map(oa => this.addMetaDataFromStore(fileName, oa.occurrence))
-            .map(o => [o.name, o])
+        // Read occurrences and their ASTs
+        const occurrenceInfos = visitVariableDeclarations(sourceFileRead)
+        // Get protocols and add metadata
+        const occurrences = new Map(occurrenceInfos
+            .map(occurrenceInfo => this.addMetaDataFromStore(fileName, occurrenceInfo.occurrence))
+            .map(occurrence => [occurrence.name, occurrence])
         )
-        const swarmProtocolASTs = new Map(occurrenceAndAsts
-            .map(oa => [oa.swarmProtocolAST.name, oa.swarmProtocolAST])
+        // Get AST snippets representing protocols
+        const swarmProtocolASTs = new Map(occurrenceInfos
+            .map(occurrenceInfo => [occurrenceInfo.swarmProtocolAST.name, occurrenceInfo.swarmProtocolAST])
         )
-
-        /* const projectWrite = new Project();
-        const sourceFileWrite = projectWrite.addSourceFileAtPath(fileName);
-        const swarmProtocolASTs = new Map(visitVariableDeclarationsAst(sourceFileWrite)
-            .map(swarmProtocolAst => [swarmProtocolAst.name, swarmProtocolAst])) */
 
         this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs})
     }
@@ -146,15 +140,6 @@ function visitVariableDeclarations(sourceFile: SourceFile): OccurrenceInfo[] {
             .map(o => getValue(o))
         return swarmProtocols
 }
-// Get all variable declarations and try to parse them as swarm protocols.
-function visitVariableDeclarationsAst(sourceFile: SourceFile): SwarmProtocolAST[] {
-        const variableDeclarations = sourceFile.getVariableDeclarations()
-        const swarmProtocols = variableDeclarations
-            .map(variableDeclaration => swarmProtocolDeclarationAst(variableDeclaration))
-            .filter(o => isSome(o))
-            .map(o => getValue(o))
-        return swarmProtocols
-}
 
 // If a variable is declared as an object with the fields 'initial' and 'transitions'
 // try to parse it. Have this function just return the variable declaration.
@@ -179,43 +164,12 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<OccurrenceI
                         },
                         swarmProtocolAST: propertiesToAstInfo(node.getName(), properties)
                         })
-/*                 const expandedInitializerInitial = getInitializerInitial(initial)
-                const expandedInitializerTransitions = getInitializerTransitions(transitions)
-                if (isSome(expandedInitializerInitial) && isSome(expandedInitializerTransitions)) {
-                    properties.set(INITIAL_FIELD, getValue(expandedInitializerInitial))
-                    properties.set(TRANSITIONS_FIELD, getValue(expandedInitializerTransitions))
-                    // Not sure about handling of end position. But did not work just using node.getEnd()..., if formatted to have e.g. }]
-                    // these characters would stay messing up the number of open and closed brackets
-                    return some(
-                        {
-                            name: node.getName(),
-                            swarmProtocol: propertiesToJSON(properties),
-
-                        })
-                } */
             }
         }
 
     return none
 }
 
-function swarmProtocolDeclarationAst(node: VariableDeclaration): Option<SwarmProtocolAST> {
-    switch (node.getInitializer().getKind()) {
-        case SyntaxKind.ObjectLiteralExpression:
-            const properties = new Map((node.getInitializer() as ObjectLiteralExpression)
-                .getProperties()
-                .map(e => (e as PropertyAssignment))
-                .map(p => [p.getName(), p]))
-
-            const initial = properties.get(INITIAL_FIELD)
-            const transitions = properties.get(TRANSITIONS_FIELD)
-            if (initial && transitions) {
-                return some(propertiesToAstInfo(node.getName(), properties))
-            }
-        }
-
-    return none
-}
 
 // Recursively extract the value from an initializer node
 function extractValue(node: Node): any {
@@ -243,220 +197,6 @@ function extractValue(node: Node): any {
     }
 }
 
-// Used to turn the 'initial' and 'transitions' fields of a SwarmProtocolType
-// into literal values -- something that can not be evaluated any further and
-// does not refer to literal values in other files.
-function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
-    //basicVisit(node)
-    switch (node.getKind()) {
-        case SyntaxKind.StringLiteral:
-        case SyntaxKind.NumericLiteral:
-        case SyntaxKind.BigIntLiteral:
-        case SyntaxKind.TrueKeyword:
-        case SyntaxKind.FalseKeyword:
-            return some(node)
-        case SyntaxKind.Identifier:
-            // Assume there is just one definition of this name. At defnitionNodes[0]
-            // https://ts-morph.com/details/identifiers:
-            // 'Gets the definitions of the identifier.
-            // This is similar to "go to definition" functionality that exists with TypeScript in most IDEs.'
-            //const defnitionNode = definitionNodeInfo(node)
-            //return isSome(defnitionNode) ? literalInitializer(getValue(defnitionNode).definitionNode) : none
-
-            // The above extracts the value that an identifier refers to. The below just returns the identifier.
-            return some(node)
-        case SyntaxKind.ArrayLiteralExpression:
-            return arrayLiteralInitializer(node as ArrayLiteralExpression, literalInitializer)
-        case SyntaxKind.ObjectLiteralExpression:
-            return objectLiteralInitializer(node as ObjectLiteralExpression)
-        default:
-            return some(node)
-        // Cases below are for extracting 'myEventType' from 'myEventType' string out of a myEvent = MachineEvent.design('myEventType'), in a swarm protocol
-        // that uses ... logType: [myEvent.type].
-        // New behavior just shows 'myEvent.type'
-        /* case SyntaxKind.PropertyAccessExpression:
-            return literalInitializer((node as PropertyAccessExpression).getNameNode())
-        case SyntaxKind.VariableDeclaration:
-            return literalInitializer((node as VariableDeclaration).getInitializer())
-        default:
-            return none */
-    }
-}
-
-// Give every array item a 'literal' initializer.
-function arrayLiteralInitializer(node: ArrayLiteralExpression, getInitializer: ((e: Expression<ts.Expression>) => Option<Node<ts.Node>>)): Option<Node<ts.Node>> {
-    node.getElements().forEach(e => {
-        const literal = getInitializer(e)
-        if (isSome(literal)) {
-            e.replaceWithText(getValue(literal).getText())
-        } else {
-            return none
-        }
-    })
-
-    return some(node)
-}
-
-// REDO A LOT OF STUFF: mutability. We actually mutate the ast in the functions -- the values passed to functions are not immutable new instances. So all this returning
-// options and resetting fields may have to be redone.
-function objectLiteralInitializer(node: ObjectLiteralExpression): Option<Node<ts.Node>> {
-    // Transform properties to literal.
-    (node as ObjectLiteralExpression)
-        .getProperties()
-        .forEach(property => {
-            if ((property as PropertyAssignment).getName() === "logType") {
-                arrayLiteralInitializer((property as PropertyAssignment).getInitializer() as ArrayLiteralExpression, literalInitializer)
-                // Removed: We just want to show the variables as text now -- not the values they refer to. So when we have e.g. myEvent.type we do
-                // not find this string, we just display myEvent.type
-                //arrayLiteralInitializer((property as PropertyAssignment).getInitializer() as ArrayLiteralExpression, handleLogTypeInitializer)
-            } else {
-                literalInitializer((property as PropertyAssignment).getInitializer())
-            }
-        })
-    return some(node)
-}
-
-function getInitializerInitial(node: PropertyAssignment): Option<PropertyAssignment> {
-    const initializer = node.getInitializer()
-    const literalOption = literalInitializer(initializer)
-    if (isSome(literalOption)) {
-        const literal = getValue(literalOption)
-        // Below was used when we extracted and shoed the values identifiers referred to, not the identifiers themselves.
-        //if (literal.getKind() === SyntaxKind.StringLiteral) {
-        return some(node.setInitializer(literal.getText()))
-        //}
-    }
-    return none
-}
-
-// Consider re-designing taking mutability into account. All the option stuff was there assuming
-// we did not mutate, so right now it looks a bit weird.
-function getInitializerTransitions(node: PropertyAssignment): Option<PropertyAssignment> {
-    const initializer = node.getInitializer()
-    const literalOption = literalInitializer(initializer)
-    if (isSome(literalOption)) {
-        return some(node)
-    }
-    return none
-}
-
-/**
- * Typically we will have something like
- * ```typescript
- *  const myEvent = MachineEvent.design('MyEventType').withoutPayload()
- *  const swarmProtocol: SwarmProtocolType = {
- *  initial: "0",
- *  transitions: [ { label: { cmd: "R1_cmd_2", logType: [myEvent.type], role: "R" }, source: "0", target: "1", },
- *                ...
- *               ]
- * ```
- * Task here is to replace myEvent.type with 'MyEventType'.
- * `myEvent` could be defined in some namespace, in another file, or wherever.
- * We know that logType is initialized as an array of strings.
- *
- * @param node
- *
- * @returns Option<Node<ts.Node>>
- */
-function handleLogTypeInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
-    switch (node.getKind()) {
-        case SyntaxKind.StringLiteral:
-            return some(node)
-        case SyntaxKind.Identifier:
-            // Assume there is just one definition of this name. At defnitionNodes[0]
-            const definitionNode = definitionNodeInfo(node)
-            return isSome(definitionNode) ? handleLogTypeInitializer(getValue(definitionNode).definitionNode) : none
-        case SyntaxKind.PropertyAccessExpression:
-            const definitionNodeProperty = definitionNodeInfo(node)
-            if (isSome(definitionNodeProperty) && isEventTypeProperty(getValue(definitionNodeProperty))) {
-                // Here we have an property access expression of the form myEvent.type
-                // pass 'myEvent' to extract event type to get the event type of myEvent
-                return extractEventTypeFromDesign((node as PropertyAccessExpression).getExpression())
-            } else {
-                return handleLogTypeInitializer((node as PropertyAccessExpression).getNameNode())
-            }
-
-        case SyntaxKind.VariableDeclaration:
-            return handleLogTypeInitializer((node as VariableDeclaration).getInitializer())
-        default:
-            return none
-    }
-}
-
-function extractEventTypeFromDesign(node: Node<ts.Node>): Option<Node<ts.Node>> {
-    switch (node.getKind()) {
-        case SyntaxKind.PropertyAccessExpression:
-            const definitionNodeProperty = definitionNodeInfo(node)
-            if (isSome(definitionNodeProperty) && isEventDefinition(getValue(definitionNodeProperty))) {
-                // At this point we have an expression MachineEvent.design('myEventType').( withoutPayload() + withPayload<...>() + withZod<...>() )
-                // Recurse wit the 'MachineEvent.design('myEventType')' bit of this expression
-                return extractEventTypeFromDesign((node as PropertyAccessExpression).getExpression())
-            }
-            // Entered if e.g. event is defined in a namespace Events and we have
-            // Events.myEvent --> getNamenameNode() returns the myEvent bit of this expression.
-            return extractEventTypeFromDesign((node as PropertyAccessExpression).getNameNode())
-        case SyntaxKind.Identifier:
-            const definitionNodes = (node as Identifier).getDefinitionNodes()
-            // Assume there is just one definition of this name. At defnitionNodes[0]
-            return definitionNodes.length > 0 ? extractEventTypeFromDesign(definitionNodes[0]) : none
-        case SyntaxKind.VariableDeclaration:
-            return extractEventTypeFromDesign((node as VariableDeclaration).getInitializer())
-        case SyntaxKind.CallExpression:
-            // Check if this is a call to withPayload or withoutPayload. If so get parent propertyAccessExpression and go back to call to design.
-            // Do this by resolving files. Should be somewhere in Runner.
-            const expr = (node as CallExpression).getExpression()
-            const callInfoOption = definitionNodeInfo(expr)
-            if (isSome(callInfoOption) && isEventDesign(getValue(callInfoOption))) {
-                // Assume there will be exactly one arguments: a string naming the event type
-                return some((node as CallExpression).getArguments()[0])
-            }
-            return extractEventTypeFromDesign(expr)
-    }
-
-    return none
-}
-
-// Assumes one definition
-function definitionNodeInfo(node: Node<ts.Node>): Option<DefinitionNodeInfo> {
-    switch (node.getKind()) {
-        case SyntaxKind.PropertyAccessExpression:
-            const definitionNodesProperty = (node as PropertyAccessExpression).getNameNode().getDefinitionNodes()
-            if (definitionNodesProperty.length > 0) {
-                // Assume just one definition
-                const definitionNode = definitionNodesProperty[0]
-                return some({ sourceFile: definitionNode.getSourceFile().getFilePath(), definitionNodeText: definitionNode.getText(), definitionNode })
-            }
-            return none
-        case SyntaxKind.Identifier:
-            const definitionNodesIdentifier = (node as Identifier).getDefinitionNodes()
-            if (definitionNodesIdentifier.length > 0) {
-                // Assume just one definition
-                const definitionNode = definitionNodesIdentifier[0]
-                return some({ sourceFile: definitionNode.getSourceFile().getFilePath(), definitionNodeText: definitionNode.getText(), definitionNode })
-            }
-            return none
-        default:
-            throw Error(`Not implemented: definitionNodeInfo(node) where \`node\` is of type ${node.getKindName()}.`)
-    }
-}
-
-function isEventTypeProperty(nodeInfo: DefinitionNodeInfo): boolean {
-    return nodeInfo.sourceFile.endsWith(EVENT_D_TS)
-        && nodeInfo.definitionNode.getKind() == SyntaxKind.PropertySignature
-        && (nodeInfo.definitionNode as PropertySignature).getName() === TYPE_FIELD
-}
-
-function isEventDefinition(nodeInfo: DefinitionNodeInfo): boolean {
-    return (nodeInfo.sourceFile.endsWith(EVENT_D_TS) && EVENT_DEFINITION_FUNCTIONS.some(eventDefFunction => eventDefFunction === nodeInfo.definitionNodeText))
-}
-
-function isEventDesign(nodeInfo: DefinitionNodeInfo): boolean {
-    return nodeInfo.sourceFile.endsWith(EVENT_D_TS) && nodeInfo.definitionNodeText === EVENT_DESIGN_FUNCTION
-}
-
-function setInitializer(node: PropertyAssignment, newInitializer: string) {
-    node.setInitializer(newInitializer)
-}
 
 // These functions make a lot of assumptions on the shape of 'properties' and the ast nodes encountered.
 // They assume that that they represent exactly an instance of SwarmProtocolType.
@@ -478,10 +218,10 @@ function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssig
 function transitionsToAstInfo(transitions: ArrayLiteralExpression): TransitionAST[] {
     return transitions
         .getElements()
-        .map(transitionToAstInfo)
+        .map((transition, index) => transitionToAstInfo(transition as ObjectLiteralExpression, index))
 }
 
-function transitionToAstInfo(transition: ObjectLiteralExpression): TransitionAST {
+function transitionToAstInfo(transition: ObjectLiteralExpression, edgeId?: number): TransitionAST {
     const transitionAst: any = {}
     for (const prop of transition.getProperties()) {
         if (Node.isPropertyAssignment(prop)) {
@@ -491,6 +231,9 @@ function transitionToAstInfo(transition: ObjectLiteralExpression): TransitionAST
                 transitionAst[prop.getName()] = prop
             }
         }
+    }
+    if (edgeId) {
+        transitionAst.edgeId = edgeId
     }
 
     return transitionAst
