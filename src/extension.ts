@@ -98,25 +98,38 @@ export function activate(context: vscode.ExtensionContext) {
             );
             console.log(message)
             const updatedProtocol = { initial: message.data.swarmProtocol.initial, transitions: message.data.swarmProtocol.transitions }
+            // Replace text in the active editor with the new data and save it.
+            protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, {name: message.data.name, swarmProtocol: updatedProtocol} )
+              // Wait until the editor has been updated
+              .then(() => {
+                // Get the updated occurrences
+                occurrences = protocolReaderWriter.getOccurrences(editor.document.fileName, {reload: true, updateMeta: true} )
+
+                // Open the webview again with the new data
+                panel.webview.postMessage({
+                  command: "buildProtocol",
+                  data: occurrences,
+                });
+
+                // Make sure the panel is visible again
+                panel.reveal();
+              }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`));
             // Replace text in the active editor with the new data
-            editor
+            // File needs to be saved if changes are to be reflected in ui
+            /* editor
               .edit((editBuilder) => {
                 editBuilder.replace(
                   new vscode.Range(
                     activeEditor.document.positionAt(0),
                     activeEditor.document.positionAt(activeEditor.document.getText().length)
                   ),
-                  protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, message.data.name)//JSON.stringify(updatedProtocol)
+                  protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, {name: message.data.name, old: occurrences.find(o => o.name === message.data.name).swarmProtocol, new: updatedProtocol} )//JSON.stringify(updatedProtocol)
                 );
               })
               // Wait until the editor has been updated
               .then(() => {
                 // Get the updated occurrences
                 occurrences = protocolReaderWriter.getOccurrences(editor.document.fileName, {reload: true, updateMeta: true} )
-                /* occurrencesAndAsts = getProtocolOccurrences(
-                  editor.document.fileName,
-                  store
-                ); */
 
                 // Open the webview again with the new data
                 panel.webview.postMessage({
@@ -127,7 +140,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // Make sure the panel is visible again
                 panel.reveal();
               }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`)
-              );
+              ); */
             // await??
             store.setSwarmProtocolMetaData(activeEditor.document.fileName, message.data.name, message.data.swarmProtocol.metadata)
           }

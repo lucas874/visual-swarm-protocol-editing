@@ -64,6 +64,9 @@ export type SwarmProtocolAST = { name: string, initial: PropertyAssignment, tran
 export type Occurrence = { name: string, swarmProtocol: SwarmProtocol }
 export type OccurrenceAndAST = { occurrence: Occurrence, swarmProtocolAST: SwarmProtocolAST }
 
+// For writing
+export type ProtocolDiff = { name: string, old: SwarmProtocol, new: SwarmProtocol }
+
 export type BuildProtocol = { command: "buildProtocol", data: Occurrence[] }
 export type HighLightEdges = { command: "highlightEdges", data: { protocol: SwarmProtocol, transitions: Transition[] } }
 export type HighlightNodes = { command: "highlightNodes", data: { protocol: SwarmProtocol, nodes: string[] } }

@@ -4,7 +4,7 @@ import { MachineEvent } from "@actyx/machine-runner";
 type PartPayload = {partName: string}
 export const part = MachineEvent.design('part').withPayload<PartPayload>()
 
-export const warehouse: SwarmProtocolType = {
+export const warehouse = {
   initial: initialState,
   transitions: [
     {source: '0', target: '1', label: {cmd: 'request', role: 'T', logType: [Events.partID.type]}},
