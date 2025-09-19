@@ -5,7 +5,7 @@ export type Transition = {
   source: string;
   target: string;
   label: TransitionLabel;
-  edgeId: number;
+  id: string;
 };
 
 export type TransitionLabel = {
@@ -55,7 +55,7 @@ export type Position = { startPos: number, endPos: number }
 
 export type LabelAST = { cmd: PropertyAssignment, logType: PropertyAssignment, role: PropertyAssignment }
 // AST nodes representing a tranistion in a SwarmProtocolType.
-export type TransitionAST = { source: PropertyAssignment, target: PropertyAssignment,  label: LabelAST, edgeId?: number }
+export type TransitionAST = { source: PropertyAssignment, target: PropertyAssignment,  label: LabelAST, id: string }
 // The AST of a SwarmProtocolType
 export type SwarmProtocolAST = { name: string, initial: PropertyAssignment, transitions: TransitionAST[] }
 

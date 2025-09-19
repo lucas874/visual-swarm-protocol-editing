@@ -87,6 +87,10 @@ export class ProtocolReaderWriter {
             if (oldSwarmProtocol.initial !== updatedOccurrence.swarmProtocol.initial) {
                 swarmProtocolAst.initial.setInitializer(`${updatedOccurrence.swarmProtocol.initial}`)
             }
+            const transitionsToMap = (transitions: {id: string, [key: string]: any}[]) => {
+                return new Map(transitions
+                    .map(t => [t.id, t]))
+            }
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
         }
     }
@@ -206,7 +210,7 @@ function propertiesToJSON(properties: Map<string, PropertyAssignment>): SwarmPro
     const protocol: any = {}
     protocol[INITIAL_FIELD] = extractValue(properties.get(INITIAL_FIELD).getInitializer())
     protocol[TRANSITIONS_FIELD] = extractValue(properties.get(TRANSITIONS_FIELD).getInitializer())
-    protocol.transitions = (protocol.transitions).map((transition, index) => { return {...transition, edgeId: index} })
+    protocol.transitions = (protocol.transitions).map((transition, index) => { return {...transition, id: index.toString()} })
     return protocol as SwarmProtocol
 }
 
@@ -218,10 +222,10 @@ function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssig
 function transitionsToAstInfo(transitions: ArrayLiteralExpression): TransitionAST[] {
     return transitions
         .getElements()
-        .map((transition, index) => transitionToAstInfo(transition as ObjectLiteralExpression, index))
+        .map((transition, index) => transitionToAstInfo(transition as ObjectLiteralExpression, index.toString()))
 }
 
-function transitionToAstInfo(transition: ObjectLiteralExpression, edgeId?: number): TransitionAST {
+function transitionToAstInfo(transition: ObjectLiteralExpression, id: string): TransitionAST {
     const transitionAst: any = {}
     for (const prop of transition.getProperties()) {
         if (Node.isPropertyAssignment(prop)) {
@@ -232,9 +236,8 @@ function transitionToAstInfo(transition: ObjectLiteralExpression, edgeId?: numbe
             }
         }
     }
-    if (edgeId) {
-        transitionAst.edgeId = edgeId
-    }
+
+    transitionAst.id = id
 
     return transitionAst
 }

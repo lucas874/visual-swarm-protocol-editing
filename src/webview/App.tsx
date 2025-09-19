@@ -135,6 +135,7 @@ const App: React.FC = () => {
           role: edge.label?.split("@")[1].split("<")[0],
           logType: edge.data.logType ?? [],
         },
+        id: edge.id
       };
     });
 
@@ -248,15 +249,16 @@ function createEdges(
       highlighted.length > 0
         ? highlighted?.find((elem) => {
             return (
-              elem.source === transition.source &&
-              elem.target === transition.target
+              elem.id == transition.id
+              //elem.source === transition.source &&
+              //elem.target === transition.target
             );
           })
         : undefined;
 
     if (transition.source === transition.target) {
       return {
-        id: transition.edgeId ?? `${transition.source}-${transition.target}`,
+        id: transition.id,
         source: transition.source,
         target: transition.target,
         label: `${transition.label.cmd}@${transition.label.role}<${transition.label.logType.join(", ")}>`,
@@ -276,10 +278,10 @@ function createEdges(
       };
     } else {
       const edgeLayout = protocol.metadata?.layout?.edges?.find(
-        (edge) => edge.id === `${transition.source}-${transition.target}`
+        (edge) => edge.id === transition.id
       );
       return {
-        id: `${transition.source}-${transition.target}`,
+        id: transition.id,
         source: transition.source,
         target: transition.target,
         label: `${transition.label.cmd}@${transition.label.role}<${transition.label.logType.join(", ")}>`,
