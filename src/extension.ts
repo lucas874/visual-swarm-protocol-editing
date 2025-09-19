@@ -10,7 +10,7 @@ import {
   hasInitial,
 } from "./error-utils";
 import { getValue, isSome, ProtocolReaderWriter } from "./protocol-reader-writer";
-import { Occurrence, OccurrenceAndAST, SwarmProtocol } from "./types";
+import { Occurrence, OccurrenceInfo, SwarmProtocol } from "./types";
 import { MetadataStore } from "./handle-metadata";
 
 export function activate(context: vscode.ExtensionContext) {

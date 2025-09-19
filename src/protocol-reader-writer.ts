@@ -1,5 +1,5 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind, NumericLiteral } from "ts-morph";
-import { LabelAST, Occurrence, OccurrenceAndAST, ProtocolDiff, SwarmProtocol, SwarmProtocolAST, Transition, TransitionAST } from "./types";
+import { LabelAST, Occurrence, OccurrenceInfo, ProtocolDiff, SwarmProtocol, SwarmProtocolAST, Transition, TransitionAST } from "./types";
 
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
@@ -46,7 +46,8 @@ const ERROR_PARSE = "Error parsing swarm protocols"
 
 type OccurrenceMap = Map<string, Occurrence>
 type AstMap = Map<string, SwarmProtocolAST>
-type ProjectOccurrences = {project: Project, occurrences: OccurrenceMap, ASTs: AstMap}
+type VariableDeclarationMap = Map<string, VariableDeclaration>
+type ProjectOccurrences = { project: Project, occurrences: OccurrenceMap, ASTs: AstMap, variableDeclarations: VariableDeclarationMap }
 type GetProtocolOptions = { reload?: boolean, updateMeta?: boolean }
 
 export class ProtocolReaderWriter {
@@ -79,8 +80,12 @@ export class ProtocolReaderWriter {
     async writeOccurrence(filename: string, updatedOccurrence: Occurrence): Promise<void> {
         const projectOccurrences = this.files.get(filename)
         if (!projectOccurrences) { return }
-
-        const swarmProtocolAst = projectOccurrences.ASTs.get(updatedOccurrence.name)
+        const variableDeclaration = projectOccurrences.variableDeclarations.get(updatedOccurrence.name)
+        if (variableDeclaration) {
+            variableDeclaration.setInitializer(JSON.stringify(updatedOccurrence.swarmProtocol))
+            await projectOccurrences.project.getSourceFileOrThrow(filename).save()
+        }
+        /* const swarmProtocolAst = projectOccurrences.ASTs.get(updatedOccurrence.name)
         const oldOccurrence = projectOccurrences.occurrences.get(updatedOccurrence.name)
         if (swarmProtocolAst && oldOccurrence) {
             const oldSwarmProtocol = oldOccurrence.swarmProtocol
@@ -88,7 +93,7 @@ export class ProtocolReaderWriter {
                 swarmProtocolAst.initial.setInitializer(`${updatedOccurrence.swarmProtocol.initial}`)
             }
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
-        }
+        } */
     }
 
     private parseProtocols(fileName: string): void {
@@ -96,29 +101,40 @@ export class ProtocolReaderWriter {
         const sourceFileRead = projectRead.addSourceFileAtPath(fileName);
 
         // Read protocols and add metadata
-        const occurrences = new Map(visitVariableDeclarations(sourceFileRead)
-            .map(o => this.addMetaDataFromStore_(fileName, o))
-            .map(o => [o.name, o]))
+        /* const occurrences = new Map(visitVariableDeclarations(sourceFileRead)
+            .map(o => this.addMetaDataFromStore(fileName, o))
+            .map(o => [o.name, o])) */
+        const occurrenceInfos = visitVariableDeclarations(sourceFileRead)
+        const occurrences = new Map(occurrenceInfos
+            .map(occurrenceInformation => this.addMetaDataFromStore(fileName, occurrenceInformation.occurrence))
+            .map(occurrence => [occurrence.name, occurrence])
+        )
+        const swarmProtocolASTs = new Map(occurrenceInfos
+            .map(occurrenceInformation => [occurrenceInformation.swarmProtocolAST.name, occurrenceInformation.swarmProtocolAST])
+        )
+        const variableDeclarations = new Map(occurrenceInfos
+            .map(occurrenceInfromation => [occurrenceInfromation.variableDeclaration.getName(), occurrenceInfromation.variableDeclaration])
+        )
 
-        const projectWrite = new Project();
+        /* const projectWrite = new Project();
         const sourceFileWrite = projectWrite.addSourceFileAtPath(fileName);
         const swarmProtocolASTs = new Map(visitVariableDeclarationsAst(sourceFileWrite)
-            .map(swarmProtocolAst => [swarmProtocolAst.name, swarmProtocolAst]))
+            .map(swarmProtocolAst => [swarmProtocolAst.name, swarmProtocolAst])) */
 
-        this.files.set(fileName, {occurrences: occurrences, project: projectWrite, ASTs: swarmProtocolASTs})
+        this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs, variableDeclarations: variableDeclarations})
     }
 
     // Could mutate directly but
     private updateOccurrenceMeta(fileName: string) {
         const projectOccurrences = this.files.get(fileName)
         const updatedOcurrences: [string, Occurrence][] = Array.from(projectOccurrences.occurrences.entries())
-            .map(([name, occurrenceAndAst]) => [name, this.addMetaDataFromStore_(fileName, occurrenceAndAst)])
+            .map(([name, occurrenceAndAst]) => [name, this.addMetaDataFromStore(fileName, occurrenceAndAst)])
 
-        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences), ASTs: projectOccurrences.ASTs})
+        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences), ASTs: projectOccurrences.ASTs, variableDeclarations: projectOccurrences.variableDeclarations})
     }
 
     // Add metadata from workspace state
-    private addMetaDataFromStore_(fileName: string, occurrence: Occurrence): Occurrence {
+    private addMetaDataFromStore(fileName: string, occurrence: Occurrence): Occurrence {
         return {
                 ...occurrence,
                 swarmProtocol: {
@@ -130,7 +146,7 @@ export class ProtocolReaderWriter {
     }
 
 // Get all variable declarations and try to parse them as swarm protocols.
-function visitVariableDeclarations(sourceFile: SourceFile): Occurrence[] {
+function visitVariableDeclarations(sourceFile: SourceFile): OccurrenceInfo[] {
         const variableDeclarations = sourceFile.getVariableDeclarations()
         const swarmProtocols = variableDeclarations
             .map(variableDeclaration => swarmProtocolDeclaration(variableDeclaration))
@@ -153,7 +169,7 @@ function visitVariableDeclarationsAst(sourceFile: SourceFile): SwarmProtocolAST[
 // Split the type and OccurrenceAndAST.
 // Make a function that returns an occurrence and another one working on a separate 'project'
 // that returns the ast info unaltered.
-function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence> {
+function swarmProtocolDeclaration(node: VariableDeclaration): Option<OccurrenceInfo> {
     switch (node.getInitializer().getKind()) {
         case SyntaxKind.ObjectLiteralExpression:
             const properties = new Map((node.getInitializer() as ObjectLiteralExpression)
@@ -164,7 +180,15 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
             const initial = properties.get(INITIAL_FIELD)
             const transitions = properties.get(TRANSITIONS_FIELD)
             if (initial && transitions) {
-                const expandedInitializerInitial = getInitializerInitial(initial)
+                return some({
+                        occurrence: {
+                                name: node.getName(),
+                                swarmProtocol: propertiesToJSON(properties),
+                        },
+                        swarmProtocolAST: propertiesToAstInfo(node.getName(), properties),
+                        variableDeclaration: node
+                        })
+/*                 const expandedInitializerInitial = getInitializerInitial(initial)
                 const expandedInitializerTransitions = getInitializerTransitions(transitions)
                 if (isSome(expandedInitializerInitial) && isSome(expandedInitializerTransitions)) {
                     properties.set(INITIAL_FIELD, getValue(expandedInitializerInitial))
@@ -177,7 +201,7 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<Occurrence>
                             swarmProtocol: propertiesToJSON(properties),
 
                         })
-                }
+                } */
             }
         }
 
@@ -225,9 +249,6 @@ function extractValue(node: Node): any {
             return (node as ArrayLiteralExpression).getElements().map(extractValue);
         default:
             return node.getText()
-        /* // Other cases?
-        default:
-            throw new Error(`Unsupported node kind: ${node.getKindName()}`); */
     }
 }
 
