@@ -91,6 +91,20 @@ export class ProtocolReaderWriter {
                 return new Map(transitions
                     .map(t => [t.id, t]))
             }
+            const oldTransitionsMap = transitionsToMap(oldOccurrence.swarmProtocol.transitions)
+            const newTransitionsMap = transitionsToMap(updatedOccurrence.swarmProtocol.transitions)
+            const astMap = transitionsToMap(swarmProtocolAst.transitions)
+
+            // Todo: functionality to add new stuff. What happens if we create an edge in the visual tool? What should be the id of this?
+            // And how should we iterate here?
+            for (const id of newTransitionsMap.keys()) {
+                if (astMap.has(id)) {
+                    updateTransitionAst(newTransitionsMap.get(id) as Transition, astMap.get(id) as TransitionAST)
+                } else {
+                    throw Error("Not implemented! Add this.")
+                }
+            }
+
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
         }
     }
@@ -158,6 +172,7 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<OccurrenceI
                 .map(e => (e as PropertyAssignment))
                 .map(p => [p.getName(), p]))
 
+            // More rigorous check here? Like is the initial field a string? Is the transistions a list of strings?
             const initial = properties.get(INITIAL_FIELD)
             const transitions = properties.get(TRANSITIONS_FIELD)
             if (initial && transitions) {
@@ -181,7 +196,7 @@ function extractValue(node: Node): any {
         case SyntaxKind.StringLiteral:
             return (node as StringLiteral).getLiteralText();
         case SyntaxKind.NumericLiteral:
-            return Number((node as NumericLiteral).getLiteralText());
+            return (node as NumericLiteral).getLiteralText();
         case SyntaxKind.TrueKeyword:
             return true;
         case SyntaxKind.FalseKeyword:
@@ -251,6 +266,14 @@ function labelAstInfo(label: ObjectLiteralExpression): LabelAST {
     }
 
     return labelAst
+}
+
+function updateTransitionAst(transition: Transition, transitionAst: TransitionAST): void {
+    transitionAst.source.setInitializer(transition.source)
+    transitionAst.target.setInitializer(transition.target)
+    transitionAst.label.cmd.setInitializer(transition.label.cmd)
+    transitionAst.label.role.setInitializer(transition.label.role)
+    transitionAst.label.logType.setInitializer(`[${transition.label.logType.join(", ") ?? "" }]`)
 }
 
 // Nice for debugging
