@@ -46,8 +46,7 @@ const ERROR_PARSE = "Error parsing swarm protocols"
 
 type OccurrenceMap = Map<string, Occurrence>
 type AstMap = Map<string, SwarmProtocolAST>
-type VariableDeclarationMap = Map<string, VariableDeclaration>
-type ProjectOccurrences = { project: Project, occurrences: OccurrenceMap, ASTs: AstMap, variableDeclarations: VariableDeclarationMap }
+type ProjectOccurrences = {project: Project, occurrences: OccurrenceMap, ASTs: AstMap}
 type GetProtocolOptions = { reload?: boolean, updateMeta?: boolean }
 
 export class ProtocolReaderWriter {
@@ -80,12 +79,8 @@ export class ProtocolReaderWriter {
     async writeOccurrence(filename: string, updatedOccurrence: Occurrence): Promise<void> {
         const projectOccurrences = this.files.get(filename)
         if (!projectOccurrences) { return }
-        const variableDeclaration = projectOccurrences.variableDeclarations.get(updatedOccurrence.name)
-        if (variableDeclaration) {
-            variableDeclaration.setInitializer(JSON.stringify(updatedOccurrence.swarmProtocol))
-            await projectOccurrences.project.getSourceFileOrThrow(filename).save()
-        }
-        /* const swarmProtocolAst = projectOccurrences.ASTs.get(updatedOccurrence.name)
+
+        const swarmProtocolAst = projectOccurrences.ASTs.get(updatedOccurrence.name)
         const oldOccurrence = projectOccurrences.occurrences.get(updatedOccurrence.name)
         if (swarmProtocolAst && oldOccurrence) {
             const oldSwarmProtocol = oldOccurrence.swarmProtocol
@@ -93,7 +88,7 @@ export class ProtocolReaderWriter {
                 swarmProtocolAst.initial.setInitializer(`${updatedOccurrence.swarmProtocol.initial}`)
             }
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
-        } */
+        }
     }
 
     private parseProtocols(fileName: string): void {
@@ -104,16 +99,13 @@ export class ProtocolReaderWriter {
         /* const occurrences = new Map(visitVariableDeclarations(sourceFileRead)
             .map(o => this.addMetaDataFromStore(fileName, o))
             .map(o => [o.name, o])) */
-        const occurrenceInfos = visitVariableDeclarations(sourceFileRead)
-        const occurrences = new Map(occurrenceInfos
-            .map(occurrenceInformation => this.addMetaDataFromStore(fileName, occurrenceInformation.occurrence))
-            .map(occurrence => [occurrence.name, occurrence])
+        const occurrenceAndAsts = visitVariableDeclarations(sourceFileRead)
+        const occurrences = new Map(occurrenceAndAsts
+            .map(oa => this.addMetaDataFromStore(fileName, oa.occurrence))
+            .map(o => [o.name, o])
         )
-        const swarmProtocolASTs = new Map(occurrenceInfos
-            .map(occurrenceInformation => [occurrenceInformation.swarmProtocolAST.name, occurrenceInformation.swarmProtocolAST])
-        )
-        const variableDeclarations = new Map(occurrenceInfos
-            .map(occurrenceInfromation => [occurrenceInfromation.variableDeclaration.getName(), occurrenceInfromation.variableDeclaration])
+        const swarmProtocolASTs = new Map(occurrenceAndAsts
+            .map(oa => [oa.swarmProtocolAST.name, oa.swarmProtocolAST])
         )
 
         /* const projectWrite = new Project();
@@ -121,7 +113,7 @@ export class ProtocolReaderWriter {
         const swarmProtocolASTs = new Map(visitVariableDeclarationsAst(sourceFileWrite)
             .map(swarmProtocolAst => [swarmProtocolAst.name, swarmProtocolAst])) */
 
-        this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs, variableDeclarations: variableDeclarations})
+        this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs})
     }
 
     // Could mutate directly but
@@ -130,7 +122,7 @@ export class ProtocolReaderWriter {
         const updatedOcurrences: [string, Occurrence][] = Array.from(projectOccurrences.occurrences.entries())
             .map(([name, occurrenceAndAst]) => [name, this.addMetaDataFromStore(fileName, occurrenceAndAst)])
 
-        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences), ASTs: projectOccurrences.ASTs, variableDeclarations: projectOccurrences.variableDeclarations})
+        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences), ASTs: projectOccurrences.ASTs})
     }
 
     // Add metadata from workspace state
@@ -185,8 +177,7 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<OccurrenceI
                                 name: node.getName(),
                                 swarmProtocol: propertiesToJSON(properties),
                         },
-                        swarmProtocolAST: propertiesToAstInfo(node.getName(), properties),
-                        variableDeclaration: node
+                        swarmProtocolAST: propertiesToAstInfo(node.getName(), properties)
                         })
 /*                 const expandedInitializerInitial = getInitializerInitial(initial)
                 const expandedInitializerTransitions = getInitializerTransitions(transitions)
