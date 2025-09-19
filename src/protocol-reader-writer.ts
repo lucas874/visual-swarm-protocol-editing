@@ -223,9 +223,11 @@ function extractValue(node: Node): any {
             return obj;
         case SyntaxKind.ArrayLiteralExpression:
             return (node as ArrayLiteralExpression).getElements().map(extractValue);
-        // Other cases?
         default:
-            throw new Error(`Unsupported node kind: ${node.getKindName()}`);
+            return node.getText()
+        /* // Other cases?
+        default:
+            throw new Error(`Unsupported node kind: ${node.getKindName()}`); */
     }
 }
 
@@ -246,18 +248,26 @@ function literalInitializer(node: Node<ts.Node>): Option<Node<ts.Node>> {
             // https://ts-morph.com/details/identifiers:
             // 'Gets the definitions of the identifier.
             // This is similar to "go to definition" functionality that exists with TypeScript in most IDEs.'
-            const defnitionNode = definitionNodeInfo(node)
-            return isSome(defnitionNode) ? literalInitializer(getValue(defnitionNode).definitionNode) : none
+            //const defnitionNode = definitionNodeInfo(node)
+            //return isSome(defnitionNode) ? literalInitializer(getValue(defnitionNode).definitionNode) : none
+
+            // The above extracts the value that an identifier refers to. The below just returns the identifier.
+            return some(node)
         case SyntaxKind.ArrayLiteralExpression:
             return arrayLiteralInitializer(node as ArrayLiteralExpression, literalInitializer)
         case SyntaxKind.ObjectLiteralExpression:
             return objectLiteralInitializer(node as ObjectLiteralExpression)
-        case SyntaxKind.PropertyAccessExpression:
+        default:
+            return some(node)
+        // Cases below are for extracting 'myEventType' from 'myEventType' string out of a myEvent = MachineEvent.design('myEventType'), in a swarm protocol
+        // that uses ... logType: [myEvent.type].
+        // New behavior just shows 'myEvent.type'
+        /* case SyntaxKind.PropertyAccessExpression:
             return literalInitializer((node as PropertyAccessExpression).getNameNode())
         case SyntaxKind.VariableDeclaration:
             return literalInitializer((node as VariableDeclaration).getInitializer())
         default:
-            return none
+            return none */
     }
 }
 
@@ -283,7 +293,10 @@ function objectLiteralInitializer(node: ObjectLiteralExpression): Option<Node<ts
         .getProperties()
         .forEach(property => {
             if ((property as PropertyAssignment).getName() === "logType") {
-                arrayLiteralInitializer((property as PropertyAssignment).getInitializer() as ArrayLiteralExpression, handleLogTypeInitializer)
+                arrayLiteralInitializer((property as PropertyAssignment).getInitializer() as ArrayLiteralExpression, literalInitializer)
+                // Removed: We just want to show the variables as text now -- not the values they refer to. So when we have e.g. myEvent.type we do
+                // not find this string, we just display myEvent.type
+                //arrayLiteralInitializer((property as PropertyAssignment).getInitializer() as ArrayLiteralExpression, handleLogTypeInitializer)
             } else {
                 literalInitializer((property as PropertyAssignment).getInitializer())
             }
@@ -296,9 +309,10 @@ function getInitializerInitial(node: PropertyAssignment): Option<PropertyAssignm
     const literalOption = literalInitializer(initializer)
     if (isSome(literalOption)) {
         const literal = getValue(literalOption)
-        if (literal.getKind() === SyntaxKind.StringLiteral) {
-            return some(node.setInitializer(literal.getText()))
-        }
+        // Below was used when we extracted and shoed the values identifiers referred to, not the identifiers themselves.
+        //if (literal.getKind() === SyntaxKind.StringLiteral) {
+        return some(node.setInitializer(literal.getText()))
+        //}
     }
     return none
 }
