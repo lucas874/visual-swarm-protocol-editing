@@ -54,10 +54,41 @@ export interface SwarmProtocol {
 export type Position = { startPos: number, endPos: number }
 
 export type LabelAST = { cmd: PropertyAssignment, logType: PropertyAssignment, role: PropertyAssignment }
-// AST nodes representing a tranistion in a SwarmProtocolType.
+// AST nodes representing a transition in a SwarmProtocolType.
 export type TransitionAST = { source: PropertyAssignment, target: PropertyAssignment,  label: LabelAST, id: string }
+// AST nodes representing metadata field
+export type NodeLayoutAST = {
+  name: PropertyAssignment;
+  x?: PropertyAssignment;
+  y?: PropertyAssignment;
+};
+
+export type PositionHandlerAST = {
+  x: PropertyAssignment;
+  y: PropertyAssignment;
+  active: PropertyAssignment;
+  isLabel: PropertyAssignment;
+};
+
+export type EdgeLayoutAST = {
+  id: PropertyAssignment;
+  positionHandlers: PositionHandlerAST[];
+};
+
+export type LayoutTypeAST = {
+  nodes?: NodeLayoutAST[];
+  edges?: EdgeLayoutAST[];
+};
+
+export type SubscriptionAST = Map<string, PropertyAssignment>//{role: string, propertyAssignment: PropertyAssignment}[]
+
+export type SwarmProtocolMetadataAST = {
+    layout: LayoutTypeAST;
+    subscriptions: SubscriptionAST;
+}
+
 // The AST of a SwarmProtocolType
-export type SwarmProtocolAST = { name: string, initial: PropertyAssignment, transitions: TransitionAST[] }
+export type SwarmProtocolAST = { name: string, initial: PropertyAssignment, transitions: TransitionAST[], metadata?: SwarmProtocolMetadataAST }
 
 // We can not use the AST stuff in occurrence, because we pass occurrences around the extension and the webview
 // using postMessage and message argument of postMessage "must be a string or other json serializable object." (from docs).

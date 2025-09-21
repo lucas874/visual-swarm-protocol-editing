@@ -1,5 +1,5 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind, NumericLiteral } from "ts-morph";
-import { EdgeLayout, LabelAST, NodeLayout, Occurrence, OccurrenceInfo, PositionHandler, ProtocolDiff, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, Transition, TransitionAST } from "./types";
+import { EdgeLayout, EdgeLayoutAST, LabelAST, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, ProtocolDiff, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
 
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
@@ -244,12 +244,10 @@ function propertiesToJSON(properties: Map<string, PropertyAssignment>): SwarmPro
 // but with string values for all properties. Give properties the right types
 function fixMetaDataFieldTypesRead(metadata: any): SwarmProtocolMetadata {
     const nodeMapper = (node: any): NodeLayout => {
-        console.log("node: ", node)
         return { ...node, x: Number(node.x), y: Number(node.y) }
     }
 
     const positionHandlerMapper = (positionHandler: any): PositionHandler => {
-        console.log("positionHandler: ", positionHandler)
         return {
             x: Number(positionHandler.x),
             y: Number(positionHandler.y),
@@ -259,7 +257,6 @@ function fixMetaDataFieldTypesRead(metadata: any): SwarmProtocolMetadata {
     }
 
     const edgeMapper = (edge: any): EdgeLayout => {
-        console.log("edge: ", edge)
         return { ...edge, positionHandlers: edge.positionHandlers.map(positionHandlerMapper) }
     }
     const meta = { ...metadata, layout: { nodes: metadata.layout.nodes.map(nodeMapper), edges: metadata.layout.edges.map(edgeMapper) } }
@@ -269,7 +266,8 @@ function fixMetaDataFieldTypesRead(metadata: any): SwarmProtocolMetadata {
 
 function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssignment>): SwarmProtocolAST {
     const transitions = transitionsToAstInfo(properties.get(TRANSITIONS_FIELD).getInitializer() as ArrayLiteralExpression)
-    return { name, initial: properties.get(INITIAL_FIELD), transitions: transitions }
+    const metadata = properties.get(METADATA_FIELD) ? metadataToAstInfo(properties.get(METADATA_FIELD).getInitializer() as ObjectLiteralExpression) : undefined
+    return { name, initial: properties.get(INITIAL_FIELD), transitions: transitions, metadata: metadata }
 }
 
 function transitionsToAstInfo(transitions: ArrayLiteralExpression): TransitionAST[] {
@@ -305,6 +303,99 @@ function labelAstInfo(label: ObjectLiteralExpression): LabelAST {
 
     return labelAst
 }
+
+function metadataToAstInfo(metadata: ObjectLiteralExpression): SwarmProtocolMetadataAST {
+    basicVisit(metadata)
+    const metadataAst: any = {}
+        for (const prop of metadata.getProperties()) {
+            if (Node.isPropertyAssignment(prop)) {
+                if (prop.getName() === "layout") {
+                    metadataAst[prop.getName()] = layoutToAstInfo(prop.getInitializer() as ObjectLiteralExpression)
+                } else if (prop.getName() === "subscriptions") { 
+                    metadataAst[prop.getName()] = subscriptionToAstInfo(prop.getInitializer() as ObjectLiteralExpression)
+                } 
+                
+            }
+    } 
+    return metadataAst as SwarmProtocolMetadataAST
+}
+
+function layoutToAstInfo(layout: ObjectLiteralExpression): LayoutTypeAST {
+    const layoutAst: any = {}
+    for (const prop of layout.getProperties()) {
+        if (Node.isPropertyAssignment(prop)) {
+            if (prop.getName() === "nodes") {
+                layoutAst[prop.getName()] = nodesMetadataToAstInfo(prop.getInitializer() as ArrayLiteralExpression)
+            }
+            if (prop.getName() === "edges") {
+                layoutAst[prop.getName()] = edgesMetadataToAstInfo(prop.getInitializer() as ArrayLiteralExpression)
+            }
+        }
+    }
+    return layoutAst as LayoutTypeAST
+}
+
+function nodesMetadataToAstInfo(nodes: ArrayLiteralExpression): NodeLayoutAST[] {
+    return nodes
+        .getElements()
+        .map((node) => layoutNodeToAstInfo(node as ObjectLiteralExpression))
+}
+
+function layoutNodeToAstInfo(node: ObjectLiteralExpression): NodeLayoutAST {
+    const nodeAst: any = {}
+    for (const prop of node.getProperties()) {
+        if (Node.isPropertyAssignment(prop)) {
+            nodeAst[prop.getName()] = prop
+        }
+    }
+
+    return nodeAst
+}
+
+function edgesMetadataToAstInfo(edges: ArrayLiteralExpression) {
+    return edges
+            .getElements()
+            .map((node) => layoutEdgeToAstInfo(node as ObjectLiteralExpression))
+}
+
+function layoutEdgeToAstInfo(edge: ObjectLiteralExpression): EdgeLayoutAST {
+    const edgeAst: any = {}
+    for (const prop of edge.getProperties()) {
+        if (Node.isPropertyAssignment(prop)) {
+            if (prop.getName() === "id") {
+                edgeAst[prop.getName()] = prop
+            } else if (prop.getName() === "positionHandlers") {
+                edgeAst[prop.getName()] = (prop.getInitializer() as ArrayLiteralExpression)
+                    .getElements()
+                        .map(positionHandlerToAstInfo)
+            }
+        }
+    }
+    return edgeAst
+}
+
+function positionHandlerToAstInfo(positionHandler: ObjectLiteralExpression): PositionHandlerAST {
+    const positionHandlerAst: any = {}
+    for (const prop of positionHandler.getProperties()) {
+        if (Node.isPropertyAssignment(prop)) {
+            positionHandlerAst[prop.getName()] = prop
+        }
+    }
+
+    return positionHandlerAst
+}
+
+function subscriptionToAstInfo(subscription: ObjectLiteralExpression): SubscriptionAST {
+    const subscriptionAst: Map<string, PropertyAssignment> = new Map()
+    for (const prop of subscription.getProperties()) {
+        if (Node.isPropertyAssignment(prop)) {
+            subscriptionAst.set(prop.getName(), prop)
+        }
+    }
+
+    return subscriptionAst
+}
+
 
 function updateTransitionAst(transition: Transition, transitionAst: TransitionAST): void {
     transitionAst.source.setInitializer(transition.source)
