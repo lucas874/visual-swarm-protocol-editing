@@ -1,5 +1,5 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind, NumericLiteral } from "ts-morph";
-import { LabelAST, Occurrence, OccurrenceInfo, ProtocolDiff, SwarmProtocol, SwarmProtocolAST, Transition, TransitionAST } from "./types";
+import { EdgeLayout, LabelAST, NodeLayout, Occurrence, OccurrenceInfo, PositionHandler, ProtocolDiff, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, Transition, TransitionAST } from "./types";
 
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
@@ -33,6 +33,7 @@ const EVENT_DESIGN_FUNCTION = "design: <Key extends string>(key: Key) => EventFa
 const EVENT_D_TS = "event.d.ts"
 const INITIAL_FIELD = "initial"
 const TRANSITIONS_FIELD = "transitions"
+const METADATA_FIELD = "metadata"
 const TYPE_FIELD = "type"
 const EVENT_DEFINITION_FUNCTIONS = [
     "withPayload: <Payload extends utils.SerializableObject>() => Factory<Key, Payload>;",
@@ -59,7 +60,7 @@ export class ProtocolReaderWriter {
         this.metadataStore = metadataStore
         this.files = new Map()
         if (fileName) {
-            this.parseProtocols(fileName)
+            this.parseProtocols(fileName, false)
         }
     }
 
@@ -67,7 +68,8 @@ export class ProtocolReaderWriter {
     getOccurrences(fileName: string, options: GetProtocolOptions = {}): Occurrence[] {
         const { reload = false, updateMeta = false } = options
         if (!this.files.has(fileName) || reload) {
-            this.parseProtocols(fileName)
+            // Parse protocols and keep any metadata stored in parsed result instead of reading from store
+            this.parseProtocols(fileName, false)
         }
         if (updateMeta) {
             this.updateOccurrenceMeta(fileName)
@@ -109,7 +111,7 @@ export class ProtocolReaderWriter {
         }
     }
 
-    private parseProtocols(fileName: string): void {
+    private parseProtocols(fileName: string, addMetaFromStore: boolean): void {
         const projectRead = new Project();
         const sourceFileRead = projectRead.addSourceFileAtPath(fileName);
 
@@ -117,8 +119,10 @@ export class ProtocolReaderWriter {
         const occurrenceInfos = visitVariableDeclarations(sourceFileRead)
         // Get protocols and add metadata
         const occurrences = new Map(occurrenceInfos
-            .map(occurrenceInfo => this.addMetaDataFromStore(fileName, occurrenceInfo.occurrence))
-            .map(occurrence => [occurrence.name, occurrence])
+            .map(occurrenceInfo => [ 
+                occurrenceInfo.occurrence.name, 
+                addMetaFromStore ? this.addMetaDataFromStore(fileName, occurrenceInfo.occurrence) : occurrenceInfo.occurrence
+            ])
         )
         // Get AST snippets representing protocols
         const swarmProtocolASTs = new Map(occurrenceInfos
@@ -226,7 +230,41 @@ function propertiesToJSON(properties: Map<string, PropertyAssignment>): SwarmPro
     protocol[INITIAL_FIELD] = extractValue(properties.get(INITIAL_FIELD).getInitializer())
     protocol[TRANSITIONS_FIELD] = extractValue(properties.get(TRANSITIONS_FIELD).getInitializer())
     protocol.transitions = (protocol.transitions).map((transition, index) => { return {...transition, id: index.toString()} })
+
+    const metadata = properties.get(METADATA_FIELD)
+    if (metadata) {
+        protocol[METADATA_FIELD] = fixMetaDataFieldTypesRead(extractValue(properties.get(METADATA_FIELD).getInitializer()))
+    }
+
     return protocol as SwarmProtocol
+}
+
+// Use any type. Called in propertiesToJson. 
+// Should actually be a an object with the same fields as a SwarmProtocolMetadata
+// but with string values for all properties. Give properties the right types
+function fixMetaDataFieldTypesRead(metadata: any): SwarmProtocolMetadata {
+    const nodeMapper = (node: any): NodeLayout => {
+        console.log("node: ", node)
+        return { ...node, x: Number(node.x), y: Number(node.y) }
+    }
+
+    const positionHandlerMapper = (positionHandler: any): PositionHandler => {
+        console.log("positionHandler: ", positionHandler)
+        return {
+            x: Number(positionHandler.x),
+            y: Number(positionHandler.y),
+            active: Number(positionHandler.active),
+            isLabel: positionHandler.isLabel === "true" ? true : false
+        }
+    }
+
+    const edgeMapper = (edge: any): EdgeLayout => {
+        console.log("edge: ", edge)
+        return { ...edge, positionHandlers: edge.positionHandlers.map(positionHandlerMapper) }
+    }
+    const meta = { ...metadata, layout: { nodes: metadata.layout.nodes.map(nodeMapper), edges: metadata.layout.edges.map(edgeMapper) } }
+
+    return meta
 }
 
 function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssignment>): SwarmProtocolAST {

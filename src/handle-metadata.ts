@@ -119,14 +119,15 @@ export class MetadataStore {
         await this.setFile(fileName, file)
     }
 
-    // Aprotocol could have changed since last time visual tool was used and metadata was written
+    // A protocol could have changed since last time visual tool was used and metadata was written
     // The metadata associated with some swarm protocol could then contain info about e.g. nodes
-    // that do not exist anymore. Update metadata to reflect current state of protocol.
+    // that do not exist anymore. If a protocol has a value for its metadata field (i.e. it is not undefined)
+    // this value has priority over data in store and is written. Update metadata to reflect current state of protocol.
     async synchronizeStore(fileName: string, occurrences: Occurrence[]): Promise<void> {
         //const file = this.getFile(uri)
         const newFileMeta = { swarmProtocols: {} }
         for (const occurrence of occurrences) {
-            const meta = this.getSwarmProtocolMetaData(fileName, occurrence.name)
+            const meta = occurrence.swarmProtocol.metadata ? occurrence.swarmProtocol.metadata : this.getSwarmProtocolMetaData(fileName, occurrence.name)
             const nodes = new Set(occurrence.swarmProtocol.transitions.flatMap(t => [t.source, t.target]))
             nodes.add(occurrence.swarmProtocol.initial)
             // This is how edge ids are set in App.tsx e.g. on line 285. TODO: change how ids are generated.

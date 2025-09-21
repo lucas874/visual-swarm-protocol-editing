@@ -37,7 +37,8 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       // Text file could have changed since last time meta was written.
-      // Synch metadata to avoid drawing states that have been renamed.
+      // Synch metadata to avoid drawing states that have been renamed
+      // and write any metadata stored in actual protocol (optional field) in store.
       // Then update metadata in occurrence.
       store.synchronizeStore(activeEditor.document.fileName, occurrences)
       occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName, { updateMeta: true})
