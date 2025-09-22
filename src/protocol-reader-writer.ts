@@ -103,7 +103,7 @@ export class ProtocolReaderWriter {
                 if (astMap.has(id)) {
                     updateTransitionAst(newTransitionsMap.get(id) as Transition, astMap.get(id) as TransitionAST)
                 } else {
-                    throw Error("Not implemented! Add this.")
+                    addTransitionToDeclaration(swarmProtocolAst.variableDeclaration, newTransitionsMap.get(id) as Transition)
                 }
             }
 
@@ -178,7 +178,7 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<OccurrenceI
 
             // Construct object from variable declaration then check if the object is a SwarmProtocol
             const maybeSwarmProtocol = propertiesToJSON(properties)
-            const maybeSwarmProtocolAST = isSome(maybeSwarmProtocol) ? propertiesToAstInfo(node.getName(), properties) : undefined
+            const maybeSwarmProtocolAST = isSome(maybeSwarmProtocol) ? propertiesToAstInfo(node, properties) : undefined
             if (isSome(maybeSwarmProtocol) && isSome(maybeSwarmProtocolAST)) {
                 return some({
                         occurrence: {
@@ -267,7 +267,7 @@ function fixMetaDataFieldTypesRead(metadata: any): SwarmProtocolMetadata {
     return meta
 }
 
-function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssignment>): Option<SwarmProtocolAST> {
+function propertiesToAstInfo(node: VariableDeclaration, properties: Map<string, PropertyAssignment>): Option<SwarmProtocolAST> {
     const initial = properties.get(INITIAL_FIELD) && properties.get(INITIAL_FIELD).isKind(SyntaxKind.PropertyAssignment) ?
         properties.get(INITIAL_FIELD) : undefined
     const transitions = properties.get(TRANSITIONS_FIELD)
@@ -276,7 +276,7 @@ function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssig
 
     if (initial && transitions) {
         const metadata = properties.get(METADATA_FIELD) ? metadataToAstInfo(properties.get(METADATA_FIELD).getInitializer() as ObjectLiteralExpression) : undefined
-        return some({ name, initial: properties.get(INITIAL_FIELD), transitions: transitions, metadata: metadata })
+        return some({ name: node.getName(), initial: properties.get(INITIAL_FIELD), transitions: transitions, metadata: metadata, variableDeclaration: node })
     }
     return none
 }
@@ -421,4 +421,25 @@ function basicVisit(node: Node, prepend: string = '') {
     node.forEachChild(child => {
         basicVisit(child, prepend + '  * ');
     });
+}
+
+// Manipulate initializer of SwarmProtocol: add a transition. Assume that variable declaration declares a proper swarm protocol
+// Do something else than replace spaces .... option to add variable declaration or insert as string literal maybe...
+function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, transition: Transition) {
+    const initializer = variableDeclaration.getInitializer()
+    const replaceSpaces = (str: string): string => str.split(" ").join("")
+    if (initializer.getKind() === SyntaxKind.ObjectLiteralExpression) {
+        try {
+        const elements = ((initializer as ObjectLiteralExpression).getProperty(TRANSITIONS_FIELD) as PropertyAssignment).getInitializer() as ArrayLiteralExpression//.addPropertyAssignment(JSON.stringify(transition, null, 2))
+        const labelString = `{ cmd: ${replaceSpaces(transition.label.cmd)}, role: ${replaceSpaces(transition.label.role)}, logType: [${transition.label.logType ? transition.label.logType.map(s => replaceSpaces(s)).join(", ") : ""}]}`
+        elements.addElement(writer => {
+            writer
+                .write("{")
+                .write(`source: ${replaceSpaces(transition.source)}, target: ${replaceSpaces(transition.target)}, label: ${labelString}`)
+                .write("}")
+        })
+    } catch (e) {
+            throw Error(`Could not add transition to ${variableDeclaration.getName()}: ${e}`)
+        }
+    }
 }

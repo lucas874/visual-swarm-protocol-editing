@@ -128,10 +128,15 @@ const LayoutFlow = ({
 
   const onConnect = useCallback((connection) => {
     // Check if the edge already exists
+    if (!connection.id) {
+      connection.id = edgesRef.current.length
+    }
+    // Should not happen
     const existingEdge = edgesRef.current.find(
       (edge) =>
-       edge.id === connection.id //edge.source === connection.source && edge.target === connection.target
+       edge.id === connection.id
     );
+
     if (existingEdge) {
       sendErrorToParent("edgeExists");
       return;
@@ -291,7 +296,7 @@ const LayoutFlow = ({
             roleRef.current = edge.label?.toString().split("@")[1].split("<")[0] ?? "";
             logTypeRef.current =
               (edge.data.logType as string[])?.join(",") ?? null;
-            edgeLabelRef.current = commandRef.current + "@" + roleRef.current + logTypeRef;
+            edgeLabelRef.current = `${commandRef.current}@${roleRef.current} + <${logTypeRef}>`;
             setIsEdgeDialogOpen(true);
           }}
           onBeforeDelete={(onBeforeDelete) => {

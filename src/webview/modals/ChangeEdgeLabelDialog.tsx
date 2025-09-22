@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import useStore, { RFState } from "../store";
 import { shallow } from "zustand/shallow";
 
@@ -17,6 +17,7 @@ function EdgeLabelDialog({
   sendErrorToParent,
   sendNewRoleToParent,
 }) {
+  //const [popupText, setPopupText] = useState<string | null>(null);
   const { edges, updateEdgeLabel, setIsEdgeDialogOpen } = useStore(
     selector,
     shallow
@@ -42,7 +43,7 @@ function EdgeLabelDialog({
             placeholder="Add command"
             onChange={(e) => {
               commandRef = e.target.value;
-              edgeLabelRef = commandRef + "@" + roleRef;
+              edgeLabelRef = `${commandRef}@${roleRef}${logTypeRef ? "<" + logTypeRef + ">" : ""}`;
             }}
             defaultValue={commandRef}
           />
@@ -55,7 +56,7 @@ function EdgeLabelDialog({
             placeholder="Add role"
             onChange={(e) => {
               roleRef = e.target.value;
-              edgeLabelRef = commandRef + "@" + roleRef;
+              edgeLabelRef = `${commandRef}@${roleRef}${logTypeRef ? "<" + logTypeRef + ">" : ""}`;
             }}
             defaultValue={roleRef}
           />
@@ -68,7 +69,7 @@ function EdgeLabelDialog({
             placeholder="Add log type"
             onChange={(e) => {
               logTypeRef = e.target.value;
-              edgeLabelRef = commandRef + "@" + roleRef;
+              edgeLabelRef = `${commandRef}@${roleRef}${logTypeRef ? "<" + logTypeRef + ">" : ""}`;
             }}
             defaultValue={logTypeRef}
           />
@@ -102,7 +103,7 @@ function EdgeLabelDialog({
                 // Check if role already exists in protocol, otherwise add it to subscriptions. COME BACK HERE.
                 if (
                   !edges.some(
-                    (edge) => edge.label?.toString().split("@")[1] === roleRef
+                    (edge) => edge.label?.toString().split("@")[1].split("<")[0] === roleRef
                   )
                 ) {
                   sendNewRoleToParent(roleRef);
@@ -119,3 +120,24 @@ function EdgeLabelDialog({
 }
 
 export default EdgeLabelDialog;
+
+/*
+<div className="row">
+          <label className="label">Thing</label>
+          <input
+            className="input float-right"
+            type="text"
+            placeholder="Add thing"
+            onChange={(e) => {
+              setPopupText(`You entered: ${e.target.value}. ${1 + 1}. ${edges.map(e => Object.keys(e) + ` id: ${e.id}, source: ${e.source}, target: ${e.target} label: ${JSON.stringify(e.label)}` + JSON.stringify(e.data)).join(" ---- ")}   `);
+            }}
+            defaultValue={commandRef}
+          />
+        </div>
+        {popupText && (
+          <div className="popup">
+            {popupText}
+            <button onClick={() => setPopupText(null)}>Close</button>
+          </div>
+        )}
+*/

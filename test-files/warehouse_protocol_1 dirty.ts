@@ -8,10 +8,10 @@ export const part = MachineEvent.design('part').withPayload<PartPayload>()
 export const warehouse = {
   initial: initialState,
   transitions: [
-    { source: initialState, target: '1', label: { cmd: 'request', role: 'T', logType: ['Events.partID.type'] } },
-    { source: '1', target: '2', label: { cmd: 'get', role: 'FL', logType: ['Events.pos.type'] } },
-    { source: '2', target: initialState, label: { cmd: 'deliver', role: 'T', logType: ['part.type'] } },
-    { source: initialState, target: '3', label: { cmd: 'close', role: 'D', logType: ['time'] } },
+    { source: initialState, target: 1, label: { cmd: request, role: T, logType: [Events.partID.type] } },
+    { source: 1, target: 2, label: { cmd: get, role: FL, logType: [Events.pos.type] } },
+    { source: 2, target: initialState, label: { cmd: deliver, role: T, logType: [part.type] } },
+    { source: initialState, target: 3, label: { cmd: close, role: D, logType: [time] } },
   ],
   metadata: {
     layout: {
@@ -57,7 +57,8 @@ export const warehouse2 = {
     { source: 1, target: 2, label: { cmd: getz, role: FL, logType: [Events.pos.type] } },
     { source: 2, target: initialState, label: { cmd: boinkver, role: T, logType: [part.type] } },
     { source: initialState, target: 3, label: { cmd: closesss, role: D, logType: [time] } },
-  ]
+      {source: 2, target: Node5, label: { cmd: C, role: r, logType: [t]}}
+]
 }
 
 export const warehouse3 = {
