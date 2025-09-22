@@ -1,5 +1,5 @@
 import { Project, PropertyAssignment } from "ts-morph"
-
+const STRING_TYPE = "string"
 // Define types of nodes and transitions for protocols
 export type Transition = {
   source: string;
@@ -47,6 +47,36 @@ export interface SwarmProtocol {
   transitions: Transition[];
   metadata?: SwarmProtocolMetadata
   nodeIds?: Record<string, number>,
+}
+
+const isTransitionLabel = (label: any): label is TransitionLabel => {
+  return Object.prototype.hasOwnProperty.call(label, "cmd")
+    && typeof label.source === STRING_TYPE
+    && Object.prototype.hasOwnProperty.call(label, "logType")
+    && Array.isArray(label.logType)
+    && label.logType.every((eventType : any) => typeof eventType === STRING_TYPE)
+    && Object.prototype.hasOwnProperty.call(label, "role")
+    && typeof label.source === STRING_TYPE
+}
+
+const isTransitions = (transitions: any): transitions is Transition[] => {
+  return Array.isArray(transitions) && transitions.every(transition =>
+    Object.prototype.hasOwnProperty.call(transition, "source")
+    && typeof transition.source === STRING_TYPE
+    && Object.prototype.hasOwnProperty.call(transition, "target")
+    && typeof transition.source === STRING_TYPE
+    && Object.prototype.hasOwnProperty.call(transition, "id")
+    && typeof transition.source === STRING_TYPE
+    && Object.prototype.hasOwnProperty.call(transition, "label")
+    && isTransitionLabel(transition.label)
+  )
+}
+
+export const isSwarmProtocol = (protocol: any): protocol is SwarmProtocol => {
+    const hasInitial =  Object.prototype.hasOwnProperty.call(protocol, "initial") && typeof protocol.initial === STRING_TYPE
+    const hasTransitions = Object.prototype.hasOwnProperty.call(protocol, "transitions") && isTransitions(protocol.transitions)
+
+    return hasInitial && hasTransitions
 }
 
 // Start and end pos are the source file text positions (in characters from beginning of file)

@@ -1,5 +1,5 @@
-import { Project, Node, SyntaxKind, VariableDeclaration, CallExpression, TypeAliasDeclaration, ObjectLiteralExpression, PropertyAssignment, Identifier, SourceFile, StringLiteral, ts, ArrayLiteralExpression, PropertyAccessExpression, Expression, PropertySignature, QuoteKind, NumericLiteral } from "ts-morph";
-import { EdgeLayout, EdgeLayoutAST, LabelAST, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, ProtocolDiff, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
+import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral } from "ts-morph";
+import { EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
 
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
@@ -119,8 +119,8 @@ export class ProtocolReaderWriter {
         const occurrenceInfos = visitVariableDeclarations(sourceFileRead)
         // Get protocols and add metadata
         const occurrences = new Map(occurrenceInfos
-            .map(occurrenceInfo => [ 
-                occurrenceInfo.occurrence.name, 
+            .map(occurrenceInfo => [
+                occurrenceInfo.occurrence.name,
                 addMetaFromStore ? this.addMetaDataFromStore(fileName, occurrenceInfo.occurrence) : occurrenceInfo.occurrence
             ])
         )
@@ -176,14 +176,13 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<OccurrenceI
                 .map(e => (e as PropertyAssignment))
                 .map(p => [p.getName(), p]))
 
-            // More rigorous check here? Like is the initial field a string? Is the transistions a list of strings?
-            const initial = properties.get(INITIAL_FIELD)
-            const transitions = properties.get(TRANSITIONS_FIELD)
-            if (initial && transitions) {
+            // Construct object from variable declaration then check if the object is a SwarmProtocol
+            const maybeSwarmProtocol = propertiesToJSON(properties)
+            if (isSome(maybeSwarmProtocol)) {
                 return some({
                         occurrence: {
                                 name: node.getName(),
-                                swarmProtocol: propertiesToJSON(properties),
+                                swarmProtocol: getValue(maybeSwarmProtocol),
                         },
                         swarmProtocolAST: propertiesToAstInfo(node.getName(), properties)
                         })
@@ -225,21 +224,24 @@ function extractValue(node: Node): any {
 // They assume that that they represent exactly an instance of SwarmProtocolType.
 // Id of edge is the index of edge in transitions? Does this work if just set here. Might be reordered somewhere...
 // If we do this ids should be the same as indices in propertiesToAstInfo?
-function propertiesToJSON(properties: Map<string, PropertyAssignment>): SwarmProtocol {
+function propertiesToJSON(properties: Map<string, PropertyAssignment>): Option<SwarmProtocol> {
     const protocol: any = {}
-    protocol[INITIAL_FIELD] = extractValue(properties.get(INITIAL_FIELD).getInitializer())
-    protocol[TRANSITIONS_FIELD] = extractValue(properties.get(TRANSITIONS_FIELD).getInitializer())
-    protocol.transitions = (protocol.transitions).map((transition, index) => { return {...transition, id: index.toString()} })
-
+    const initial = properties.get(INITIAL_FIELD)
+    const transitions = properties.get(TRANSITIONS_FIELD)
+    if (initial && transitions) {
+        protocol[INITIAL_FIELD] = extractValue(initial.getInitializer())
+        protocol[TRANSITIONS_FIELD] = extractValue(transitions.getInitializer())
+        protocol.transitions = (protocol.transitions).map((transition, index) => { return {...transition, id: index.toString()} })
+    }
     const metadata = properties.get(METADATA_FIELD)
     if (metadata) {
         protocol[METADATA_FIELD] = fixMetaDataFieldTypesRead(extractValue(properties.get(METADATA_FIELD).getInitializer()))
     }
 
-    return protocol as SwarmProtocol
+    return isSwarmProtocol(protocol) ? some(protocol) : none
 }
 
-// Use any type. Called in propertiesToJson. 
+// Use any type. Called in propertiesToJson.
 // Should actually be a an object with the same fields as a SwarmProtocolMetadata
 // but with string values for all properties. Give properties the right types
 function fixMetaDataFieldTypesRead(metadata: any): SwarmProtocolMetadata {
@@ -311,12 +313,12 @@ function metadataToAstInfo(metadata: ObjectLiteralExpression): SwarmProtocolMeta
             if (Node.isPropertyAssignment(prop)) {
                 if (prop.getName() === "layout") {
                     metadataAst[prop.getName()] = layoutToAstInfo(prop.getInitializer() as ObjectLiteralExpression)
-                } else if (prop.getName() === "subscriptions") { 
+                } else if (prop.getName() === "subscriptions") {
                     metadataAst[prop.getName()] = subscriptionToAstInfo(prop.getInitializer() as ObjectLiteralExpression)
-                } 
-                
+                }
+
             }
-    } 
+    }
     return metadataAst as SwarmProtocolMetadataAST
 }
 
