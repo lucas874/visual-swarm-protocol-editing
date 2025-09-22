@@ -33,15 +33,38 @@ export const warehouse3 = {
     { source: 2, target: initialState, label: { cmd: boinkver, role: T, logType: [part.type] } },
     { source: initialState, target: 3, label: { cmd: closesss, role: D, logType: [time] } },
   ],
-  metadata: { 
-    layout: { 
-      nodes: [ 
-        { name: initialState, x: 312.5, y: 37.5 }, 
-        { name: '1', x: 11.36998313659359, y: 91.69376053962898 }, 
-        { name: '2', x: 261.25, y: 287.5 }, 
-        { name: '3', x: 312.5, y: 162.5 }], 
-        edges: [] 
-      }, 
+  metadata: {
+    layout: {
+      nodes: [
+        { name: initialState, x: 312.5, y: 37.5 },
+        { name: '1', x: 11.36998313659359, y: 91.69376053962898 },
+        { name: '2', x: 261.25, y: 287.5 },
+        { name: '3', x: 312.5, y: 162.5 }],
+        edges: []
+      },
+      subscriptions: { T: [], FL: [], D: [] } }
+}
+
+// First transition does not have 'cmd', second does not have a proper label, third does not have an source, final does not have a target
+// Really, the others are not either. They refer to identifiers that do not exist, have integers for source and targets. But still
+// everything like this parsed as strings so its okay.
+export const notValidSwarmProtocol = {
+  initial: initialState,
+  transitions: [
+    { source: initialState, target: 1, label: { role: T, logType: [Events.partID.type] } },
+    { source: 1, target: 2, label: "a" },
+    { target: initialState, label: { cmd: boinkver, role: T, logType: [part.type] } },
+    { source: 3, label: { cmd: closesss, role: D, logType: [time] } },
+  ],
+  metadata: {
+    layout: {
+      nodes: [
+        { name: initialState, x: 312.5, y: 37.5 },
+        { name: '1', x: 11.36998313659359, y: 91.69376053962898 },
+        { name: '2', x: 261.25, y: 287.5 },
+        { name: '3', x: 312.5, y: 162.5 }],
+        edges: []
+      },
       subscriptions: { T: [], FL: [], D: [] } }
 }
 

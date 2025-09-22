@@ -51,12 +51,12 @@ export interface SwarmProtocol {
 
 const isTransitionLabel = (label: any): label is TransitionLabel => {
   return Object.prototype.hasOwnProperty.call(label, "cmd")
-    && typeof label.source === STRING_TYPE
+    && typeof label.cmd === STRING_TYPE
     && Object.prototype.hasOwnProperty.call(label, "logType")
     && Array.isArray(label.logType)
     && label.logType.every((eventType : any) => typeof eventType === STRING_TYPE)
     && Object.prototype.hasOwnProperty.call(label, "role")
-    && typeof label.source === STRING_TYPE
+    && typeof label.role === STRING_TYPE
 }
 
 const isTransitions = (transitions: any): transitions is Transition[] => {
