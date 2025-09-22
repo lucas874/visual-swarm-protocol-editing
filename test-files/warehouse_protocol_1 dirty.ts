@@ -12,7 +12,42 @@ export const warehouse = {
     { source: '1', target: '2', label: { cmd: 'get', role: 'FL', logType: ['Events.pos.type'] } },
     { source: '2', target: initialState, label: { cmd: 'deliver', role: 'T', logType: ['part.type'] } },
     { source: initialState, target: '3', label: { cmd: 'close', role: 'D', logType: ['time'] } },
-  ]
+  ],
+  metadata: {
+    layout: {
+      nodes: [
+        {
+          name: initialState,
+          x: 5,
+          y: 5
+        },
+        {
+          name: '1',
+          x: 10,
+          y: 10
+        },
+        {
+          name: '2',
+          x: 15,
+          y: 15
+        },
+        {
+          name: '3',
+          x: 20,
+          y: 20
+        }
+      ]},
+    subscriptions: {
+      D: [part.type, Events.partID.type, Events.time.type],
+      FL: [Events.partID.type, Events.pos.type, Events.time.type],
+      T: [
+        part.type,
+        Events.partID.type,
+        Events.pos.type,
+        Events.time.type,
+      ],
+    }
+  }
 }
 
 export const warehouse2 = {

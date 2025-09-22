@@ -178,13 +178,14 @@ function swarmProtocolDeclaration(node: VariableDeclaration): Option<OccurrenceI
 
             // Construct object from variable declaration then check if the object is a SwarmProtocol
             const maybeSwarmProtocol = propertiesToJSON(properties)
-            if (isSome(maybeSwarmProtocol)) {
+            const maybeSwarmProtocolAST = isSome(maybeSwarmProtocol) ? propertiesToAstInfo(node.getName(), properties) : undefined
+            if (isSome(maybeSwarmProtocol) && isSome(maybeSwarmProtocolAST)) {
                 return some({
                         occurrence: {
                                 name: node.getName(),
                                 swarmProtocol: getValue(maybeSwarmProtocol),
                         },
-                        swarmProtocolAST: propertiesToAstInfo(node.getName(), properties)
+                        swarmProtocolAST: getValue(maybeSwarmProtocolAST)
                         })
             }
         }
@@ -261,15 +262,23 @@ function fixMetaDataFieldTypesRead(metadata: any): SwarmProtocolMetadata {
     const edgeMapper = (edge: any): EdgeLayout => {
         return { ...edge, positionHandlers: edge.positionHandlers.map(positionHandlerMapper) }
     }
-    const meta = { ...metadata, layout: { nodes: metadata.layout.nodes.map(nodeMapper), edges: metadata.layout.edges.map(edgeMapper) } }
+    const meta = { ...metadata, layout: { nodes: metadata.layout.nodes?.map(nodeMapper), edges: metadata.layout.edges?.map(edgeMapper) } }
 
     return meta
 }
 
-function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssignment>): SwarmProtocolAST {
-    const transitions = transitionsToAstInfo(properties.get(TRANSITIONS_FIELD).getInitializer() as ArrayLiteralExpression)
-    const metadata = properties.get(METADATA_FIELD) ? metadataToAstInfo(properties.get(METADATA_FIELD).getInitializer() as ObjectLiteralExpression) : undefined
-    return { name, initial: properties.get(INITIAL_FIELD), transitions: transitions, metadata: metadata }
+function propertiesToAstInfo(name: string, properties: Map<string, PropertyAssignment>): Option<SwarmProtocolAST> {
+    const initial = properties.get(INITIAL_FIELD) && properties.get(INITIAL_FIELD).isKind(SyntaxKind.PropertyAssignment) ?
+        properties.get(INITIAL_FIELD) : undefined
+    const transitions = properties.get(TRANSITIONS_FIELD)
+        && properties.get(TRANSITIONS_FIELD).getInitializer().isKind(SyntaxKind.ArrayLiteralExpression) ?
+            transitionsToAstInfo(properties.get(TRANSITIONS_FIELD).getInitializer() as ArrayLiteralExpression) : undefined
+
+    if (initial && transitions) {
+        const metadata = properties.get(METADATA_FIELD) ? metadataToAstInfo(properties.get(METADATA_FIELD).getInitializer() as ObjectLiteralExpression) : undefined
+        return some({ name, initial: properties.get(INITIAL_FIELD), transitions: transitions, metadata: metadata })
+    }
+    return none
 }
 
 function transitionsToAstInfo(transitions: ArrayLiteralExpression): TransitionAST[] {
@@ -307,7 +316,6 @@ function labelAstInfo(label: ObjectLiteralExpression): LabelAST {
 }
 
 function metadataToAstInfo(metadata: ObjectLiteralExpression): SwarmProtocolMetadataAST {
-    basicVisit(metadata)
     const metadataAst: any = {}
         for (const prop of metadata.getProperties()) {
             if (Node.isPropertyAssignment(prop)) {
