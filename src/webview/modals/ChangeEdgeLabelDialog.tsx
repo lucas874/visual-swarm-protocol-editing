@@ -17,7 +17,6 @@ function EdgeLabelDialog({
   sendErrorToParent,
   sendNewRoleToParent,
 }) {
-  //const [popupText, setPopupText] = useState<string | null>(null);
   const { edges, updateEdgeLabel, setIsEdgeDialogOpen } = useStore(
     selector,
     shallow
@@ -120,24 +119,3 @@ function EdgeLabelDialog({
 }
 
 export default EdgeLabelDialog;
-
-/*
-<div className="row">
-          <label className="label">Thing</label>
-          <input
-            className="input float-right"
-            type="text"
-            placeholder="Add thing"
-            onChange={(e) => {
-              setPopupText(`You entered: ${e.target.value}. ${1 + 1}. ${edges.map(e => Object.keys(e) + ` id: ${e.id}, source: ${e.source}, target: ${e.target} label: ${JSON.stringify(e.label)}` + JSON.stringify(e.data)).join(" ---- ")}   `);
-            }}
-            defaultValue={commandRef}
-          />
-        </div>
-        {popupText && (
-          <div className="popup">
-            {popupText}
-            <button onClick={() => setPopupText(null)}>Close</button>
-          </div>
-        )}
-*/
