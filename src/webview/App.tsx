@@ -124,7 +124,7 @@ const App: React.FC = () => {
   }
 
   // Pass data back to extension
-  function handleChangesFromFlow(changedNodes, changedEdges) {
+  function handleChangesFromFlow(changedNodes, changedEdges, isStoreInMetaChecked) {
     // Transform changes to transitions
     let newTransitions: Transition[] = changedEdges.map((edge) => {
       return {
@@ -176,6 +176,7 @@ const App: React.FC = () => {
       data: {
         name: selectedProtocolRef.current,
         swarmProtocol: protocol,
+        isStoreInMetaChecked: isStoreInMetaChecked
       },
     });
   }

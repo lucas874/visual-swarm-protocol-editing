@@ -56,6 +56,7 @@ const selector = (state: RFState) => ({
   isDeleteDialogOpen: state.isDeleteDialogOpen,
   isNodeDialogOpen: state.isNodeDialogOpen,
   isEdgeDialogOpen: state.isEdgeDialogOpen,
+  isStoreInMetaChecked: state.isStoreInMetaChecked,
   setInitialElements: state.setInitialElements,
   setNodes: state.setNodes,
   setEdges: state.setEdges,
@@ -66,6 +67,7 @@ const selector = (state: RFState) => ({
   setIsNodeDialogOpen: state.setIsNodeDialogOpen,
   setIsEdgeDialogOpen: state.setIsEdgeDialogOpen,
   setIsDeleteDialogOpen: state.setIsDeleteDialogOpen,
+  setIsStoreInMetaChecked: state.setIsStoreInMetaChecked
 });
 
 // Create flow from values given
@@ -84,6 +86,7 @@ const LayoutFlow = ({
     isDeleteDialogOpen,
     isNodeDialogOpen,
     isEdgeDialogOpen,
+    isStoreInMetaChecked,
     setIsDeleteDialogOpen,
     setIsNodeDialogOpen,
     setIsEdgeDialogOpen,
@@ -94,6 +97,7 @@ const LayoutFlow = ({
     onEdgesChange,
     addEdge,
     addNode,
+    setIsStoreInMetaChecked
   } = useStore(selector, shallow);
 
   // https://react.dev/reference/react/useRef
@@ -122,7 +126,7 @@ const LayoutFlow = ({
           id: node.data.label,
         };
       });
-      sendDataToParent(fixNodeNames, edgesRef.current);
+      sendDataToParent(fixNodeNames, edgesRef.current, isStoreInMetaChecked);
     }
   }
 
@@ -254,6 +258,10 @@ const LayoutFlow = ({
         >
           Add new state
         </button>
+      </div>
+      <div>
+        <input type="checkbox" id="storeMetadataInFile" name="storeMetadataInFile" onChange={(event) => { setIsStoreInMetaChecked((event.target as HTMLInputElement).checked) }} />
+        <label htmlFor="storeMetadataInFile">Store metadata in protocol.</label>
       </div>
       {/* Create a dialog trying to delete */}
       {isDeleteDialogOpen && <DeleteDialog onDeleteRef={onDeleteRef.current} />}

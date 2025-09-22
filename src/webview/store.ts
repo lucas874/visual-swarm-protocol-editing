@@ -10,13 +10,14 @@ import {
   type OnNodesChange,
 } from "@xyflow/react";
 import { createWithEqualityFn } from "zustand/traditional";
-
+//  const [storeMetaInFile, setStoreMetaInFile] = React.useState(false);
 export type RFState = {
   nodes: Node[];
   edges: Edge[];
   isDeleteDialogOpen: boolean;
   isNodeDialogOpen: boolean;
   isEdgeDialogOpen: boolean;
+  isStoreInMetaChecked: boolean;
   setInitialElements: (initialNodes: Node[], initialEdges: Edge[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -32,6 +33,7 @@ export type RFState = {
   setIsDeleteDialogOpen: (open: boolean) => void;
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
+  setIsStoreInMetaChecked: (checked: boolean) => void;
 };
 
 const useStore = createWithEqualityFn<RFState>((set, get) => ({
@@ -40,6 +42,7 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
   isDeleteDialogOpen: false,
   isNodeDialogOpen: false,
   isEdgeDialogOpen: false,
+  isStoreInMetaChecked: false,
   setInitialElements(initialNodes: Node[], initialEdges: Edge[]) {
     set({
       nodes: initialNodes,
@@ -140,6 +143,9 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
   setIsDeleteDialogOpen: (open: boolean) => {
     set({ isDeleteDialogOpen: open });
   },
+  setIsStoreInMetaChecked: (checked: boolean) => {
+    set( { isStoreInMetaChecked: checked } )
+  }
 }));
 
 export default useStore;
