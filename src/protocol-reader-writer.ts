@@ -455,11 +455,11 @@ function updateMetaDataAst(swarmProtocolAst: SwarmProtocolAST, metadata: SwarmPr
 
     if (swarmProtocolAst.properties.has(METADATA_FIELD)) {
         updateMetadataInitializer(swarmProtocolAst.properties.get(METADATA_FIELD)!, metadata)
-        return
-    }
-    const initializer = swarmProtocolAst.variableDeclaration.getInitializer()
-    if (initializer.getKind() === SyntaxKind.ObjectLiteralExpression) {
-        (initializer as ObjectLiteralExpression).addPropertyAssignment({ name: METADATA_FIELD, initializer: metadataWriterFunction(metadata) })
+    } else {
+        const initializer = swarmProtocolAst.variableDeclaration.getInitializer()
+        if (initializer.getKind() === SyntaxKind.ObjectLiteralExpression) {
+            (initializer as ObjectLiteralExpression).addPropertyAssignment({ name: METADATA_FIELD, initializer: metadataWriterFunction(metadata) })
+        }
     }
 
 }
@@ -477,12 +477,6 @@ function metadataWriterFunction(metadata: SwarmProtocolMetadata): WriterFunction
         const y = nodeLayout.y ? `, y: ${nodeLayout.y}` : ""
         return `{ name: ${nodeLayout.name}${x}${y} }`
     } 
-
-    // We could do a general one... but more control if not???
-    /* const maybe = (thing: Object): string => {
-        const fields = Object.
-        return `{  }`
-    } */
 
     const positionHandlerString = (positionHandler: PositionHandler): string => {
         return `{ x: ${positionHandler.x}, y: ${positionHandler.y}, active: ${positionHandler.active}, isLabel: ${positionHandler.isLabel} }`

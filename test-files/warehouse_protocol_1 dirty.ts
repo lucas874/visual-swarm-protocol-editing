@@ -14,40 +14,24 @@ export const warehouse = {
     { source: initialState, target: 3, label: { cmd: close, role: D, logType: [time] } },
   ],
   metadata: {
-    layout: {
-      nodes: [
-        {
-          name: initialState,
-          x: 5,
-          y: 5
-        },
-        {
-          name: '1',
-          x: 10,
-          y: 10
-        },
-        {
-          name: '2',
-          x: 15,
-          y: 15
-        },
-        {
-          name: '3',
-          x: 20,
-          y: 20
-        }
-      ]},
-    subscriptions: {
-      D: [part.type, Events.partID.type, Events.time.type],
-      FL: [Events.partID.type, Events.pos.type, Events.time.type],
-      T: [
-        part.type,
-        Events.partID.type,
-        Events.pos.type,
-        Events.time.type,
-      ],
-    }
-  }
+          layout: 
+          {
+              nodes: [
+              { name: initialState, x: -148.87594452313766, y: -289.65949569098757 }, 
+              { name: 1, x: -28.163539850088526, y: -130.16858022227973 }, 
+              { name: 2, x: -11.619853708974503, y: 35.196583261827584 }, 
+              { name: 3, x: -289.3198001343866, y: -69.69588296717959 }
+              ],
+              edges: [
+              ]
+          },
+          subscriptions: 
+          {
+              T: [], 
+              FL: [], 
+              D: []
+          }
+      }
 }
 
 export const warehouse2 = {
@@ -58,28 +42,7 @@ export const warehouse2 = {
     { source: 2, target: initialState, label: { cmd: boinkver, role: T, logType: [part.type] } },
     { source: initialState, target: 3, label: { cmd: closesss, role: D, logType: [time] } },
       {source: 2, target: Node5, label: { cmd: C, role: r, logType: [t]}}
-],
-    metadata: {
-            layout: 
-            {
-                nodes: [
-                { name: initialState, x: 372.24044016069394, y: 147.7786879703334 }, 
-                { name: 1, x: 254.5, y: -65 }, 
-                { name: 2, x: -212.4549917197644, y: 181.77067060856726 }, 
-                { name: 3, x: 130, y: 279.5 }, 
-                { name: Node5, x: -120.05737594066684, y: -43.35683038862781 }
-                ],
-                edges: [
-                ]
-            },
-            subscriptions: 
-            {
-                T: [], 
-                FL: [], 
-                D: [], 
-                r: []
-            }
-        }
+]
 }
 
 export const warehouse3 = {
