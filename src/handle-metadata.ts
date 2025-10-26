@@ -130,8 +130,7 @@ export class MetadataStore {
             const meta = occurrence.swarmProtocol.metadata ? occurrence.swarmProtocol.metadata : this.getSwarmProtocolMetaData(fileName, occurrence.name)
             const nodes = new Set(occurrence.swarmProtocol.transitions.flatMap(t => [t.source, t.target]))
             nodes.add(occurrence.swarmProtocol.initial)
-            // This is how edge ids are set in App.tsx e.g. on line 285. TODO: change how ids are generated.
-            // There could be multiple transitions between same pair.
+
             const edgeIds = new Set(occurrence.swarmProtocol.transitions.map(t => t.id))
 
             const prunedNodes = meta.layout.nodes?.filter(nodeLayout => nodes.has(nodeLayout.name))

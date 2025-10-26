@@ -97,9 +97,9 @@ export function activate(context: vscode.ExtensionContext) {
             const editor = await vscode.window.showTextDocument(
               activeEditor.document.uri
             );
-            const updatedProtocol = { initial: message.data.swarmProtocol.initial, transitions: message.data.swarmProtocol.transitions }
+            const updatedProtocol = { initial: message.data.swarmProtocol.initial, transitions: message.data.swarmProtocol.transitions, metadata: message.data.swarmProtocol.metadata }
             // Replace text in the active editor with the new data and save it.
-            protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, {name: message.data.name, swarmProtocol: updatedProtocol} )
+            protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, {name: message.data.name, swarmProtocol: updatedProtocol}, message.data.isStoreInMetaChecked)
               // Wait until the editor has been updated
               .then(() => {
                 // Get the updated occurrences

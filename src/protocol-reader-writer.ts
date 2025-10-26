@@ -1,5 +1,5 @@
-import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral } from "ts-morph";
-import { EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
+import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter } from "ts-morph";
+import { EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
 
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
@@ -78,7 +78,8 @@ export class ProtocolReaderWriter {
         return Array.from(this.files.get(fileName).occurrences.values())
     }
 
-    async writeOccurrence(filename: string, updatedOccurrence: Occurrence): Promise<void> {
+    // if storeMetaInProtocol store meta from updated occurence in store and in ast that is written back.
+    async writeOccurrence(filename: string, updatedOccurrence: Occurrence, storeMetaInProtocol: boolean): Promise<void> {
         const projectOccurrences = this.files.get(filename)
         if (!projectOccurrences) { return }
 
@@ -99,6 +100,7 @@ export class ProtocolReaderWriter {
 
             // Todo: functionality to add new stuff. What happens if we create an edge in the visual tool? What should be the id of this?
             // And how should we iterate here?
+            // Consider just 'resetting' whole variable declaration? Set it to updated occurence?
             for (const id of newTransitionsMap.keys()) {
                 if (astMap.has(id)) {
                     updateTransitionAst(newTransitionsMap.get(id) as Transition, astMap.get(id) as TransitionAST)
@@ -106,7 +108,9 @@ export class ProtocolReaderWriter {
                     addTransitionToDeclaration(swarmProtocolAst.variableDeclaration, newTransitionsMap.get(id) as Transition)
                 }
             }
-
+            if (storeMetaInProtocol) {
+                updateMetaDataAst(swarmProtocolAst, updatedOccurrence.swarmProtocol.metadata)
+            }
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
         }
     }
@@ -276,7 +280,7 @@ function propertiesToAstInfo(node: VariableDeclaration, properties: Map<string, 
 
     if (initial && transitions) {
         const metadata = properties.get(METADATA_FIELD) ? metadataToAstInfo(properties.get(METADATA_FIELD).getInitializer() as ObjectLiteralExpression) : undefined
-        return some({ name: node.getName(), initial: properties.get(INITIAL_FIELD), transitions: transitions, metadata: metadata, variableDeclaration: node })
+        return some({ name: node.getName(), initial: properties.get(INITIAL_FIELD), transitions: transitions, metadata: metadata, variableDeclaration: node, properties })
     }
     return none
 }
@@ -443,3 +447,97 @@ function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, tr
         }
     }
 }
+
+function updateMetaDataAst(swarmProtocolAst: SwarmProtocolAST, metadata: SwarmProtocolMetadata | undefined) {
+    if (!metadata) {
+        return
+    }
+
+    if (swarmProtocolAst.properties.has(METADATA_FIELD)) {
+        updateMetadataInitializer(swarmProtocolAst.properties.get(METADATA_FIELD)!, metadata)
+        return
+    }
+    const initializer = swarmProtocolAst.variableDeclaration.getInitializer()
+    if (initializer.getKind() === SyntaxKind.ObjectLiteralExpression) {
+        (initializer as ObjectLiteralExpression).addPropertyAssignment({ name: METADATA_FIELD, initializer: metadataWriterFunction(metadata) })
+    }
+
+}
+
+function updateMetadataInitializer(propertyAssignment: PropertyAssignment, metadata: SwarmProtocolMetadata) {
+    propertyAssignment.setInitializer(metadataWriterFunction(metadata))
+}
+
+// Function that returns a WriterFunction to use for writing initializer of metadata field.
+// export type WriterFunction = (writer: CodeBlockWriter) => void;
+function metadataWriterFunction(metadata: SwarmProtocolMetadata): WriterFunction {
+    
+    const nodeLayoutString = (nodeLayout: NodeLayout): string => {
+        const x = nodeLayout.x ? `, x: ${nodeLayout.x}` : ""
+        const y = nodeLayout.y ? `, y: ${nodeLayout.y}` : ""
+        return `{ name: ${nodeLayout.name}${x}${y} }`
+    } 
+
+    // We could do a general one... but more control if not???
+    /* const maybe = (thing: Object): string => {
+        const fields = Object.
+        return `{  }`
+    } */
+
+    const positionHandlerString = (positionHandler: PositionHandler): string => {
+        return `{ x: ${positionHandler.x}, y: ${positionHandler.y}, active: ${positionHandler.active}, isLabel: ${positionHandler.isLabel} }`
+    }
+
+    const edgeLayoutString = (edgeLayout: EdgeLayout): string => {
+        return `{ id: ${edgeLayout.id}, positionHandlers: [ ${edgeLayout.positionHandlers.map(positionHandlerString).join(", ")} ]}`
+    }
+
+    const writeArrayProperty = <ElementType>(
+        writer: CodeBlockWriter,
+        propertyName: string,
+        theArray: ElementType[],
+        elementWriter: (element: ElementType) => string,
+        terminator=""
+    ): CodeBlockWriter => {
+        writer.writeLine(`${propertyName}: [`)
+        theArray.forEach((element, i) => {
+            writer.writeLine(`${elementWriter(element)}${i != theArray.length-1 ? ", " : ""}`)
+        })
+        writer.writeLine(`]${terminator}`)
+        return writer
+    }
+    
+    const writeLayout = (writer: CodeBlockWriter, layout: LayoutType): CodeBlockWriter => {
+        writer.writeLine("layout: ").inlineBlock(() => {
+            if (layout.nodes) {
+                writeArrayProperty(writer, "nodes", layout.nodes, nodeLayoutString, ",")
+            }
+            if (layout.edges) {
+            writeArrayProperty(writer, "edges", layout.edges, edgeLayoutString, "")
+            }
+        }).write(",")
+        return writer
+
+    }
+
+    const writeSubscriptions = (writer: CodeBlockWriter, subscription: Record<string, string[]>): CodeBlockWriter => {
+        const subscriptionLines = Array.from(Object.entries(subscription))
+            .map(([role, eventTypes]) => `${role}: [${eventTypes.join(", ")}]`)
+            .join(", \n")
+
+        writer.writeLine("subscriptions: ").inlineBlock(() => {
+            writer.writeLine(subscriptionLines)
+        })
+        return writer
+        
+    }
+    const writerFunction = (writer: CodeBlockWriter) => {
+        writer.inlineBlock(() => {
+            writeLayout(writer, metadata.layout)
+            writeSubscriptions(writer, metadata.subscriptions)
+        })
+    }
+
+    return writerFunction
+}
+

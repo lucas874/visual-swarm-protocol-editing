@@ -118,7 +118,14 @@ export type SwarmProtocolMetadataAST = {
 }
 
 // The AST of a SwarmProtocolType
-export type SwarmProtocolAST = { name: string, initial: PropertyAssignment, transitions: TransitionAST[], metadata?: SwarmProtocolMetadataAST, variableDeclaration: VariableDeclaration }
+export type SwarmProtocolAST = { 
+  name: string, 
+  initial: PropertyAssignment, 
+  transitions: TransitionAST[], 
+  metadata?: SwarmProtocolMetadataAST, 
+  variableDeclaration: VariableDeclaration
+  properties: Map<string, PropertyAssignment>
+}
 
 // We can not use the AST stuff in occurrence, because we pass occurrences around the extension and the webview
 // using postMessage and message argument of postMessage "must be a string or other json serializable object." (from docs).
