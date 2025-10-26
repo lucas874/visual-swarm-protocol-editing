@@ -46,6 +46,10 @@ function EdgeLabelDialog({
             }}
             defaultValue={commandRef}
           />
+        <div>
+        <input type="checkbox" id="storeCommandAsVariable" name="storeCommandAsVariable" onChange={(event) => {  }} />
+        <label htmlFor="storeCommandAsVariable">Store command as variable.</label>
+      </div>
         </div>
         <div className="row">
           <label className="label">Role</label>

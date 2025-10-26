@@ -47,7 +47,8 @@ const ERROR_PARSE = "Error parsing swarm protocols"
 
 type OccurrenceMap = Map<string, Occurrence>
 type AstMap = Map<string, SwarmProtocolAST>
-type ProjectOccurrences = {project: Project, occurrences: OccurrenceMap, ASTs: AstMap}
+type Variables = Map<string, VariableDeclaration>
+type ProjectOccurrences = {project: Project, occurrences: OccurrenceMap, ASTs: AstMap, variables: Variables}
 type GetProtocolOptions = { reload?: boolean, updateMeta?: boolean }
 
 export class ProtocolReaderWriter {
@@ -133,7 +134,9 @@ export class ProtocolReaderWriter {
             .map(occurrenceInfo => [occurrenceInfo.swarmProtocolAST.name, occurrenceInfo.swarmProtocolAST])
         )
 
-        this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs})
+        const variables = getVariables(sourceFileRead)
+
+        this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs, variables})
     }
 
     // Could mutate directly but
@@ -142,7 +145,7 @@ export class ProtocolReaderWriter {
         const updatedOcurrences: [string, Occurrence][] = Array.from(projectOccurrences.occurrences.entries())
             .map(([name, occurrenceAndAst]) => [name, this.addMetaDataFromStore(fileName, occurrenceAndAst)])
 
-        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences), ASTs: projectOccurrences.ASTs})
+        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences), ASTs: projectOccurrences.ASTs, variables: projectOccurrences.variables })
     }
 
     // Add metadata from workspace state
@@ -159,7 +162,11 @@ export class ProtocolReaderWriter {
 
 // Get all variable declarations and try to parse them as swarm protocols.
 function visitVariableDeclarations(sourceFile: SourceFile): OccurrenceInfo[] {
-        const variableDeclarations = sourceFile.getVariableDeclarations()
+        const variableDeclarations = sourceFile
+            .getVariableDeclarations()
+            .concat(sourceFile
+                .getDescendantsOfKind(SyntaxKind.ModuleDeclaration)
+                .flatMap(m => m.getVariableDeclarations())) // Nice to have: handle name clases between modules
         const swarmProtocols = variableDeclarations
             .map(variableDeclaration => swarmProtocolDeclaration(variableDeclaration))
             .filter(o => isSome(o))
@@ -410,6 +417,15 @@ function subscriptionToAstInfo(subscription: ObjectLiteralExpression): Subscript
     return subscriptionAst
 }
 
+function getVariables(sourceFile: SourceFile): Variables {
+    const variableDeclarations = sourceFile
+    .getVariableDeclarations()
+    .concat(sourceFile
+        .getDescendantsOfKind(SyntaxKind.ModuleDeclaration)
+        .flatMap(m => m.getVariableDeclarations())) // Nice to have: handle name clases between modules
+    return new Map(variableDeclarations.map(v => [v.getName(), v]))
+    
+}
 
 function updateTransitionAst(transition: Transition, transitionAst: TransitionAST): void {
     transitionAst.source.setInitializer(transition.source)
