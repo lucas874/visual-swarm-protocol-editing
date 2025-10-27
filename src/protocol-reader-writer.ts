@@ -113,7 +113,7 @@ export class ProtocolReaderWriter {
             if (changeProtocolData.isStoreInMetaChecked) {
                 updateMetaDataAst(swarmProtocolAst, changeProtocolData.swarmProtocol.metadata)
             }
-            this.addVariableDeclarations(filename, changeProtocolData.variables)
+            this.addVariableDeclarations(filename, changeProtocolData.name, changeProtocolData.variables)
 
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
         }
@@ -165,13 +165,14 @@ export class ProtocolReaderWriter {
     // Go through newNames.
     // Any new name that is not already in the set of variables declared in filename
     // is added to the file by creating a VariableDeclaration in the file: const newName = "newName"
-    private addVariableDeclarations(filename: string, newNames: string[]): void {
+    private addVariableDeclarations(filename: string, swarmProtocolName: string, newNames: string[]): void {
         const projectOccurrence = this.files.get(filename)
         const sourceFile = projectOccurrence?.project.getSourceFile(filename)
-        if (!projectOccurrence || !sourceFile) { return }
+        const swarmProtocolUsingNames = projectOccurrence.ASTs.get(swarmProtocolName)
+        if (!projectOccurrence || !sourceFile || !swarmProtocolUsingNames) { return }
         for (const newVariable of newNames) {
             if (!projectOccurrence.variables.has(newVariable)) {
-                projectOccurrence.variables.set(newVariable, addStringVariableDeclaration(sourceFile, newVariable))
+                projectOccurrence.variables.set(newVariable, addStringVariableDeclaration(sourceFile, swarmProtocolUsingNames, newVariable))
             }
         }
     }
@@ -568,8 +569,8 @@ function metadataWriterFunction(metadata: SwarmProtocolMetadata): WriterFunction
     return writerFunction
 }
 
-function addStringVariableDeclaration(sourceFile: SourceFile, name: string): VariableDeclaration {
-    sourceFile.addVariableStatement({
+function addStringVariableDeclaration(sourceFile: SourceFile, swarmProtoUsingName: SwarmProtocolAST, name: string): VariableDeclaration {
+    sourceFile.insertVariableStatement(swarmProtoUsingName.variableDeclaration.getChildIndex(), {
         declarationKind: VariableDeclarationKind.Const,
         declarations: [
             {
