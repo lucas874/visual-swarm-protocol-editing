@@ -6,6 +6,7 @@ import {
   MarkerType,
   type Node,
   Controls,
+  Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
@@ -53,6 +54,7 @@ const getLayoutedElements = (nodes, edges) => {
 const selector = (state: RFState) => ({
   nodes: state.nodes,
   edges: state.edges,
+  variables: state.variables,
   isDeleteDialogOpen: state.isDeleteDialogOpen,
   isNodeDialogOpen: state.isNodeDialogOpen,
   isEdgeDialogOpen: state.isEdgeDialogOpen,
@@ -67,7 +69,10 @@ const selector = (state: RFState) => ({
   setIsNodeDialogOpen: state.setIsNodeDialogOpen,
   setIsEdgeDialogOpen: state.setIsEdgeDialogOpen,
   setIsDeleteDialogOpen: state.setIsDeleteDialogOpen,
-  setIsStoreInMetaChecked: state.setIsStoreInMetaChecked
+  setIsStoreInMetaChecked: state.setIsStoreInMetaChecked,
+  setVariables: state.setVariables,
+  addVariable: state.addVariable,
+  hasVariable: state.hasVariable
 });
 
 // Create flow from values given
@@ -83,6 +88,7 @@ const LayoutFlow = ({
   const {
     nodes,
     edges,
+    variables,
     isDeleteDialogOpen,
     isNodeDialogOpen,
     isEdgeDialogOpen,
@@ -97,7 +103,10 @@ const LayoutFlow = ({
     onEdgesChange,
     addEdge,
     addNode,
-    setIsStoreInMetaChecked
+    setIsStoreInMetaChecked,
+    setVariables,
+    addVariable,
+    hasVariable,
   } = useStore(selector, shallow);
 
   // https://react.dev/reference/react/useRef
@@ -126,8 +135,25 @@ const LayoutFlow = ({
           id: node.data.label,
         };
       });
-      sendDataToParent(fixNodeNames, edgesRef.current, isStoreInMetaChecked);
+      // names in variables filter out the the ones that are not actually on an edge or a node then send to parent
+      const namesInCurrentProto = namesInUse()
+      sendDataToParent(fixNodeNames, edgesRef.current, isStoreInMetaChecked, Array.from(variables).filter(name => namesInCurrentProto.has(name)));
     }
+  }
+
+  const namesInUse = (): Set<string> => {
+    //const edgeLabelRegex = /(?<commandName>.*)@(?<roleName>.*)<(?<logTypeName>.*)>/
+    const edgeMapper = (edge: Edge): string[] => {
+      const labelString = edge.label?.toString() ?? ""
+      if (!labelString) { return [] }
+      return [
+        labelString.split("@")[0],
+        labelString.split("@")[1].split("<")[0]
+        ].concat((edge.data.logType as string[]) ?? [])
+    }
+    const nodeMapper = (node: Node): string => node.data.label.toString()
+
+    return new Set(edgesRef.current.flatMap(edgeMapper).concat(nodesRef.current.map(nodeMapper)))
   }
 
   const onConnect = useCallback((connection) => {

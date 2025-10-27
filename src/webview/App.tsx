@@ -123,8 +123,8 @@ const App: React.FC = () => {
     subRef.current = newSubscriptions;
   }
 
-  // Pass data back to extension
-  function handleChangesFromFlow(changedNodes, changedEdges, isStoreInMetaChecked) {
+  // Pass data back to extension. Type annotations.
+  function handleChangesFromFlow(changedNodes, changedEdges, isStoreInMetaChecked, variables) {
     // Transform changes to transitions
     let newTransitions: Transition[] = changedEdges.map((edge) => {
       return {
@@ -176,7 +176,8 @@ const App: React.FC = () => {
       data: {
         name: selectedProtocolRef.current,
         swarmProtocol: protocol,
-        isStoreInMetaChecked: isStoreInMetaChecked
+        isStoreInMetaChecked,
+        variables
       },
     });
   }

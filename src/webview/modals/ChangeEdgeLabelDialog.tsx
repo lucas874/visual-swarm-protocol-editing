@@ -6,6 +6,7 @@ const selector = (state: RFState) => ({
   edges: state.edges,
   updateEdgeLabel: state.updateEdgeLabel,
   setIsEdgeDialogOpen: state.setIsEdgeDialogOpen,
+  addVariable: state.addVariable
 });
 
 function EdgeLabelDialog({
@@ -17,10 +18,14 @@ function EdgeLabelDialog({
   sendErrorToParent,
   sendNewRoleToParent,
 }) {
-  const { edges, updateEdgeLabel, setIsEdgeDialogOpen } = useStore(
+  const { edges, updateEdgeLabel, setIsEdgeDialogOpen, addVariable } = useStore(
     selector,
     shallow
   );
+
+  let storeCommandVariable: boolean = false;
+  let storeRoleVariable: boolean = false;
+  let storeLogTypeVariable: boolean = false;
 
   return (
     <div className="overlay" onClick={(event) => setIsEdgeDialogOpen(false)}>
@@ -47,9 +52,11 @@ function EdgeLabelDialog({
             defaultValue={commandRef}
           />
         <div>
-        <input type="checkbox" id="storeCommandAsVariable" name="storeCommandAsVariable" onChange={(event) => {  }} />
-        <label htmlFor="storeCommandAsVariable">Store command as variable.</label>
-      </div>
+          <input type="checkbox" id="storeCommandAsVariable" name="storeCommandAsVariable" onChange={(event) => {
+              storeCommandVariable = (event.target as HTMLInputElement).checked
+            }} />
+          <label htmlFor="storeCommandAsVariable">Create variable.</label>
+        </div>
         </div>
         <div className="row">
           <label className="label">Role</label>
@@ -63,6 +70,12 @@ function EdgeLabelDialog({
             }}
             defaultValue={roleRef}
           />
+        <div>
+          <input type="checkbox" id="storeRoleAsVariable" name="storeRoleAsVariable" onChange={(event) => {
+              storeRoleVariable = (event.target as HTMLInputElement).checked
+           }} />
+          <label htmlFor="storeRoleAsVariable">Create variable.</label>
+        </div>
         </div>
         <div className="row">
           <label className="label">Log type (comma separated)</label>
@@ -76,6 +89,12 @@ function EdgeLabelDialog({
             }}
             defaultValue={logTypeRef}
           />
+        <div>
+          <input type="checkbox" id="storeLogTypeAsVariable" name="storeLogTypeAsVariable" onChange={(event) => {
+              storeLogTypeVariable = (event.target as HTMLInputElement).checked
+           }} />
+          <label htmlFor="storeLogTypeAsVariable">Create variables.</label>
+        </div>
         </div>
         <div className="row float-right">
           <button
@@ -102,6 +121,9 @@ function EdgeLabelDialog({
                     ? []
                     : logTypeRef.split(",")
                 );
+                if (storeCommandVariable) { addVariable(commandRef) }
+                if (storeRoleVariable) { addVariable(roleRef) }
+                if (storeLogTypeVariable && logTypeRef) { logTypeRef.split(",").forEach((eventType: string) => addVariable(eventType)) }
 
                 // Check if role already exists in protocol, otherwise add it to subscriptions. COME BACK HERE.
                 if (

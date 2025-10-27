@@ -14,6 +14,7 @@ import { createWithEqualityFn } from "zustand/traditional";
 export type RFState = {
   nodes: Node[];
   edges: Edge[];
+  variables: Set<string>;
   isDeleteDialogOpen: boolean;
   isNodeDialogOpen: boolean;
   isEdgeDialogOpen: boolean;
@@ -34,11 +35,15 @@ export type RFState = {
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   setIsStoreInMetaChecked: (checked: boolean) => void;
+  setVariables: (variables: Set<string>) => void;
+  addVariable: (variable: string) => void;
+  hasVariable: (variable: string) => boolean;
 };
 
 const useStore = createWithEqualityFn<RFState>((set, get) => ({
   nodes: [],
   edges: [],
+  variables: new Set(),
   isDeleteDialogOpen: false,
   isNodeDialogOpen: false,
   isEdgeDialogOpen: false,
@@ -145,6 +150,15 @@ const useStore = createWithEqualityFn<RFState>((set, get) => ({
   },
   setIsStoreInMetaChecked: (checked: boolean) => {
     set( { isStoreInMetaChecked: checked } )
+  },
+  setVariables: (variables: Set<string>) => {
+    set({ variables })
+  },
+  addVariable: (variable: string) => {
+    return get().variables.add(variable)
+  },
+  hasVariable: (variable: string): boolean => {
+    return get().variables.has(variable)
   }
 }));
 
