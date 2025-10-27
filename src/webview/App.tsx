@@ -7,6 +7,10 @@ import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
 import DownloadButton from "./custom-elements/DownloadButton";
 import SubscriptionsDialog from "./modals/SubscriptionsDialog";
+import useStore, { RFState } from "./store";
+import { shallow } from "zustand/shallow";
+
+const selector = (state: RFState) => ({ setVariables: state.setVariables });
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
@@ -23,8 +27,7 @@ const App: React.FC = () => {
   const [occurrences, setOccurrences] = useState<Map<string, Occurrence>>(new Map());
   const [protocol, setProtocol] = useState<SwarmProtocol>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [variables, setVariables] = useState<Set<string>>(new Set())
-
+  const { setVariables } = useStore(selector, shallow)
   const subRef = useRef<Record<string, string[]>>({});
   const selectedProtocolRef = React.useRef("");
 
