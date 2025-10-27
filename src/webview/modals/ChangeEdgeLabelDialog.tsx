@@ -6,7 +6,8 @@ const selector = (state: RFState) => ({
   edges: state.edges,
   updateEdgeLabel: state.updateEdgeLabel,
   setIsEdgeDialogOpen: state.setIsEdgeDialogOpen,
-  addVariable: state.addVariable
+  addVariable: state.addVariable,
+  hasVariable: state.hasVariable,
 });
 
 function EdgeLabelDialog({
@@ -18,14 +19,14 @@ function EdgeLabelDialog({
   sendErrorToParent,
   sendNewRoleToParent,
 }) {
-  const { edges, updateEdgeLabel, setIsEdgeDialogOpen, addVariable } = useStore(
+  const { edges, updateEdgeLabel, setIsEdgeDialogOpen, addVariable, hasVariable } = useStore(
     selector,
     shallow
   );
 
-  let storeCommandVariable: boolean = false;
-  let storeRoleVariable: boolean = false;
-  let storeLogTypeVariable: boolean = false;
+  let isCmdNameStringLiteral: boolean = !hasVariable(commandRef);
+  let isRoleNameStringLiteral: boolean = !hasVariable(roleRef);
+  let isLogTypeStringLiteral: boolean = !hasVariable(logTypeRef.split(",").every((eventType: string) => hasVariable(eventType)));
 
   return (
     <div className="overlay" onClick={(event) => setIsEdgeDialogOpen(false)}>
@@ -52,10 +53,15 @@ function EdgeLabelDialog({
             defaultValue={commandRef}
           />
         <div>
-          <input type="checkbox" id="storeCommandAsVariable" name="storeCommandAsVariable" onChange={(event) => {
-              storeCommandVariable = (event.target as HTMLInputElement).checked
+          <input
+            type="checkbox"
+            id="isCmdNameStringLiteral"
+            name="isCmdNameStringLiteral"
+            defaultChecked={isCmdNameStringLiteral}
+            onChange={(event) => {
+              isCmdNameStringLiteral = (event.target as HTMLInputElement).checked
             }} />
-          <label htmlFor="storeCommandAsVariable">Create variable.</label>
+          <label htmlFor="isCmdNameStringLiteral">String literal.</label>
         </div>
         </div>
         <div className="row">
@@ -71,10 +77,16 @@ function EdgeLabelDialog({
             defaultValue={roleRef}
           />
         <div>
-          <input type="checkbox" id="storeRoleAsVariable" name="storeRoleAsVariable" onChange={(event) => {
-              storeRoleVariable = (event.target as HTMLInputElement).checked
-           }} />
-          <label htmlFor="storeRoleAsVariable">Create variable.</label>
+          <input
+            type="checkbox"
+            id="isRoleNameStringLiteral"
+            name="isRoleNameStringLiteral"
+            defaultChecked={isRoleNameStringLiteral}
+            onChange={(event) => {
+              isRoleNameStringLiteral = (event.target as HTMLInputElement).checked
+            }}
+          />
+          <label htmlFor="isRoleNameStringLiteral">String literal.</label>
         </div>
         </div>
         <div className="row">
@@ -90,10 +102,16 @@ function EdgeLabelDialog({
             defaultValue={logTypeRef}
           />
         <div>
-          <input type="checkbox" id="storeLogTypeAsVariable" name="storeLogTypeAsVariable" onChange={(event) => {
-              storeLogTypeVariable = (event.target as HTMLInputElement).checked
-           }} />
-          <label htmlFor="storeLogTypeAsVariable">Create variables.</label>
+          <input
+            type="checkbox"
+            id="isLogTypeNameStringLiteral"
+            name="isLogTypeNameStringLiteral"
+            defaultChecked={isLogTypeStringLiteral}
+            onChange={(event) => {
+              isLogTypeStringLiteral = (event.target as HTMLInputElement).checked
+           }}
+          />
+          <label htmlFor="isLogTypeNameStringLiteral">String literal.</label>
         </div>
         </div>
         <div className="row float-right">
@@ -121,9 +139,9 @@ function EdgeLabelDialog({
                     ? []
                     : logTypeRef.split(",")
                 );
-                if (storeCommandVariable) { addVariable(commandRef) }
-                if (storeRoleVariable) { addVariable(roleRef) }
-                if (storeLogTypeVariable && logTypeRef) { logTypeRef.split(",").forEach((eventType: string) => addVariable(eventType)) }
+                if (!isCmdNameStringLiteral) { addVariable(commandRef) }
+                if (!isRoleNameStringLiteral) { addVariable(roleRef) }
+                if (!isLogTypeStringLiteral && logTypeRef) { logTypeRef.split(",").forEach((eventType: string) => addVariable(eventType)) }
 
                 // Check if role already exists in protocol, otherwise add it to subscriptions. COME BACK HERE.
                 if (

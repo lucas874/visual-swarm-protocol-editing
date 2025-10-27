@@ -1,3 +1,6 @@
+const FL = "FL";
+const get = "get";
+
 import { SwarmProtocolType } from "@actyx/machine-check";
 import { Events, initialState } from "./warehouse_protocol_util";
 import { MachineEvent } from "@actyx/machine-runner";
