@@ -79,6 +79,16 @@ export class ProtocolReaderWriter {
         return Array.from(this.files.get(fileName).occurrences.values())
     }
 
+    // Return all variable names in a file. Read file if not present in the `files` map.
+    getVariables(fileName: string, reload=false): Set<string> {
+        if (!this.files.has(fileName) || reload) {
+            // Parse protocols and keep any metadata stored in parsed result instead of reading from store
+            this.parseProtocols(fileName, false)
+        }
+
+        return new Set(this.files.get(fileName)!.variables.keys())
+    }
+
     // if storeMetaInProtocol store meta from updated occurence in store and in ast that is written back.
     async writeOccurrence(filename: string, changeProtocolData: ChangeProtocolData): Promise<void> {
         // filename: string, updatedOccurrence: Occurrence, storeMetaInProtocol: boolean

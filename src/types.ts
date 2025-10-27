@@ -136,9 +136,15 @@ export type OccurrenceInfo = { occurrence: Occurrence, swarmProtocolAST: SwarmPr
 export type ProtocolDiff = { name: string, old: SwarmProtocol, new: SwarmProtocol }
 
 // Use these!
-export type BuildProtocol = { command: "buildProtocol", data: Occurrence[] }
+// Does it work with set? Or should it be an array?
+export type BuildProtocolData = { occurrences: Occurrence[], variables: string[] }
+export type BuildProtocol = { command: "buildProtocol", data: BuildProtocolData }
+
 export type HighLightEdges = { command: "highlightEdges", data: { protocol: SwarmProtocol, transitions: Transition[] } }
+
 export type HighlightNodes = { command: "highlightNodes", data: { protocol: SwarmProtocol, nodes: string[] } }
+
 export type ChangeProtocolData = { name: string, swarmProtocol: SwarmProtocol, isStoreInMetaChecked: boolean, variables: string[] }
 export type ChangeProtocol = { command: "changeProtocol", data: ChangeProtocolData }
+
 export type MessageEventPayload = BuildProtocol | HighLightEdges | HighlightNodes | ChangeProtocol

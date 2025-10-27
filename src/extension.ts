@@ -43,6 +43,8 @@ export function activate(context: vscode.ExtensionContext) {
       store.synchronizeStore(activeEditor.document.fileName, occurrences)
       occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName, { updateMeta: true})
 
+      let variables = protocolReaderWriter.getVariables(activeEditor.document.fileName)
+
       // Create the webview panel
       let panel = vscode.window.createWebviewPanel(
         "webview",
@@ -68,7 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
       // Send the occurrences to the webview
       panel.webview.postMessage({
         command: "buildProtocol",
-        data: occurrences,
+        data: { occurrences, variables: Array.from(variables) },
       });
 
       // Get messages from child component
@@ -103,13 +105,14 @@ export function activate(context: vscode.ExtensionContext) {
             protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, message.data)
               // Wait until the editor has been updated
               .then(() => {
-                // Get the updated occurrences
+                // Get the updated occurrences and variables
                 occurrences = protocolReaderWriter.getOccurrences(editor.document.fileName, {reload: true, updateMeta: true} )
+                variables = protocolReaderWriter.getVariables(activeEditor.document.fileName, true)
 
                 // Open the webview again with the new data
                 panel.webview.postMessage({
                   command: "buildProtocol",
-                  data: occurrences,
+                  data: {occurrences, variables: Array.from(variables)},
                 });
 
                 // Make sure the panel is visible again

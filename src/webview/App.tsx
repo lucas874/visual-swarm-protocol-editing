@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import Flow from "./Flow";
-import JSON5 from "json5";
 import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
 import { LayoutType, MessageEventPayload, Occurrence, SwarmProtocol, Transition } from "../types";
@@ -24,6 +23,7 @@ const App: React.FC = () => {
   const [occurrences, setOccurrences] = useState<Map<string, Occurrence>>(new Map());
   const [protocol, setProtocol] = useState<SwarmProtocol>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [variables, setVariables] = useState<Set<string>>(new Set())
 
   const subRef = useRef<Record<string, string[]>>({});
   const selectedProtocolRef = React.useRef("");
@@ -33,11 +33,11 @@ const App: React.FC = () => {
       const message = event.data;
 
       if (message.command === "buildProtocol") {
-        setOccurrences(new Map(message.data.map(o => [o.name, o])));
+        setOccurrences(new Map(message.data.occurrences.map(o => [o.name, o])));
 
         // Message data is used to set values, occurrences not updated this rendering
         //let tempProtocol = JSON5.parse(message.data[0].jsonObject);
-        let tempProtocol = message.data[0].swarmProtocol
+        let tempProtocol = message.data.occurrences[0].swarmProtocol
 
         // Save protocol to state
         setProtocol(tempProtocol);
@@ -48,11 +48,14 @@ const App: React.FC = () => {
         // Create nodes for the flowchart with the first occurrence
         setNodes(createNodes(tempProtocol));
 
+        // Set variables
+        setVariables(new Set(message.data.variables))
+
         // Set subscriptions
         subRef.current = createSubscriptions(tempProtocol);
 
         // Set the selected protocol to the first occurrence
-        selectedProtocolRef.current = message.data[0].name;
+        selectedProtocolRef.current = message.data.occurrences[0].name;
       } else if (message.command === "highlightEdges") {
         let tempProtocol = message.data.protocol;
 
