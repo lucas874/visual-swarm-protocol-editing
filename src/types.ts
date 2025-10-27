@@ -118,11 +118,11 @@ export type SwarmProtocolMetadataAST = {
 }
 
 // The AST of a SwarmProtocolType
-export type SwarmProtocolAST = { 
-  name: string, 
-  initial: PropertyAssignment, 
-  transitions: TransitionAST[], 
-  metadata?: SwarmProtocolMetadataAST, 
+export type SwarmProtocolAST = {
+  name: string,
+  initial: PropertyAssignment,
+  transitions: TransitionAST[],
+  metadata?: SwarmProtocolMetadataAST,
   variableDeclaration: VariableDeclaration
   properties: Map<string, PropertyAssignment>
 }
@@ -135,8 +135,10 @@ export type OccurrenceInfo = { occurrence: Occurrence, swarmProtocolAST: SwarmPr
 // For writing
 export type ProtocolDiff = { name: string, old: SwarmProtocol, new: SwarmProtocol }
 
+// Use these!
 export type BuildProtocol = { command: "buildProtocol", data: Occurrence[] }
 export type HighLightEdges = { command: "highlightEdges", data: { protocol: SwarmProtocol, transitions: Transition[] } }
 export type HighlightNodes = { command: "highlightNodes", data: { protocol: SwarmProtocol, nodes: string[] } }
-export type ChangeProtocol = { command: "changeProtocol", data: Occurrence }
+export type ChangeProtocolData = { name: string, swarmProtocol: SwarmProtocol, isStoreInMetaChecked: boolean, variables: string[] }
+export type ChangeProtocol = { command: "changeProtocol", data: ChangeProtocolData }
 export type MessageEventPayload = BuildProtocol | HighLightEdges | HighlightNodes | ChangeProtocol

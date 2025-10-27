@@ -1,5 +1,5 @@
-import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter } from "ts-morph";
-import { EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
+import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter, VariableDeclarationKind } from "ts-morph";
+import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
 
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
@@ -80,23 +80,24 @@ export class ProtocolReaderWriter {
     }
 
     // if storeMetaInProtocol store meta from updated occurence in store and in ast that is written back.
-    async writeOccurrence(filename: string, updatedOccurrence: Occurrence, storeMetaInProtocol: boolean): Promise<void> {
+    async writeOccurrence(filename: string, changeProtocolData: ChangeProtocolData): Promise<void> {
+        // filename: string, updatedOccurrence: Occurrence, storeMetaInProtocol: boolean
         const projectOccurrences = this.files.get(filename)
         if (!projectOccurrences) { return }
 
-        const swarmProtocolAst = projectOccurrences.ASTs.get(updatedOccurrence.name)
-        const oldOccurrence = projectOccurrences.occurrences.get(updatedOccurrence.name)
+        const swarmProtocolAst = projectOccurrences.ASTs.get(changeProtocolData.name)
+        const oldOccurrence = projectOccurrences.occurrences.get(changeProtocolData.name)
         if (swarmProtocolAst && oldOccurrence) {
             const oldSwarmProtocol = oldOccurrence.swarmProtocol
-            if (oldSwarmProtocol.initial !== updatedOccurrence.swarmProtocol.initial) {
-                swarmProtocolAst.initial.setInitializer(`${updatedOccurrence.swarmProtocol.initial}`)
+            if (oldSwarmProtocol.initial !== changeProtocolData.swarmProtocol.initial) {
+                swarmProtocolAst.initial.setInitializer(`${changeProtocolData.swarmProtocol.initial}`)
             }
             const transitionsToMap = (transitions: {id: string, [key: string]: any}[]) => {
                 return new Map(transitions
                     .map(t => [t.id, t]))
             }
             const oldTransitionsMap = transitionsToMap(oldOccurrence.swarmProtocol.transitions)
-            const newTransitionsMap = transitionsToMap(updatedOccurrence.swarmProtocol.transitions)
+            const newTransitionsMap = transitionsToMap(changeProtocolData.swarmProtocol.transitions)
             const astMap = transitionsToMap(swarmProtocolAst.transitions)
 
             // Todo: functionality to add new stuff. What happens if we create an edge in the visual tool? What should be the id of this?
@@ -109,9 +110,11 @@ export class ProtocolReaderWriter {
                     addTransitionToDeclaration(swarmProtocolAst.variableDeclaration, newTransitionsMap.get(id) as Transition)
                 }
             }
-            if (storeMetaInProtocol) {
-                updateMetaDataAst(swarmProtocolAst, updatedOccurrence.swarmProtocol.metadata)
+            if (changeProtocolData.isStoreInMetaChecked) {
+                updateMetaDataAst(swarmProtocolAst, changeProtocolData.swarmProtocol.metadata)
             }
+            this.addVariableDeclarations(filename, changeProtocolData.variables)
+
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
         }
     }
@@ -156,9 +159,23 @@ export class ProtocolReaderWriter {
                     ...occurrence.swarmProtocol,
                     metadata: this.metadataStore.getSwarmProtocolMetaData(fileName, occurrence.name)
                 }
+        }
+    }
+
+    // Go through newNames.
+    // Any new name that is not already in the set of variables declared in filename
+    // is added to the file by creating a VariableDeclaration in the file: const newName = "newName"
+    private addVariableDeclarations(filename: string, newNames: string[]): void {
+        const projectOccurrence = this.files.get(filename)
+        const sourceFile = projectOccurrence?.project.getSourceFile(filename)
+        if (!projectOccurrence || !sourceFile) { return }
+        for (const newVariable of newNames) {
+            if (!projectOccurrence.variables.has(newVariable)) {
+                projectOccurrence.variables.set(newVariable, addStringVariableDeclaration(sourceFile, newVariable))
             }
         }
     }
+}
 
 // Get all variable declarations and try to parse them as swarm protocols.
 function visitVariableDeclarations(sourceFile: SourceFile): OccurrenceInfo[] {
@@ -424,7 +441,7 @@ function getVariables(sourceFile: SourceFile): Variables {
         .getDescendantsOfKind(SyntaxKind.ModuleDeclaration)
         .flatMap(m => m.getVariableDeclarations())) // Nice to have: handle name clases between modules
     return new Map(variableDeclarations.map(v => [v.getName(), v]))
-    
+
 }
 
 function updateTransitionAst(transition: Transition, transitionAst: TransitionAST): void {
@@ -487,12 +504,12 @@ function updateMetadataInitializer(propertyAssignment: PropertyAssignment, metad
 // Function that returns a WriterFunction to use for writing initializer of metadata field.
 // export type WriterFunction = (writer: CodeBlockWriter) => void;
 function metadataWriterFunction(metadata: SwarmProtocolMetadata): WriterFunction {
-    
+
     const nodeLayoutString = (nodeLayout: NodeLayout): string => {
         const x = nodeLayout.x ? `, x: ${nodeLayout.x}` : ""
         const y = nodeLayout.y ? `, y: ${nodeLayout.y}` : ""
         return `{ name: ${nodeLayout.name}${x}${y} }`
-    } 
+    }
 
     const positionHandlerString = (positionHandler: PositionHandler): string => {
         return `{ x: ${positionHandler.x}, y: ${positionHandler.y}, active: ${positionHandler.active}, isLabel: ${positionHandler.isLabel} }`
@@ -516,7 +533,7 @@ function metadataWriterFunction(metadata: SwarmProtocolMetadata): WriterFunction
         writer.writeLine(`]${terminator}`)
         return writer
     }
-    
+
     const writeLayout = (writer: CodeBlockWriter, layout: LayoutType): CodeBlockWriter => {
         writer.writeLine("layout: ").inlineBlock(() => {
             if (layout.nodes) {
@@ -539,7 +556,7 @@ function metadataWriterFunction(metadata: SwarmProtocolMetadata): WriterFunction
             writer.writeLine(subscriptionLines)
         })
         return writer
-        
+
     }
     const writerFunction = (writer: CodeBlockWriter) => {
         writer.inlineBlock(() => {
@@ -551,3 +568,16 @@ function metadataWriterFunction(metadata: SwarmProtocolMetadata): WriterFunction
     return writerFunction
 }
 
+function addStringVariableDeclaration(sourceFile: SourceFile, name: string): VariableDeclaration {
+    sourceFile.addVariableStatement({
+        declarationKind: VariableDeclarationKind.Const,
+        declarations: [
+            {
+                name,
+                initializer: `"${name}"`
+            }
+        ]
+    })
+
+    return sourceFile.getVariableDeclaration(name)
+}
