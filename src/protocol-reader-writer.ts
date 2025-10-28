@@ -1,5 +1,5 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter, VariableDeclarationKind, ImportSpecifier, ImportDeclaration } from "ts-morph";
-import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
+import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST, TransitionLabel } from "./types";
 import isIdentifier from 'is-identifier';
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
@@ -150,7 +150,7 @@ export class ProtocolReaderWriter {
         )
 
         const variables = getVariables(sourceFileRead)
-        const importedNames = getImportedNames(sourceFileRead)
+        const importedNames = getImportedNames(sourceFileRead, Array.from(occurrences.values()))
 
         this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs, variables, importedNames: importedNames })
     }
@@ -476,7 +476,22 @@ function importedVariables(sourceFile: SourceFile): VariableDeclaration[] {
         .map(getValue)
 }
 
-function getImportedNames(sourceFile: SourceFile): Set<string> {
+// We should do something similar with variables? Like the inModule thing. Not variables but like namespaces/classes etc. defined in same file.
+function getImportedNames(sourceFile: SourceFile, occurences: Occurrence[]): Set<string> {
+    // Sort of a heuristic
+    const isInModule = (valueToCheck: string, importedNames: Set<string>): boolean =>
+        valueToCheck.split(".").some(component => importedNames.has(component) && isIdentifier(component))
+
+    const allStringsLabel = (label: TransitionLabel): string[] =>
+        [label.cmd, label.role].concat(label.logType?.map(eventType => eventType) ?? [])
+    const allStringsTransition = (transition: Transition): string[] =>
+        [transition.source, transition.target].concat(allStringsLabel(transition.label))
+    const allStringsOccurrence = (occurence: Occurrence): string[] => {
+        return [occurence.name, occurence.swarmProtocol.initial].concat(occurence.swarmProtocol.transitions.flatMap(allStringsTransition))
+    }
+    const allStringsOccurrences = (occurences: Occurrence[]): string[] =>
+        Array.from(new Set(occurences.flatMap(allStringsOccurrence)))
+
     const mapper = (importDeclaration: ImportDeclaration): string[] => {
         const names = []
         const defaultImport = importDeclaration.getDefaultImport()
@@ -487,8 +502,9 @@ function getImportedNames(sourceFile: SourceFile): Set<string> {
         return names.concat(importDeclaration.getNamedImports().map(importSpecifier =>
             importSpecifier.getAliasNode()?.getText() ?? importSpecifier.getName()))
     }
-
-    return new Set(sourceFile.getImportDeclarations().flatMap(mapper))
+    const importedNames = new Set(sourceFile.getImportDeclarations().flatMap(mapper))
+    const namesFromModules = allStringsOccurrences(occurences).filter(s => isInModule(s, importedNames))
+    return new Set(Array.from(importedNames).concat(Array.from(namesFromModules)))
 }
 
 function getVariables(sourceFile: SourceFile): Variables {
