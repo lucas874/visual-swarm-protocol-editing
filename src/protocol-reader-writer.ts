@@ -1,4 +1,4 @@
-import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter, VariableDeclarationKind } from "ts-morph";
+import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter, VariableDeclarationKind, ImportSpecifier, ImportDeclaration } from "ts-morph";
 import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
 
 
@@ -48,7 +48,7 @@ const ERROR_PARSE = "Error parsing swarm protocols"
 type OccurrenceMap = Map<string, Occurrence>
 type AstMap = Map<string, SwarmProtocolAST>
 type Variables = Map<string, VariableDeclaration>
-type ProjectOccurrences = {project: Project, occurrences: OccurrenceMap, ASTs: AstMap, variables: Variables}
+type ProjectOccurrences = {project: Project, occurrences: OccurrenceMap, ASTs: AstMap, variables: Variables, importedNames: Set<string> }
 type GetProtocolOptions = { reload?: boolean, updateMeta?: boolean }
 
 export class ProtocolReaderWriter {
@@ -79,14 +79,15 @@ export class ProtocolReaderWriter {
         return Array.from(this.files.get(fileName).occurrences.values())
     }
 
-    // Return all variable names in a file. Read file if not present in the `files` map.
-    getVariables(fileName: string, reload=false): Set<string> {
+    // Return all names used in a file. Read file if not present in the `files` map.
+    getNames(fileName: string, reload=false): Set<string> {
         if (!this.files.has(fileName) || reload) {
             // Parse protocols and keep any metadata stored in parsed result instead of reading from store
             this.parseProtocols(fileName, false)
         }
-
-        return new Set(this.files.get(fileName)!.variables.keys())
+        const imported = Array.from(this.files.get(fileName)!.importedNames)
+        const variables = Array.from(this.files.get(fileName)!.variables.keys())
+        return new Set(imported.concat(variables))
     }
 
     // if storeMetaInProtocol store meta from updated occurence in store and in ast that is written back.
@@ -106,22 +107,23 @@ export class ProtocolReaderWriter {
                 return new Map(transitions
                     .map(t => [t.id, t]))
             }
-            const oldTransitionsMap = transitionsToMap(oldOccurrence.swarmProtocol.transitions)
+
             const newTransitionsMap = transitionsToMap(changeProtocolData.swarmProtocol.transitions)
             const astMap = transitionsToMap(swarmProtocolAst.transitions)
 
             // Todo: functionality to add new stuff. What happens if we create an edge in the visual tool? What should be the id of this?
             // And how should we iterate here?
             // Consider just 'resetting' whole variable declaration? Set it to updated occurence?
+            const names = new Set(Array.from(this.getNames(filename)).concat(changeProtocolData.variables))
             for (const id of newTransitionsMap.keys()) {
                 if (astMap.has(id)) {
-                    updateTransitionAst(newTransitionsMap.get(id) as Transition, astMap.get(id) as TransitionAST)
+                    updateTransitionAst(newTransitionsMap.get(id) as Transition, astMap.get(id) as TransitionAST, names)
                 } else {
-                    addTransitionToDeclaration(swarmProtocolAst.variableDeclaration, newTransitionsMap.get(id) as Transition)
+                    addTransitionToDeclaration(swarmProtocolAst.variableDeclaration, newTransitionsMap.get(id) as Transition, names)
                 }
             }
             if (changeProtocolData.isStoreInMetaChecked) {
-                updateMetaDataAst(swarmProtocolAst, changeProtocolData.swarmProtocol.metadata)
+                updateMetaDataAst(swarmProtocolAst, changeProtocolData.swarmProtocol.metadata, names)
             }
             this.addVariableDeclarations(filename, changeProtocolData.name, changeProtocolData.variables)
 
@@ -148,8 +150,9 @@ export class ProtocolReaderWriter {
         )
 
         const variables = getVariables(sourceFileRead)
+        const importedNames = getImportedNames(sourceFileRead)
 
-        this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs, variables})
+        this.files.set(fileName, {occurrences: occurrences, project: projectRead, ASTs: swarmProtocolASTs, variables, importedNames: importedNames })
     }
 
     // Could mutate directly but
@@ -158,7 +161,7 @@ export class ProtocolReaderWriter {
         const updatedOcurrences: [string, Occurrence][] = Array.from(projectOccurrences.occurrences.entries())
             .map(([name, occurrenceAndAst]) => [name, this.addMetaDataFromStore(fileName, occurrenceAndAst)])
 
-        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences), ASTs: projectOccurrences.ASTs, variables: projectOccurrences.variables })
+        this.files.set(fileName, {project: projectOccurrences.project, occurrences: new Map(updatedOcurrences), ASTs: projectOccurrences.ASTs, variables: projectOccurrences.variables, importedNames: projectOccurrences.importedNames})
     }
 
     // Add metadata from workspace state
@@ -180,8 +183,9 @@ export class ProtocolReaderWriter {
         const sourceFile = projectOccurrence?.project.getSourceFile(filename)
         const swarmProtocolUsingNames = projectOccurrence.ASTs.get(swarmProtocolName)
         if (!projectOccurrence || !sourceFile || !swarmProtocolUsingNames) { return }
+        const names = this.getNames(filename)
         for (const newVariable of newNames) {
-            if (!projectOccurrence.variables.has(newVariable)) {
+            if (!names.has(newVariable)) {
                 projectOccurrence.variables.set(newVariable, addStringVariableDeclaration(sourceFile, swarmProtocolUsingNames, newVariable))
             }
         }
@@ -444,6 +448,45 @@ function subscriptionToAstInfo(subscription: ObjectLiteralExpression): Subscript
 
     return subscriptionAst
 }
+// importSpecifier.getName()
+function importedVariables(sourceFile: SourceFile): VariableDeclaration[] {
+    /* const isVariableImport = (importSpecifier: ImportSpecifier): boolean => {
+        const symbol = importSpecifier.getNameNode().getSymbol()
+        if (!symbol) { return false }
+        const declarations = symbol.getDeclarations() ?? []
+        return declarations.some(declaration => declaration.getKind() === SyntaxKind.VariableDeclaration)
+    } */
+
+    const getVariableImport = (importSpecifier: ImportSpecifier): Option<VariableDeclaration> => {
+        const symbol = importSpecifier.getNameNode().getSymbol()
+        if (!symbol) { return none }
+        const declarations = symbol.getDeclarations() ?? []
+        const variableDeclaration = declarations.find(declaration => declaration.getKind() === SyntaxKind.VariableDeclaration)
+        return variableDeclaration ? some(variableDeclaration as VariableDeclaration) : none
+    }
+
+    return sourceFile
+        .getImportDeclarations()
+        .flatMap(importDeclaration => importDeclaration.getNamedImports())
+        .map(getVariableImport)
+        .filter(isSome)
+        .map(getValue)
+}
+
+function getImportedNames(sourceFile: SourceFile): Set<string> {
+    const mapper = (importDeclaration: ImportDeclaration): string[] => {
+        const names = []
+        const defaultImport = importDeclaration.getDefaultImport()
+        if (defaultImport) { names.push(defaultImport.getText()) }
+        const namespaceImport = importDeclaration.getNamespaceImport()
+        if (namespaceImport) { names.push(namespaceImport.getText()) }
+
+        return names.concat(importDeclaration.getNamedImports().map(importSpecifier =>
+            importSpecifier.getAliasNode()?.getText() ?? importSpecifier.getName()))
+    }
+
+    return new Set(sourceFile.getImportDeclarations().flatMap(mapper))
+}
 
 function getVariables(sourceFile: SourceFile): Variables {
     const variableDeclarations = sourceFile
@@ -455,12 +498,21 @@ function getVariables(sourceFile: SourceFile): Variables {
 
 }
 
-function updateTransitionAst(transition: Transition, transitionAst: TransitionAST): void {
-    transitionAst.source.setInitializer(transition.source)
-    transitionAst.target.setInitializer(transition.target)
-    transitionAst.label.cmd.setInitializer(transition.label.cmd)
-    transitionAst.label.role.setInitializer(transition.label.role)
-    transitionAst.label.logType.setInitializer(`[${transition.label.logType.join(", ") ?? "" }]`)
+// If value is a known name initializer becomes this name,
+// otherwise initializer becomes a string literal with the value of 'value'.
+// Not so robust but also check for member access/namespace access by splitting on '.'.
+// Add to names instead!!
+const initializerValue = (names: Set<string>, value: string): string =>
+    names.has(value) || value.split(".").some(component => names.has(component))
+        ? value
+        : `"${value}"`
+
+function updateTransitionAst(transition: Transition, transitionAst: TransitionAST, names: Set<string>): void {
+    transitionAst.source.setInitializer(initializerValue(names, transition.source))
+    transitionAst.target.setInitializer(initializerValue(names, transition.target))
+    transitionAst.label.cmd.setInitializer(initializerValue(names, transition.label.cmd))
+    transitionAst.label.role.setInitializer(initializerValue(names, transition.label.role))
+    transitionAst.label.logType.setInitializer(`[${transition.label.logType?.map(eventType => initializerValue(names, eventType)).join(", ") ?? "" }]`)
 }
 
 // Nice for debugging
@@ -473,17 +525,17 @@ function basicVisit(node: Node, prepend: string = '') {
 
 // Manipulate initializer of SwarmProtocol: add a transition. Assume that variable declaration declares a proper swarm protocol
 // Do something else than replace spaces .... option to add variable declaration or insert as string literal maybe...
-function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, transition: Transition) {
+function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, transition: Transition, names: Set<string>) {
     const initializer = variableDeclaration.getInitializer()
     const replaceSpaces = (str: string): string => str.split(" ").join("")
     if (initializer.getKind() === SyntaxKind.ObjectLiteralExpression) {
         try {
         const elements = ((initializer as ObjectLiteralExpression).getProperty(TRANSITIONS_FIELD) as PropertyAssignment).getInitializer() as ArrayLiteralExpression//.addPropertyAssignment(JSON.stringify(transition, null, 2))
-        const labelString = `{ cmd: ${replaceSpaces(transition.label.cmd)}, role: ${replaceSpaces(transition.label.role)}, logType: [${transition.label.logType ? transition.label.logType.map(s => replaceSpaces(s)).join(", ") : ""}]}`
+        const labelString = `{ cmd: ${initializerValue(names, transition.label.cmd)}, role: ${initializerValue(names, transition.label.role)}, logType: [${transition.label.logType?.map(s => initializerValue(names, s)).join(", ") ?? ""}]}`
         elements.addElement(writer => {
             writer
                 .write("{")
-                .write(`source: ${replaceSpaces(transition.source)}, target: ${replaceSpaces(transition.target)}, label: ${labelString}`)
+                .write(`source: ${initializerValue(names, transition.source)}, target: ${initializerValue(names, transition.target)}, label: ${labelString}`)
                 .write("}")
         })
     } catch (e) {
@@ -492,34 +544,34 @@ function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, tr
     }
 }
 
-function updateMetaDataAst(swarmProtocolAst: SwarmProtocolAST, metadata: SwarmProtocolMetadata | undefined) {
+function updateMetaDataAst(swarmProtocolAst: SwarmProtocolAST, metadata: SwarmProtocolMetadata | undefined, names: Set<string>) {
     if (!metadata) {
         return
     }
 
     if (swarmProtocolAst.properties.has(METADATA_FIELD)) {
-        updateMetadataInitializer(swarmProtocolAst.properties.get(METADATA_FIELD)!, metadata)
+        updateMetadataInitializer(swarmProtocolAst.properties.get(METADATA_FIELD)!, metadata, names)
     } else {
         const initializer = swarmProtocolAst.variableDeclaration.getInitializer()
         if (initializer.getKind() === SyntaxKind.ObjectLiteralExpression) {
-            (initializer as ObjectLiteralExpression).addPropertyAssignment({ name: METADATA_FIELD, initializer: metadataWriterFunction(metadata) })
+            (initializer as ObjectLiteralExpression).addPropertyAssignment({ name: METADATA_FIELD, initializer: metadataWriterFunction(metadata, names) })
         }
     }
 
 }
 
-function updateMetadataInitializer(propertyAssignment: PropertyAssignment, metadata: SwarmProtocolMetadata) {
-    propertyAssignment.setInitializer(metadataWriterFunction(metadata))
+function updateMetadataInitializer(propertyAssignment: PropertyAssignment, metadata: SwarmProtocolMetadata, names: Set<string>) {
+    propertyAssignment.setInitializer(metadataWriterFunction(metadata, names))
 }
 
 // Function that returns a WriterFunction to use for writing initializer of metadata field.
 // export type WriterFunction = (writer: CodeBlockWriter) => void;
-function metadataWriterFunction(metadata: SwarmProtocolMetadata): WriterFunction {
+function metadataWriterFunction(metadata: SwarmProtocolMetadata, names: Set<string>): WriterFunction {
 
     const nodeLayoutString = (nodeLayout: NodeLayout): string => {
         const x = nodeLayout.x ? `, x: ${nodeLayout.x}` : ""
         const y = nodeLayout.y ? `, y: ${nodeLayout.y}` : ""
-        return `{ name: ${nodeLayout.name}${x}${y} }`
+        return `{ name: ${initializerValue(names, nodeLayout.name)}${x}${y} }`
     }
 
     const positionHandlerString = (positionHandler: PositionHandler): string => {

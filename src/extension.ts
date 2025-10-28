@@ -43,7 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
       store.synchronizeStore(activeEditor.document.fileName, occurrences)
       occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName, { updateMeta: true})
 
-      let variables = protocolReaderWriter.getVariables(activeEditor.document.fileName)
+      let variables = protocolReaderWriter.getNames(activeEditor.document.fileName)
 
       // Create the webview panel
       let panel = vscode.window.createWebviewPanel(
@@ -99,7 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
             const editor = await vscode.window.showTextDocument(
               activeEditor.document.uri
             );
-            const updatedProtocol = { initial: message.data.swarmProtocol.initial, transitions: message.data.swarmProtocol.transitions, metadata: message.data.swarmProtocol.metadata }
+
             // Replace text in the active editor with the new data and save it.
             //protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, {name: message.data.name, swarmProtocol: updatedProtocol}, message.data.isStoreInMetaChecked)
             protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, message.data)
@@ -107,7 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
               .then(() => {
                 // Get the updated occurrences and variables
                 occurrences = protocolReaderWriter.getOccurrences(editor.document.fileName, {reload: true, updateMeta: true} )
-                variables = protocolReaderWriter.getVariables(activeEditor.document.fileName, true)
+                variables = protocolReaderWriter.getNames(activeEditor.document.fileName, true)
 
                 // Open the webview again with the new data
                 panel.webview.postMessage({

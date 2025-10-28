@@ -136,6 +136,8 @@ const LayoutFlow = ({
         };
       });
       // names in variables filter out the the ones that are not actually on an edge or a node then send to parent
+      // not sure whether we should only send back names in use or all names (Array.from(variables))
+      // and handle what to add as new variables differently.
       const namesInCurrentProto = namesInUse()
       sendDataToParent(fixNodeNames, edgesRef.current, isStoreInMetaChecked, Array.from(variables).filter(name => namesInCurrentProto.has(name)));
     }
