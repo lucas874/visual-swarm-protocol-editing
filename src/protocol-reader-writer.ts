@@ -1,6 +1,6 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter, VariableDeclarationKind, ImportSpecifier, ImportDeclaration } from "ts-morph";
 import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST } from "./types";
-
+import isIdentifier from 'is-identifier';
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
 export type Some<T> = { tag: "Some", value: T }
@@ -186,7 +186,10 @@ export class ProtocolReaderWriter {
         const names = this.getNames(filename)
         for (const newVariable of newNames) {
             if (!names.has(newVariable)) {
-                projectOccurrence.variables.set(newVariable, addStringVariableDeclaration(sourceFile, swarmProtocolUsingNames, newVariable))
+                const optionVariableDeclaration = addStringVariableDeclaration(sourceFile, swarmProtocolUsingNames, newVariable)
+                if (isSome(optionVariableDeclaration)) {
+                    projectOccurrence.variables.set(newVariable, getValue(optionVariableDeclaration))
+                }
             }
         }
     }
@@ -503,7 +506,7 @@ function getVariables(sourceFile: SourceFile): Variables {
 // Not so robust but also check for member access/namespace access by splitting on '.'.
 // Add to names instead!!
 const initializerValue = (names: Set<string>, value: string): string =>
-    names.has(value) || value.split(".").some(component => names.has(component))
+    (names.has(value) && isIdentifier(value)) || value.split(".").some(component => names.has(component) && isIdentifier(component)) // bit sketchy
         ? value
         : `"${value}"`
 
@@ -631,7 +634,10 @@ function metadataWriterFunction(metadata: SwarmProtocolMetadata, names: Set<stri
     return writerFunction
 }
 
-function addStringVariableDeclaration(sourceFile: SourceFile, swarmProtoUsingName: SwarmProtocolAST, name: string): VariableDeclaration {
+function addStringVariableDeclaration(sourceFile: SourceFile, swarmProtoUsingName: SwarmProtocolAST, name: string): Option<VariableDeclaration> {
+    if (!isIdentifier(name)) {
+        return none
+    }
     sourceFile.insertVariableStatement(swarmProtoUsingName.variableDeclaration.getChildIndex(), {
         declarationKind: VariableDeclarationKind.Const,
         declarations: [
@@ -642,5 +648,5 @@ function addStringVariableDeclaration(sourceFile: SourceFile, swarmProtoUsingNam
         ]
     })
 
-    return sourceFile.getVariableDeclaration(name)
+    return some(sourceFile.getVariableDeclaration(name))
 }

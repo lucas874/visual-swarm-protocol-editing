@@ -61,6 +61,7 @@
     "@types/vscode": "^1.93.0",
     "@xyflow/react": "^12.3.0",
     "html-to-image": "^1.11.11",
+    "is-identifier": "^1.0.1",
     "json5": "^2.2.3",
     "tapable": "^2.2.1",
     "ts-morph": "^27.0.0",
