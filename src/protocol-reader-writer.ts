@@ -437,30 +437,6 @@ function subscriptionToAstInfo(subscription: ObjectLiteralExpression): Subscript
 
     return subscriptionAst
 }
-// importSpecifier.getName()
-function importedVariables(sourceFile: SourceFile): VariableDeclaration[] {
-    /* const isVariableImport = (importSpecifier: ImportSpecifier): boolean => {
-        const symbol = importSpecifier.getNameNode().getSymbol()
-        if (!symbol) { return false }
-        const declarations = symbol.getDeclarations() ?? []
-        return declarations.some(declaration => declaration.getKind() === SyntaxKind.VariableDeclaration)
-    } */
-
-    const getVariableImport = (importSpecifier: ImportSpecifier): Option<VariableDeclaration> => {
-        const symbol = importSpecifier.getNameNode().getSymbol()
-        if (!symbol) { return none }
-        const declarations = symbol.getDeclarations() ?? []
-        const variableDeclaration = declarations.find(declaration => declaration.getKind() === SyntaxKind.VariableDeclaration)
-        return variableDeclaration ? some(variableDeclaration as VariableDeclaration) : none
-    }
-
-    return sourceFile
-        .getImportDeclarations()
-        .flatMap(importDeclaration => importDeclaration.getNamedImports())
-        .map(getVariableImport)
-        .filter(isSome)
-        .map(getValue)
-}
 
 // We should do something similar with variables? Like the inModule thing. Not variables but like namespaces/classes etc. defined in same file.
 function getImportedNames(sourceFile: SourceFile, occurences: Occurrence[]): Set<string> {
