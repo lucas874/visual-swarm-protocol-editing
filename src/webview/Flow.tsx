@@ -332,7 +332,7 @@ const LayoutFlow = ({
             roleRef.current = edge.label?.toString().split("@")[1].split("<")[0] ?? "";
             logTypeRef.current =
               (edge.data.logType as string[])?.join(",") ?? null;
-            edgeLabelRef.current = `${commandRef.current}@${roleRef.current} + <${logTypeRef}>`;
+            edgeLabelRef.current = `${commandRef.current}@${roleRef.current}<${logTypeRef.current}>`;
             setIsEdgeDialogOpen(true);
           }}
           onBeforeDelete={(onBeforeDelete) => {
