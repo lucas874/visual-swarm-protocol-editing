@@ -159,10 +159,10 @@ const LayoutFlow = ({
   }
 
   const onConnect = useCallback((connection) => {
-    // Check if the edge already exists
     if (!connection.id) {
-      connection.id = edgesRef.current.length
+      connection.id = edgesRef.current.length.toString()
     }
+    // Check if the edge already exists
     // Should not happen
     const existingEdge = edgesRef.current.find(
       (edge) =>
@@ -179,7 +179,7 @@ const LayoutFlow = ({
     connection.style = {
       strokeWidth: 1.7,
     };
-    connection.id = connection.id;
+
     if (connection.source === connection.target) {
       connection.type = "selfconnecting";
     } else {
@@ -331,7 +331,7 @@ const LayoutFlow = ({
             commandRef.current = edge.label?.toString().split("@")[0] ?? "";
             roleRef.current = edge.label?.toString().split("@")[1].split("<")[0] ?? "";
             logTypeRef.current =
-              (edge.data.logType as string[])?.join(",") ?? null;
+              (edge.data.logType as string[])?.join(",") ?? "";
             edgeLabelRef.current = `${commandRef.current}@${roleRef.current}<${logTypeRef.current}>`;
             setIsEdgeDialogOpen(true);
           }}

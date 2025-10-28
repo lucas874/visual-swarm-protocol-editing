@@ -26,7 +26,7 @@ function EdgeLabelDialog({
 
   let isCmdNameStringLiteral: boolean = !hasVariable(commandRef);
   let isRoleNameStringLiteral: boolean = !hasVariable(roleRef);
-  let isLogTypeStringLiteral: boolean = !hasVariable(logTypeRef.split(",").every((eventType: string) => hasVariable(eventType)));
+  let isLogTypeStringLiteral: boolean = !hasVariable(logTypeRef.replaceAll(" ", "").split(",").every((eventType: string) => hasVariable(eventType)));
 
   return (
     <div className="overlay" onClick={(event) => setIsEdgeDialogOpen(false)}>
@@ -137,11 +137,12 @@ function EdgeLabelDialog({
                   edgeLabelRef,
                   logTypeRef === "" || logTypeRef === null
                     ? []
-                    : logTypeRef.split(",")
+                    : logTypeRef.replaceAll(" ", "").split(",")
                 );
                 if (!isCmdNameStringLiteral) { addVariable(commandRef) }
                 if (!isRoleNameStringLiteral) { addVariable(roleRef) }
-                if (!isLogTypeStringLiteral && logTypeRef) { logTypeRef.split(",").forEach((eventType: string) => addVariable(eventType)) }
+                // We remove spaces. This is a decision. Makes things easier.
+                if (!isLogTypeStringLiteral && logTypeRef) { logTypeRef.replaceAll(" ", "").split(",").forEach((eventType: string) => addVariable(eventType)) }
 
                 // Check if role already exists in protocol, otherwise add it to subscriptions. COME BACK HERE.
                 if (

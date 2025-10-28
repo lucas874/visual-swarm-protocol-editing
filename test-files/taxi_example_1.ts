@@ -1,3 +1,32 @@
+const haha = "haha";
+const sol = "sol";
+const fa = "fa";
+const mi = "mi";
+const re = "re";
+const CMDZ = "CMDZ";
+const by = "by";
+const ba = "ba";
+const ing = "ing";
+const Bo = "Bo";
+const R = "R";
+const okokokoCommand = "okokokoCommand";
+const f = "f";
+const e = "e";
+const d = "d";
+const c = "c";
+const b = "b";
+const a = "a";
+const okCommand = "okCommand";
+const niceCommand = "niceCommand";
+const C = "C";
+const B = "B";
+const A = "A";
+const someCommand = "someCommand";
+const receiptState = "receiptState";
+const second = "second";
+const first = "first";
+const finalRole = "finalRole";
+const finalCommand = "finalCommand";
 const finalState = "finalState";
 const rideFinishedState = "rideFinishedState";
 const rideState = "rideState";
@@ -68,7 +97,7 @@ const protocol = {
     },
     {
       source: rideFinishedState,
-      target: finalState,
+      target: receiptState,
       label: { cmd: makeReceipt, role: O, logType: [Receipt] },
     },
     {
@@ -76,7 +105,13 @@ const protocol = {
       target: rideFinishedState,
       label: { cmd: Cancel, role: P, logType: [Cancelled] },
     },
-  ],
+      {source: receiptState, target: "Node 8", label: { cmd: finalCommand, role: finalRole, logType: [first, second]}},
+      {source: receiptState, target: "anotherState", label: { cmd: someCommand, role: O, logType: [A, B, C]}},
+      {source: "Node 8", target: "Node 10", label: { cmd: niceCommand, role: O, logType: [Bo, ing, ba, by]}},
+      {source: "Node 10", target: "Node 11", label: { cmd: okCommand, role: T, logType: [a, b, c, d, e, f]}},
+      {source: "Node 11", target: "Node 12", label: { cmd: okokokoCommand, role: R, logType: ["o", "p", "q", "r", "s", "t"]}},
+      {source: "Node 8", target: "Node 13", label: { cmd: CMDZ, role: R, logType: ["do", re, mi, fa, sol, haha]}}
+],
     metadata: {
           layout:
           {
@@ -87,7 +122,9 @@ const protocol = {
               { name: arrivedState, x: -32.05652849190567, y: 259.81130569838115 },
               { name: rideState, x: -68.44307251519436, y: 408.64132122976423 },
               { name: rideFinishedState, x: 150.5, y: 531 },
-              { name: finalState, x: 148.49449913783096, y: 698.3136898772765 }
+              { name: receiptState, x: 183.30194683948886, y: 732.1266390731727 },
+              { name: "Node 8" },
+              { name: "anotherState", x: 7.248843807458286, y: 934.8410606624462 }
               ],
               edges: [
               ]
@@ -96,7 +133,8 @@ const protocol = {
           {
               P: [],
               T: [],
-              O: []
+              O: [],
+              finalRole: []
           }
       }
 };
