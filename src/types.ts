@@ -110,7 +110,7 @@ export type LayoutTypeAST = {
   edges?: EdgeLayoutAST[];
 };
 
-export type SubscriptionAST = Map<string, PropertyAssignment>//{role: string, propertyAssignment: PropertyAssignment}[]
+export type SubscriptionAST = Map<string, PropertyAssignment>
 
 export type SwarmProtocolMetadataAST = {
     layout: LayoutTypeAST;
@@ -131,9 +131,6 @@ export type SwarmProtocolAST = {
 // using postMessage and message argument of postMessage "must be a string or other json serializable object." (from docs).
 export type Occurrence = { name: string, swarmProtocol: SwarmProtocol }
 export type OccurrenceInfo = { occurrence: Occurrence, swarmProtocolAST: SwarmProtocolAST }
-
-// For writing
-export type ProtocolDiff = { name: string, old: SwarmProtocol, new: SwarmProtocol }
 
 // Use these!
 // Does it work with set? Or should it be an array?

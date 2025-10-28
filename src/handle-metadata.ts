@@ -3,62 +3,6 @@ import { Occurrence, SwarmProtocolMetadata } from "./types";
 
 const METADATA_KEY = "visual-swarm-protocol-editor.metadata"
 
-// Types representing metadata for workspace
-/* interface NodeData {
-    name: string,
-    x: number,
-    y: number
-}
-
-interface EdgeData {
-    id: string;
-    positionHandlers: {
-        x: number;
-        y: number;
-        active: number;
-        isLabel: boolean;
-    }[];
-}
-
-interface SwarmProtocolLayout {
-    nodes: NodeData[],
-    edges: EdgeData[]
-}
-
-interface SwarmProtocolMetadata {
-    name: string,
-    layout: SwarmProtocolLayout,
-    subscriptions: Record<string, string[]>
-} */
-/* export type NodeLayout = {
-  name: string;
-  x: number;
-  y: number;
-};
-
-export type PositionHandler = {
-  x: number;
-  y: number;
-  active: number;
-  isLabel: boolean;
-};
-
-export type EdgeLayout = {
-  id: string;
-  positionHandlers: PositionHandler[];
-};
-
-export type SwarmProtocolLayout = {
-  nodes: NodeLayout[];
-  edges: EdgeLayout[];
-};
-
-interface SwarmProtocolMetadata {
-    name: string,
-    layout: SwarmProtocolLayout,
-    subscriptions: Record<string, string[]>
-} */
-
 interface FileMetadata {
     swarmProtocols: Record<string, SwarmProtocolMetadata>
 }

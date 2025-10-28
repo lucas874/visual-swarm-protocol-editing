@@ -1,6 +1,7 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter, VariableDeclarationKind, ImportSpecifier, ImportDeclaration } from "ts-morph";
 import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST, TransitionLabel } from "./types";
 import isIdentifier from 'is-identifier';
+import { MetadataStore } from "./handle-metadata";
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
 export type Some<T> = { tag: "Some", value: T }
@@ -26,24 +27,10 @@ export const getValue = <T>(optionValue: Some<T>): T => {
     return optionValue.value
 }
 
-type DefinitionNodeInfo = { sourceFile: string, definitionNodeText: string, definitionNode: Node<ts.Node> }
-
 // Constants
-const EVENT_DESIGN_FUNCTION = "design: <Key extends string>(key: Key) => EventFactoryIntermediate<Key>"
-const EVENT_D_TS = "event.d.ts"
 const INITIAL_FIELD = "initial"
 const TRANSITIONS_FIELD = "transitions"
 const METADATA_FIELD = "metadata"
-const TYPE_FIELD = "type"
-const EVENT_DEFINITION_FUNCTIONS = [
-    "withPayload: <Payload extends utils.SerializableObject>() => Factory<Key, Payload>;",
-    "withoutPayload: () => Factory<Key, Record<never, never>>;",
-    "withZod: <Payload extends utils.SerializableObject>(z: z.ZodType<Payload>) => Factory<Key, Payload>;"
-]
-import { MetadataStore } from "./handle-metadata";
-
-const ERROR_NONE_FOUND = "No swarm protocol found"
-const ERROR_PARSE = "Error parsing swarm protocols"
 
 type OccurrenceMap = Map<string, Occurrence>
 type AstMap = Map<string, SwarmProtocolAST>
@@ -55,7 +42,6 @@ export class ProtocolReaderWriter {
     metadataStore: MetadataStore
     // Map filenames to swarm protocols occurring in those files
     files: Map<string, ProjectOccurrences>
-    //occurrences: Map<string, Map>
 
     constructor(metadataStore: MetadataStore, fileName?: string) {
         this.metadataStore = metadataStore
