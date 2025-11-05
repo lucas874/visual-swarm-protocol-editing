@@ -6,6 +6,7 @@ import {
   MarkerType,
   type Node,
   Controls,
+  Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
@@ -53,9 +54,11 @@ const getLayoutedElements = (nodes, edges) => {
 const selector = (state: RFState) => ({
   nodes: state.nodes,
   edges: state.edges,
+  variables: state.variables,
   isDeleteDialogOpen: state.isDeleteDialogOpen,
   isNodeDialogOpen: state.isNodeDialogOpen,
   isEdgeDialogOpen: state.isEdgeDialogOpen,
+  isStoreInMetaChecked: state.isStoreInMetaChecked,
   setInitialElements: state.setInitialElements,
   setNodes: state.setNodes,
   setEdges: state.setEdges,
@@ -66,6 +69,10 @@ const selector = (state: RFState) => ({
   setIsNodeDialogOpen: state.setIsNodeDialogOpen,
   setIsEdgeDialogOpen: state.setIsEdgeDialogOpen,
   setIsDeleteDialogOpen: state.setIsDeleteDialogOpen,
+  setIsStoreInMetaChecked: state.setIsStoreInMetaChecked,
+  setVariables: state.setVariables,
+  addVariable: state.addVariable,
+  hasVariable: state.hasVariable
 });
 
 // Create flow from values given
@@ -81,9 +88,11 @@ const LayoutFlow = ({
   const {
     nodes,
     edges,
+    variables,
     isDeleteDialogOpen,
     isNodeDialogOpen,
     isEdgeDialogOpen,
+    isStoreInMetaChecked,
     setIsDeleteDialogOpen,
     setIsNodeDialogOpen,
     setIsEdgeDialogOpen,
@@ -94,6 +103,10 @@ const LayoutFlow = ({
     onEdgesChange,
     addEdge,
     addNode,
+    setIsStoreInMetaChecked,
+    setVariables,
+    addVariable,
+    hasVariable,
   } = useStore(selector, shallow);
 
   // https://react.dev/reference/react/useRef
@@ -122,16 +135,40 @@ const LayoutFlow = ({
           id: node.data.label,
         };
       });
-      sendDataToParent(fixNodeNames, edgesRef.current);
+      // names in variables filter out the the ones that are not actually on an edge or a node then send to parent
+      // not sure whether we should only send back names in use or all names (Array.from(variables))
+      // and handle what to add as new variables differently.
+      const namesInCurrentProto = namesInUse()
+      sendDataToParent(fixNodeNames, edgesRef.current, isStoreInMetaChecked, Array.from(variables).filter(name => namesInCurrentProto.has(name)));
     }
   }
 
+  const namesInUse = (): Set<string> => {
+    //const edgeLabelRegex = /(?<commandName>.*)@(?<roleName>.*)<(?<logTypeName>.*)>/
+    const edgeMapper = (edge: Edge): string[] => {
+      const labelString = edge.label?.toString() ?? ""
+      if (!labelString) { return [] }
+      return [
+        labelString.split("@")[0],
+        labelString.split("@")[1].split("<")[0]
+        ].concat((edge.data.logType as string[]) ?? [])
+    }
+    const nodeMapper = (node: Node): string => node.data.label.toString()
+
+    return new Set(edgesRef.current.flatMap(edgeMapper).concat(nodesRef.current.map(nodeMapper)))
+  }
+
   const onConnect = useCallback((connection) => {
+    if (!connection.id) {
+      connection.id = edgesRef.current.length.toString()
+    }
     // Check if the edge already exists
+    // Should not happen
     const existingEdge = edgesRef.current.find(
       (edge) =>
-        edge.source === connection.source && edge.target === connection.target
+       edge.id === connection.id
     );
+
     if (existingEdge) {
       sendErrorToParent("edgeExists");
       return;
@@ -142,7 +179,7 @@ const LayoutFlow = ({
     connection.style = {
       strokeWidth: 1.7,
     };
-    connection.id = `${connection.source}-${connection.target}`;
+
     if (connection.source === connection.target) {
       connection.type = "selfconnecting";
     } else {
@@ -250,6 +287,10 @@ const LayoutFlow = ({
           Add new state
         </button>
       </div>
+      <div>
+        <input type="checkbox" id="storeMetadataInFile" name="storeMetadataInFile" onChange={(event) => { setIsStoreInMetaChecked((event.target as HTMLInputElement).checked) }} />
+        <label htmlFor="storeMetadataInFile">Store metadata in protocol.</label>
+      </div>
       {/* Create a dialog trying to delete */}
       {isDeleteDialogOpen && <DeleteDialog onDeleteRef={onDeleteRef.current} />}
       {/* Create a dialog when double clicking on a node */}
@@ -288,10 +329,10 @@ const LayoutFlow = ({
           onEdgeDoubleClick={(_, edge) => {
             selectedEdgeRef.current = edge;
             commandRef.current = edge.label?.toString().split("@")[0] ?? "";
-            roleRef.current = edge.label?.toString().split("@")[1] ?? "";
+            roleRef.current = edge.label?.toString().split("@")[1].split("<")[0] ?? "";
             logTypeRef.current =
-              (edge.data.logType as string[])?.join(",") ?? null;
-            edgeLabelRef.current = commandRef.current + "@" + roleRef.current;
+              (edge.data.logType as string[])?.join(",") ?? "";
+            edgeLabelRef.current = `${commandRef.current}@${roleRef.current}<${logTypeRef.current}>`;
             setIsEdgeDialogOpen(true);
           }}
           onBeforeDelete={(onBeforeDelete) => {

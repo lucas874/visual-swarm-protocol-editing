@@ -6,6 +6,8 @@ const selector = (state: RFState) => ({
   edges: state.edges,
   updateEdgeLabel: state.updateEdgeLabel,
   setIsEdgeDialogOpen: state.setIsEdgeDialogOpen,
+  addVariable: state.addVariable,
+  hasVariable: state.hasVariable,
 });
 
 function EdgeLabelDialog({
@@ -17,10 +19,14 @@ function EdgeLabelDialog({
   sendErrorToParent,
   sendNewRoleToParent,
 }) {
-  const { edges, updateEdgeLabel, setIsEdgeDialogOpen } = useStore(
+  const { edges, updateEdgeLabel, setIsEdgeDialogOpen, addVariable, hasVariable } = useStore(
     selector,
     shallow
   );
+
+  let isCmdNameStringLiteral: boolean = !hasVariable(commandRef);
+  let isRoleNameStringLiteral: boolean = !hasVariable(roleRef);
+  let isLogTypeStringLiteral: boolean = !hasVariable(logTypeRef.replaceAll(" ", "").split(",").every((eventType: string) => hasVariable(eventType)));
 
   return (
     <div className="overlay" onClick={(event) => setIsEdgeDialogOpen(false)}>
@@ -42,10 +48,21 @@ function EdgeLabelDialog({
             placeholder="Add command"
             onChange={(e) => {
               commandRef = e.target.value;
-              edgeLabelRef = commandRef + "@" + roleRef;
+              edgeLabelRef = `${commandRef}@${roleRef}${logTypeRef ? "<" + logTypeRef + ">" : ""}`;
             }}
             defaultValue={commandRef}
           />
+        <div>
+          <input
+            type="checkbox"
+            id="isCmdNameStringLiteral"
+            name="isCmdNameStringLiteral"
+            defaultChecked={isCmdNameStringLiteral}
+            onChange={(event) => {
+              isCmdNameStringLiteral = (event.target as HTMLInputElement).checked
+            }} />
+          <label htmlFor="isCmdNameStringLiteral">String literal.</label>
+        </div>
         </div>
         <div className="row">
           <label className="label">Role</label>
@@ -55,10 +72,22 @@ function EdgeLabelDialog({
             placeholder="Add role"
             onChange={(e) => {
               roleRef = e.target.value;
-              edgeLabelRef = commandRef + "@" + roleRef;
+              edgeLabelRef = `${commandRef}@${roleRef}${logTypeRef ? "<" + logTypeRef + ">" : ""}`;
             }}
             defaultValue={roleRef}
           />
+        <div>
+          <input
+            type="checkbox"
+            id="isRoleNameStringLiteral"
+            name="isRoleNameStringLiteral"
+            defaultChecked={isRoleNameStringLiteral}
+            onChange={(event) => {
+              isRoleNameStringLiteral = (event.target as HTMLInputElement).checked
+            }}
+          />
+          <label htmlFor="isRoleNameStringLiteral">String literal.</label>
+        </div>
         </div>
         <div className="row">
           <label className="label">Log type (comma separated)</label>
@@ -68,10 +97,22 @@ function EdgeLabelDialog({
             placeholder="Add log type"
             onChange={(e) => {
               logTypeRef = e.target.value;
-              edgeLabelRef = commandRef + "@" + roleRef;
+              edgeLabelRef = `${commandRef}@${roleRef}${logTypeRef ? "<" + logTypeRef + ">" : ""}`;
             }}
             defaultValue={logTypeRef}
           />
+        <div>
+          <input
+            type="checkbox"
+            id="isLogTypeNameStringLiteral"
+            name="isLogTypeNameStringLiteral"
+            defaultChecked={isLogTypeStringLiteral}
+            onChange={(event) => {
+              isLogTypeStringLiteral = (event.target as HTMLInputElement).checked
+           }}
+          />
+          <label htmlFor="isLogTypeNameStringLiteral">String literal.</label>
+        </div>
         </div>
         <div className="row float-right">
           <button
@@ -96,13 +137,17 @@ function EdgeLabelDialog({
                   edgeLabelRef,
                   logTypeRef === "" || logTypeRef === null
                     ? []
-                    : logTypeRef.split(",")
+                    : logTypeRef.replaceAll(" ", "").split(",")
                 );
+                if (!isCmdNameStringLiteral) { addVariable(commandRef) }
+                if (!isRoleNameStringLiteral) { addVariable(roleRef) }
+                // We remove spaces. This is a decision. Makes things easier.
+                if (!isLogTypeStringLiteral && logTypeRef) { logTypeRef.replaceAll(" ", "").split(",").forEach((eventType: string) => addVariable(eventType)) }
 
-                // Check if role already exists in protocol, otherwise add it to subscriptions
+                // Check if role already exists in protocol, otherwise add it to subscriptions. COME BACK HERE.
                 if (
                   !edges.some(
-                    (edge) => edge.label?.toString().split("@")[1] === roleRef
+                    (edge) => edge.label?.toString().split("@")[1].split("<")[0] === roleRef
                   )
                 ) {
                   sendNewRoleToParent(roleRef);

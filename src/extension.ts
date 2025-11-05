@@ -9,8 +9,13 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
+import { getValue, isSome, ProtocolReaderWriter } from "./protocol-reader-writer";
+import { Occurrence, OccurrenceInfo, SwarmProtocol } from "./types";
+import { MetadataStore } from "./handle-metadata";
 
 export function activate(context: vscode.ExtensionContext) {
+  const store = new MetadataStore(context)
+
   context.subscriptions.push(
     // Create the command to open the webview
     vscode.commands.registerCommand("extension.openWebview", () => {
@@ -23,15 +28,22 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      // Save text from active editor to a variable
-      const text = activeEditor.document.getText();
-      // Set regex string to search for the SwarmProtocolType
-      const typeRegex = /\S*:\s*SwarmProtocolType\s*=\s*/gm;
+      const protocolReaderWriter = new ProtocolReaderWriter(store, activeEditor.document.fileName)
+      let occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName)
 
-      let occurrences = getAllProtocolOccurrences(text, typeRegex);
       if (occurrences.length === 0) {
-        return;
+        vscode.window.showErrorMessage("No swarm protocol found");
+        return
       }
+
+      // Text file could have changed since last time meta was written.
+      // Synch metadata to avoid drawing states that have been renamed
+      // and write any metadata stored in actual protocol (optional field) in store.
+      // Then update metadata in occurrence.
+      store.synchronizeStore(activeEditor.document.fileName, occurrences)
+      occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName, { updateMeta: true})
+
+      let variables = protocolReaderWriter.getNames(activeEditor.document.fileName)
 
       // Create the webview panel
       let panel = vscode.window.createWebviewPanel(
@@ -58,19 +70,19 @@ export function activate(context: vscode.ExtensionContext) {
       // Send the occurrences to the webview
       panel.webview.postMessage({
         command: "buildProtocol",
-        data: occurrences,
+        data: { occurrences, variables: Array.from(variables) },
       });
 
       // Get messages from child component
       panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === "changeProtocol") {
           // Only save if protocol is well-formed. Await answer from error check.
-          let wellFormedness = await errorChecks(message.data.protocol);
+          let wellFormedness =  await errorChecks(message.data.swarmProtocol);
           if (wellFormedness.name === "highlightEdges") {
             panel.webview.postMessage({
               command: "highlightEdges",
               data: {
-                protocol: JSON5.stringify(message.data.protocol),
+                protocol: JSON5.stringify(message.data.swarmProtocol),
                 transitions: wellFormedness.transitions,
               },
             });
@@ -78,7 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
             panel.webview.postMessage({
               command: "highlightNodes",
               data: {
-                protocol: JSON5.stringify(message.data.protocol),
+                protocol: JSON5.stringify(message.data.swarmProtocol),
                 nodes: wellFormedness.nodes,
               },
             });
@@ -88,57 +100,26 @@ export function activate(context: vscode.ExtensionContext) {
               activeEditor.document.uri
             );
 
-            // Create list of all SwarmProtocolType occurrences
-            let helperArray;
+            // Replace text in the active editor with the new data and save it.
+            //protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, {name: message.data.name, swarmProtocol: updatedProtocol}, message.data.isStoreInMetaChecked)
+            protocolReaderWriter.writeOccurrence(activeEditor.document.fileName, message.data)
+              // Wait until the editor has been updated
+              .then(() => {
+                // Get the updated occurrences and variables
+                occurrences = protocolReaderWriter.getOccurrences(editor.document.fileName, {reload: true, updateMeta: true} )
+                variables = protocolReaderWriter.getNames(activeEditor.document.fileName, true)
 
-            // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-            // Find all occurrences of the SwarmProtocolType
-            while (
-              (helperArray = typeRegex.exec(editor.document.getText())) !== null
-            ) {
-              // Find the name of the protocol
-              const occurrenceName = helperArray[0].substring(
-                0,
-                helperArray[0].indexOf(":")
-              );
+                // Open the webview again with the new data
+                panel.webview.postMessage({
+                  command: "buildProtocol",
+                  data: {occurrences, variables: Array.from(variables)},
+                });
 
-              // Find the correct occurrence based on the data from the child component
-              if (occurrenceName === message.data.name) {
-                // Replace text in the active editor with the new data
-                editor
-                  .edit((editBuilder) => {
-                    editBuilder.replace(
-                      new vscode.Range(
-                        activeEditor.document.positionAt(typeRegex.lastIndex),
-                        activeEditor.document.positionAt(
-                          getLastIndex(
-                            editor.document.getText(),
-                            typeRegex.lastIndex
-                          )
-                        )
-                      ),
-                      `${message.data.protocol}`
-                    );
-                  })
-                  // Wait until the editor has been updated
-                  .then(() => {
-                    // Get the updated occurrences
-                    occurrences = getAllProtocolOccurrences(
-                      editor.document.getText(),
-                      typeRegex
-                    );
-
-                    // Open the webview again with the new data
-                    panel.webview.postMessage({
-                      command: "buildProtocol",
-                      data: occurrences,
-                    });
-
-                    // Make sure the panel is visible again
-                    panel.reveal();
-                  });
-              }
-            }
+                // Make sure the panel is visible again
+                panel.reveal();
+              }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`));
+            // await??
+            store.setSwarmProtocolMetaData(activeEditor.document.fileName, message.data.name, message.data.swarmProtocol.metadata)
           }
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All transitions must have a label");
@@ -159,30 +140,8 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // Method to check if the protocol is well-formed and show messages to the user
-async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
-  // Parse the protocol
-  let protocolObject = JSON5.parse(protocol);
-
-  // Transform custom type to SwarmProtocolType
-  let swarmProtocol: SwarmProtocolType = {
-    initial: protocolObject.initial,
-    transitions: [],
-  };
-
-  // Add transitions to the swarm protocol
-  for (let transition of protocolObject.transitions) {
-    swarmProtocol.transitions.push({
-      source: transition.source,
-      target: transition.target,
-      label: {
-        cmd: transition.label.cmd,
-        role: transition.label.role,
-        logType: transition.label.logType ?? [],
-      },
-    });
-  }
-
-  if (!hasInitial(protocolObject)) {
+async function errorChecks(swarmProtocol: SwarmProtocol): Promise<WellFormednessCheck> {
+  if (!hasInitial(swarmProtocol)) {
     vscode.window.showErrorMessage("No initial state found");
     return {
       name: "error",
@@ -193,7 +152,7 @@ async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
 
   // Check if the protocol is well-formed
   let swarmCheck: { check: WellFormednessCheck; detail: string } =
-    checkWellFormedness(swarmProtocol, protocolObject);
+    checkWellFormedness(swarmProtocol);
 
   if (swarmCheck.check.name !== "OK") {
     vscode.window.showErrorMessage("NOT WELL-FORMED", {
@@ -204,8 +163,8 @@ async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
   }
 
   // Check for duplicated edges and unconnected nodes
-  let duplicatedEdges = checkDuplicatedEdgeLabels(protocolObject);
-  let unconnectedNodes = checkUnconnectedNodes(protocolObject);
+  let duplicatedEdges = checkDuplicatedEdgeLabels(swarmProtocol);
+  let unconnectedNodes = checkUnconnectedNodes(swarmProtocol);
   let val = {
     name: "OK",
     transitions: [],
@@ -277,98 +236,58 @@ async function errorChecks(protocol: string): Promise<WellFormednessCheck> {
   };
 }
 
-function getAllProtocolOccurrences(text: string, typeRegex: RegExp): any[] {
-  let occurrences = [];
+/* function getProtocolOccurrences(protocolReaderWriter: ProtocolReaderWriter, fileName: string): Occurrence[] {
+  protocolReaderWriter.parseProtocols(fileName)
+  const occurrences = protocolReaderWriter.getOccurrences(fileName)
 
-  // Check if the file contains a swarm protocol
-  if (text.includes("SwarmProtocolType")) {
-    // Create list of all SwarmProtocolType occurrences
-    let helperArray;
-
-    // Inspiration from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-    // Find all occurrences of the SwarmProtocolType
-    while ((helperArray = typeRegex.exec(text)) !== null) {
-      // Find the name of the protocol
-      const occurrenceName = helperArray[0].substring(
-        0,
-        helperArray[0].indexOf(":")
-      );
-
-      let jsonObject = getNestedJSONObject(text, typeRegex.lastIndex);
-
-      if (jsonObject === "") {
-        // End the process if there are errors
-        return;
-      } else {
-        // Put the occurrence in the occurrences array along with the json code.
-        occurrences.push({
-          name: occurrenceName,
-          jsonObject: jsonObject,
-        });
-      }
-    }
-
-    return occurrences;
-  } else {
+  if (occurrences.length === 0) {
     vscode.window.showErrorMessage("No swarm protocol found");
-    return [];
-  }
-}
-
-function getNestedJSONObject(text: string, index: number) {
-  // Get the index of the opening curly brace
-  let openingCurlyBraceIndex = text.indexOf("{", index);
-  let closingCurlyBraceIndex = getLastIndex(text, index);
-
-  // Get the JSON object from the file
-  const jsonObject = text.substring(
-    openingCurlyBraceIndex,
-    closingCurlyBraceIndex
-  );
-
-  try {
-    JSON5.parse(jsonObject);
-  } catch (error) {
-    vscode.window.showErrorMessage(
-      "The JSON object is not valid. Please check the syntax"
-    );
-    return "";
   }
 
-  return jsonObject;
+  return occurrences
+} */
+
+/* function getProtocolOccurrences(fileName: string, store: MetadataStore): OccurrenceAndAST[] {
+  const occurrencesOption = parseProtocols(fileName)
+  if (occurrencesOption.length === 0) {
+    vscode.window.showErrorMessage("No swarm protocol found");
+  }
+
+  if (!occurrencesOption.every(o => isSome(o))) {
+    vscode.window.showErrorMessage("Error parsing swarm protocols");
+    return []
+  }
+  return occurrencesOption
+    .map(someOccurrenceAndAst => getValue(someOccurrenceAndAst))
+    .map(occurrenceAndAst => {
+      return {
+        ...occurrenceAndAst,
+        occurrence: {
+          ...occurrenceAndAst.occurrence,
+          swarmProtocol: {
+            ...occurrenceAndAst.occurrence.swarmProtocol,
+            metadata: store.getSwarmProtocolMetaData(fileName, occurrenceAndAst.occurrence.name)
+          }
+        }
+      }
+    })
 }
 
-function getLastIndex(text: string, index: number): number {
-  // Get the index of the opening curly brace
-  let closingCurlyBraceIndex;
-
-  let counter = 0;
-
-  do {
-    const openIndex = text.indexOf("{", index);
-    const closingIndex = text.indexOf("}", index);
-
-    // Ensure that last curly brace can be found
-    if (closingIndex === -1) {
-      vscode.window.showErrorMessage(
-        "Cannot find the last closing curly brace"
-      );
-      return -1;
-    }
-
-    // Check if the opening curly brace is before the closing curly brace
-    if (openIndex < closingIndex && openIndex !== -1) {
-      index = openIndex + 1;
-      counter++;
-    } else {
-      index = closingIndex + 1;
-      closingCurlyBraceIndex = closingIndex;
-      counter--;
-    }
-  } while (counter !== 0);
-
-  return closingCurlyBraceIndex + 1;
-}
+function updateOccurrenceMeta(fileName: string, store: MetadataStore, occurrencesAndAsts: OccurrenceAndAST[]): OccurrenceAndAST[] {
+  return occurrencesAndAsts
+    .map(occurrenceAndAst => {
+      return {
+        ...occurrenceAndAst,
+        occurrence: {
+          ...occurrenceAndAst.occurrence,
+          swarmProtocol: {
+            ...occurrenceAndAst.occurrence.swarmProtocol,
+            metadata: store.getSwarmProtocolMetaData(fileName, occurrenceAndAst.occurrence.name)
+          }
+        }
+      }
+    })
+} */
 
 function getReactAppHtml(scriptUri: vscode.Uri): string {
   return `

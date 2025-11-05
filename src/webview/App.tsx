@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import Flow from "./Flow";
-import JSON5 from "json5";
 import SelfConnecting from "./custom-elements/SelfConnectingEdge";
 import { MarkerType } from "@xyflow/react";
-import { LayoutType, SwarmProtocol, Transition } from "../types";
+import { LayoutType, MessageEventPayload, Occurrence, SwarmProtocol, Transition } from "../types";
 import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
 import DownloadButton from "./custom-elements/DownloadButton";
 import SubscriptionsDialog from "./modals/SubscriptionsDialog";
+import useStore, { RFState } from "./store";
+import { shallow } from "zustand/shallow";
+
+const selector = (state: RFState) => ({ setVariables: state.setVariables });
 
 // Declare the vscode object to be able to communicate with the extension
 const vscode = acquireVsCodeApi();
@@ -19,24 +22,25 @@ const edgesTypes = {
 
 const App: React.FC = () => {
   // Set the initial state of nodes and edges, to ensure rerendering after values are set
-  const [nodes, setNodes] = useState<any[]>([]);
-  const [edges, setEdges] = useState<any[]>([]);
-  const [occurrences, setOccurrences] = useState<any[]>([]);
+  const [nodes, setNodes] = useState<string[]>([]);
+  const [edges, setEdges] = useState<Transition[]>([]);
+  const [occurrences, setOccurrences] = useState<Map<string, Occurrence>>(new Map());
   const [protocol, setProtocol] = useState<SwarmProtocol>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
+  const { setVariables } = useStore(selector, shallow)
   const subRef = useRef<Record<string, string[]>>({});
   const selectedProtocolRef = React.useRef("");
 
   useEffect(() => {
-    const buildProtocol = (event: MessageEvent) => {
+    const buildProtocol = (event: MessageEvent<MessageEventPayload>) => {
       const message = event.data;
 
       if (message.command === "buildProtocol") {
-        setOccurrences(parseObjects(message.data));
+        setOccurrences(new Map(message.data.occurrences.map(o => [o.name, o])));
 
         // Message data is used to set values, occurrences not updated this rendering
-        let tempProtocol = JSON5.parse(message.data[0].jsonObject);
+        //let tempProtocol = JSON5.parse(message.data[0].jsonObject);
+        let tempProtocol = message.data.occurrences[0].swarmProtocol
 
         // Save protocol to state
         setProtocol(tempProtocol);
@@ -47,13 +51,16 @@ const App: React.FC = () => {
         // Create nodes for the flowchart with the first occurrence
         setNodes(createNodes(tempProtocol));
 
+        // Set variables
+        setVariables(new Set(message.data.variables))
+
         // Set subscriptions
         subRef.current = createSubscriptions(tempProtocol);
 
         // Set the selected protocol to the first occurrence
-        selectedProtocolRef.current = message.data[0].name;
+        selectedProtocolRef.current = message.data.occurrences[0].name;
       } else if (message.command === "highlightEdges") {
-        let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+        let tempProtocol = message.data.protocol;
 
         // Save protocol to state
         setProtocol(tempProtocol);
@@ -67,7 +74,7 @@ const App: React.FC = () => {
         // Set subscriptions
         subRef.current = createSubscriptions(tempProtocol);
       } else if (message.command === "highlightNodes") {
-        let tempProtocol = JSON5.parse(JSON5.parse(message.data.protocol));
+        let tempProtocol = message.data.protocol;
         // Save protocol to state
         setProtocol(tempProtocol);
 
@@ -93,21 +100,22 @@ const App: React.FC = () => {
   // For selection of protocol
   const handleSelect = (e: any) => {
     // Find the occurrence that corresponds to the selected protocol
-    let occurrence = occurrences.find(
+    let occurrence = occurrences.get(e.target.value)
+    /* let occurrence = occurrences.find(
       (occurrence) => occurrence.name === e.target.value
-    );
+    ); */
 
     // Set nodes to correspond to the selected protocol
-    setNodes(createNodes(occurrence.json));
+    setNodes(createNodes(occurrence.swarmProtocol));
 
     // Set edges to correspond to the selected protocol
-    setEdges(createEdges(occurrence.json));
+    setEdges(createEdges(occurrence.swarmProtocol));
 
     // Set the protocol to the selected occurrence
-    setProtocol(occurrence.json);
+    setProtocol(occurrence.swarmProtocol);
 
     // Set subscriptions
-    subRef.current = createSubscriptions(occurrence.json);
+    subRef.current = createSubscriptions(occurrence.swarmProtocol);
 
     // Set the selected protocol to the selected occurrence
     selectedProtocolRef.current = e.target.value;
@@ -121,8 +129,8 @@ const App: React.FC = () => {
     subRef.current = newSubscriptions;
   }
 
-  // Pass data back to extension
-  function handleChangesFromFlow(changedNodes, changedEdges) {
+  // Pass data back to extension. Type annotations.
+  function handleChangesFromFlow(changedNodes, changedEdges, isStoreInMetaChecked, variables) {
     // Transform changes to transitions
     let newTransitions: Transition[] = changedEdges.map((edge) => {
       return {
@@ -130,9 +138,10 @@ const App: React.FC = () => {
         target: edge.target,
         label: {
           cmd: edge.label?.split("@")[0],
-          role: edge.label?.split("@")[1],
+          role: edge.label?.split("@")[1].split("<")[0],
           logType: edge.data.logType ?? [],
         },
+        id: edge.id
       };
     });
 
@@ -157,15 +166,14 @@ const App: React.FC = () => {
         }
       }),
     };
-
+    //selectedProtocolRef
     let initialNode = changedNodes.find((node) => node.data.initial);
 
     // Change swarm protocol to correspond to the changes
     const protocol: SwarmProtocol = {
       initial: initialNode ? initialNode.data.label : "unknown",
-      layout: layout,
-      subscriptions: subRef.current,
       transitions: newTransitions,
+      metadata: {layout: layout, subscriptions: subRef.current}
     };
 
     // Send the changes to the extension
@@ -173,7 +181,9 @@ const App: React.FC = () => {
       command: "changeProtocol",
       data: {
         name: selectedProtocolRef.current,
-        protocol: JSON5.stringify(protocol),
+        swarmProtocol: protocol,
+        isStoreInMetaChecked,
+        variables
       },
     });
   }
@@ -203,9 +213,9 @@ const App: React.FC = () => {
         />
       )}
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
-      {occurrences.length > 1 && (
+      {occurrences.size > 1 && (
         <select className="dropdown" onChange={handleSelect}>
-          {occurrences.map((occurrence) => (
+          {Array.from(occurrences).map(([name, occurrence]) => (
             <option value={occurrence.name} key={occurrence.name}>
               {occurrence.name}
             </option>
@@ -215,7 +225,7 @@ const App: React.FC = () => {
       <Flow
         nodes={nodes}
         edges={edges}
-        hasLayout={protocol?.layout !== undefined}
+        hasLayout={protocol?.metadata?.layout !== undefined}
         edgesTypes={edgesTypes}
         sendDataToParent={handleChangesFromFlow}
         sendErrorToParent={(error) => vscode.postMessage(error)}
@@ -224,20 +234,6 @@ const App: React.FC = () => {
     </>
   );
 };
-
-function parseObjects(occurrences: any[]): any[] {
-  let occurrences2 = [];
-
-  // Parse the jsonObject to JSON5
-  occurrences.forEach((occurrence) => {
-    occurrences2.push({
-      name: occurrence.name,
-      json: JSON5.parse(occurrence.jsonObject),
-    });
-  });
-
-  return occurrences2;
-}
 
 function createSubscriptions(protocol): Record<string, string[]> {
   let subscriptions = protocol.subscriptions ?? {};
@@ -261,18 +257,19 @@ function createEdges(
       highlighted.length > 0
         ? highlighted?.find((elem) => {
             return (
-              elem.source === transition.source &&
-              elem.target === transition.target
+              elem.id == transition.id
+              //elem.source === transition.source &&
+              //elem.target === transition.target
             );
           })
         : undefined;
 
     if (transition.source === transition.target) {
       return {
-        id: `${transition.source}-${transition.target}`,
+        id: transition.id,
         source: transition.source,
         target: transition.target,
-        label: transition.label.cmd + "@" + transition.label.role,
+        label: `${transition.label.cmd}@${transition.label.role}<${transition.label.logType.join(", ")}>`,
         data: {
           positionHandlers: [],
           logType: transition.label.logType,
@@ -288,14 +285,14 @@ function createEdges(
         },
       };
     } else {
-      const edgeLayout = protocol.layout?.edges?.find(
-        (edge) => edge.id === `${transition.source}-${transition.target}`
+      const edgeLayout = protocol.metadata?.layout?.edges?.find(
+        (edge) => edge.id === transition.id
       );
       return {
-        id: `${transition.source}-${transition.target}`,
+        id: transition.id,
         source: transition.source,
         target: transition.target,
-        label: transition.label.cmd + "@" + transition.label.role,
+        label: `${transition.label.cmd}@${transition.label.role}<${transition.label.logType.join(", ")}>`,
         data: {
           positionHandlers: edgeLayout?.positionHandlers ?? [],
           logType: transition.label.logType,
@@ -333,15 +330,19 @@ function createNodes(
     }
   });
 
-  protocol.layout?.nodes?.forEach((element) => {
+  // Outcommented this section. We should only draw the nodes
+  // that actually appear in protocol? metadata could contain nodes
+  // that have been renamed or for other reasons do not exist in protocol?
+  // even though protocol synchronized.
+  /* protocol.metadata?.layout?.nodes?.forEach((element) => {
     if (!nodeNames.has(element.name)) {
       nodeNames.add(element.name);
     }
-  });
+  }); */
 
   // Create nodes that correspond to ReactFlow
   const nodes = Array.from(nodeNames).map((nodeName) => {
-    let nodeLayout = protocol.layout?.nodes?.find(
+    let nodeLayout = protocol.metadata?.layout?.nodes?.find(
       (node) => node.name === nodeName
     );
     return {

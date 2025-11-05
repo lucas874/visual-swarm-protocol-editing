@@ -1,21 +1,23 @@
 import React from "react";
 import useStore, { RFState } from "../store";
 import { shallow } from "zustand/shallow";
-import { send } from "process";
 
 const selector = (state: RFState) => ({
   updateNodeLabel: state.updateNodeLabel,
   updateInitialNode: state.updateInitialNode,
   setIsNodeDialogOpen: state.setIsNodeDialogOpen,
+  addVariable: state.addVariable,
+  hasVariable: state.hasVariable
 });
 
 function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
-  const { updateNodeLabel, updateInitialNode, setIsNodeDialogOpen } = useStore(
+  const { updateNodeLabel, updateInitialNode, setIsNodeDialogOpen, addVariable, hasVariable } = useStore(
     selector,
     shallow
   );
 
   let isInitial = selectedNodeRef.data.initial;
+  let isNodeNameStringLiteral = !hasVariable(nodeLabelRef)
 
   return (
     <div className="overlay" onClick={(event) => setIsNodeDialogOpen(false)}>
@@ -49,6 +51,19 @@ function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
             onChange={(e) => (isInitial = e.target.checked)}
           />
         </div>
+        <div className="row">
+          <label htmlFor="initial" className="label">
+            String literal node name
+          </label>
+          <input
+            className="float-right"
+            type="checkbox"
+            id="isNodeNameStringLiteral"
+            name="isNodeNameStringLiteral"
+            defaultChecked={isNodeNameStringLiteral}
+            onChange={(event) => (isNodeNameStringLiteral = (event.target as HTMLInputElement).checked)}
+          />
+        </div>
         <div className="row float-right">
           <button
             className="button-cancel float-right"
@@ -70,6 +85,9 @@ function NodeLabelDialog({ nodeLabelRef, selectedNodeRef, sendErrorToParent }) {
                   updateInitialNode(nodeLabelRef);
                 } else {
                   selectedNodeRef.data.initial = false;
+                }
+                if (!isNodeNameStringLiteral) {
+                  addVariable(nodeLabelRef)
                 }
               }
             }}
