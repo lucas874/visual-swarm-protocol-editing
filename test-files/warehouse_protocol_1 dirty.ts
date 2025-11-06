@@ -1,3 +1,15 @@
+const closed = "closed";
+const got = "got";
+const requested = "requested";
+const D = "D";
+const clozzzz = "clozzzz";
+const request = "request";
+const FL = "FL";
+const get = "get";
+const T = "T";
+const deliver = "deliver";
+const time = "time";
+
 import { SwarmProtocolType } from "@actyx/machine-check";
 import { Events, initialState } from "./warehouse_protocol_util";
 import { MachineEvent } from "@actyx/machine-runner";
@@ -8,28 +20,28 @@ export const part = MachineEvent.design('part').withPayload<PartPayload>()
 export const warehouse = {
   initial: initialState,
   transitions: [
-    { source: initialState, target: 1, label: { cmd: request, role: T, logType: [Events.partID.type] } },
-    { source: 1, target: 2, label: { cmd: get, role: FL, logType: [Events.pos.type] } },
-    { source: 2, target: initialState, label: { cmd: deliver, role: T, logType: [part.type] } },
-    { source: initialState, target: 3, label: { cmd: clozzzz, role: D, logType: [time] } },
+    { source: initialState, target: requested, label: { cmd: request, role: T, logType: [Events.partID.type] } },
+    { source: requested, target: got, label: { cmd: get, role: FL, logType: [Events.pos.type] } },
+    { source: got, target: initialState, label: { cmd: deliver, role: T, logType: [part.type] } },
+    { source: initialState, target: closed, label: { cmd: clozzzz, role: D, logType: [time] } },
   ],
   metadata: {
-          layout:
+          layout: 
           {
               nodes: [
-              { name: initialState, x: -148.87594452313766, y: -289.65949569098757 },
-              { name: 1, x: -28.163539850088526, y: -130.16858022227973 },
-              { name: 2, x: -11.619853708974503, y: 35.196583261827584 },
-              { name: 3, x: -289.3198001343866, y: -69.69588296717959 }
+              { name: initialState, x: 275, y: 18.5 }, 
+              { name: requested, x: 75, y: 105.5 }, 
+              { name: got, x: 226, y: 241.5 }, 
+              { name: closed, x: 453.5, y: 130.5 }
               ],
               edges: [
               ]
           },
-          subscriptions:
+          subscriptions: 
           {
-              T: [],
-              FL: [],
-              D: []
+              T: [Events.partID.type, Events.pos.type, part.type, time], 
+              FL: [Events.partID.type, Events.pos.type, time], 
+              D: [Events.partID.type, part.type, time]
           }
       }
 }

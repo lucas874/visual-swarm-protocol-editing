@@ -1,4 +1,4 @@
-import { checkSwarmProtocol, SwarmProtocolType } from "@actyx/machine-check";
+import { checkComposedSwarmProtocol } from "@actyx/machine-check";
 import { SwarmProtocol, Transition } from "./types";
 
 export interface WellFormednessCheck {
@@ -34,10 +34,10 @@ export function checkWellFormedness(
         label: { cmd: transition.label.cmd, logType: transition.label.logType ?? [], role: transition.label.role }
       }
     } 
-    const message = checkSwarmProtocol(
-      { 
+    const message = checkComposedSwarmProtocol(
+      [{ 
         initial: swarmProtocol.initial, 
-        transitions: swarmProtocol.transitions.map(transitionMapper) }, 
+        transitions: swarmProtocol.transitions.map(transitionMapper) }], 
       swarmProtocol.metadata.subscriptions);
 
     let errorMessage: WellFormednessCheck = {

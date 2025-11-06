@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import JSON5 from "json5";
 import path from "path";
-import { SwarmProtocolType } from "@actyx/machine-check";
 import {
   checkUnconnectedNodes,
   checkDuplicatedEdgeLabels,
@@ -9,8 +8,8 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
-import { getValue, isSome, ProtocolReaderWriter } from "./protocol-reader-writer";
-import { Occurrence, OccurrenceInfo, SwarmProtocol } from "./types";
+import { ProtocolReaderWriter } from "./protocol-reader-writer";
+import { SwarmProtocol } from "./types";
 import { MetadataStore } from "./handle-metadata";
 
 export function activate(context: vscode.ExtensionContext) {
