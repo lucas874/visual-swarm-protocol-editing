@@ -7,7 +7,8 @@
     "sourceMap": true,
     "lib": ["es6", "dom"],
     "rootDir": "src",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/webview/collide.js", "src/webview/initial.js"], // Include .tsx files
   "exclude": ["node_modules"]
