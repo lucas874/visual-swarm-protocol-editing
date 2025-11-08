@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [protocol, setProtocol] = useState<SwarmProtocol>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isNewProtocolDialogOpen, setIsNewProtocolDialogOpen] = useState(false);
+
   const { setVariables } = useStore(selector, shallow)
   const subRef = useRef<Record<string, string[]>>({});
   const selectedProtocolRef = React.useRef("");
@@ -190,6 +191,16 @@ const App: React.FC = () => {
     });
   }
 
+  function sendNewProtocolToExtension(protocolName: string) {
+    // Send the changes to the extension
+    vscode.postMessage({
+      command: "newProtocol",
+      data: {
+        protocolName,
+      },
+    });
+  }
+
   function updateSubscriptions(subs: Record<string, string[]>) {
     subRef.current = subs;
   }
@@ -228,8 +239,7 @@ const App: React.FC = () => {
       {isNewProtocolDialogOpen && (
         <NewProtocolDialog
           setIsNewProtocolDialogOpen={setIsNewProtocolDialogOpen}
-          setOccurrences={setOccurrences}
-          occurences={occurrences}
+          sendNewProtocolToExtension={sendNewProtocolToExtension}
         />
       )}
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}

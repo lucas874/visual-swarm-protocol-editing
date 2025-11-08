@@ -1,5 +1,5 @@
 import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter, VariableDeclarationKind, ImportSpecifier, ImportDeclaration } from "ts-morph";
-import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST, TransitionLabel } from "./types";
+import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NewProtocolData, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST, TransitionLabel } from "./types";
 import isIdentifier from 'is-identifier';
 import { MetadataStore } from "./handle-metadata";
 
@@ -115,6 +115,25 @@ export class ProtocolReaderWriter {
 
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
         }
+    }
+
+    // if storeMetaInProtocol store meta from updated occurence in store and in ast that is written back.
+    async writeNewOccurrence(filename: string, newProtocolData: NewProtocolData): Promise<void> {
+        // filename: string, updatedOccurrence: Occurrence, storeMetaInProtocol: boolean
+        const sourceFile = this.files.get(filename)?.project.getSourceFile(filename)
+
+        if (!sourceFile || !isIdentifier(newProtocolData.protocolName)) { return }
+
+        sourceFile.addVariableStatement({
+            declarationKind: VariableDeclarationKind.Const,
+            declarations: [
+                {
+                    name: newProtocolData.protocolName,
+                    initializer: `{ initial: "initalState", transitions: [{ source: "initialState", target: "initialState", label: { cmd: "dummyCommand", role: "dummyRole", logType: ["dummyEventType"] }}] }`
+                }
+            ]
+        })
+        await sourceFile.save()
     }
 
     private parseProtocols(fileName: string, addMetaFromStore: boolean): void {

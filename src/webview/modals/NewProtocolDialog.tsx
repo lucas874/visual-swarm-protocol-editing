@@ -1,15 +1,15 @@
 import React, { Dispatch, SetStateAction } from "react";
 import { Occurrence, SwarmProtocol } from "../../types";
+import isIdentifier from "is-identifier";
 
 // https://stackoverflow.com/questions/64729482/typescript-usestate-setstate-in-child-with-argument
 export interface CreateNewProtocolProps {
   setIsNewProtocolDialogOpen: (value: boolean) => void;
-  setOccurrences: (occurences: Map<string, Occurrence>) => void;
-  occurences: Map<string, Occurrence>;
+  sendNewProtocolToExtension: (protocolName: string) => void;
 }
 
 function NewProtocolDialog(props: CreateNewProtocolProps) {
-  const { setIsNewProtocolDialogOpen, setOccurrences, occurences } = props;
+  const { setIsNewProtocolDialogOpen, sendNewProtocolToExtension } = props;
   let newProtocolName = ""
 
   return (
@@ -38,9 +38,10 @@ function NewProtocolDialog(props: CreateNewProtocolProps) {
             className="button-dialog float-right"
             type="button"
             onClick={(e) => {
-              const newOccurrence = { name: newProtocolName, swarmProtocol: { initial: "initialState", transitions: [] } }
-              occurences.set(newProtocolName, newOccurrence)
-              setOccurrences(occurences);
+              // TODO: show error message if invalid protocol name
+              if (isIdentifier(newProtocolName)) {
+                sendNewProtocolToExtension(newProtocolName)
+              }
               setIsNewProtocolDialogOpen(false);
             }}
           >
