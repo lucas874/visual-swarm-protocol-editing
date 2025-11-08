@@ -30,10 +30,10 @@ export function activate(context: vscode.ExtensionContext) {
       const protocolReaderWriter = new ProtocolReaderWriter(store, activeEditor.document.fileName)
       let occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName)
 
-      if (occurrences.length === 0) {
+      /* if (occurrences.length === 0) {
         vscode.window.showErrorMessage("No swarm protocol found");
         return
-      }
+      } */
 
       // Text file could have changed since last time meta was written.
       // Synch metadata to avoid drawing states that have been renamed
