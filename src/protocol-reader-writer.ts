@@ -2,6 +2,8 @@ import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression
 import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NewProtocolData, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST, TransitionLabel } from "./types";
 import isIdentifier from 'is-identifier';
 import { MetadataStore } from "./handle-metadata";
+import { writer } from "repl";
+import { write } from "fs";
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
 export type Some<T> = { tag: "Some", value: T }
@@ -97,17 +99,23 @@ export class ProtocolReaderWriter {
             const newTransitionsMap = transitionsToMap(changeProtocolData.swarmProtocol.transitions)
             const astMap = transitionsToMap(swarmProtocolAst.transitions)
 
-            // Todo: functionality to add new stuff. What happens if we create an edge in the visual tool? What should be the id of this?
-            // And how should we iterate here?
-            // Consider just 'resetting' whole variable declaration? Set it to updated occurence?
+
+            // Consider just 'resetting' whole variable declaration? Set it to updated occurence? No because variables and literals
             const names = new Set(Array.from(this.getNames(filename)).concat(changeProtocolData.variables))
+            /* for (const id of astMap.keys()) {
+                if (!newTransitionsMap.has(id)) {
+                    removeTransitionFromDeclaration(astMap.get(id) as TransitionAST)
+                }
+            }
             for (const id of newTransitionsMap.keys()) {
                 if (astMap.has(id)) {
                     updateTransitionAst(newTransitionsMap.get(id) as Transition, astMap.get(id) as TransitionAST, names)
                 } else {
                     addTransitionToDeclaration(swarmProtocolAst.variableDeclaration, newTransitionsMap.get(id) as Transition, names)
                 }
-            }
+            } */
+            writeSwarmProtocol(swarmProtocolAst.variableDeclaration, changeProtocolData.swarmProtocol, names)
+
             if (changeProtocolData.isStoreInMetaChecked) {
                 updateMetaDataAst(swarmProtocolAst, changeProtocolData.swarmProtocol.metadata, names)
             }
@@ -542,6 +550,27 @@ function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, tr
             throw Error(`Could not add transition to ${variableDeclaration.getName()}: ${e}`)
         }
     }
+}
+
+function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProtocol: SwarmProtocol, names: Set<string>) {
+    variableDeclaration.setInitializer(writer => {
+        //writer.writeLine(`{`)
+        //writer.setIndentationLevel(writer.getIndentationLevel() + 1)
+        writer.inlineBlock(() => {
+            writer.writeLine(`initial: ${initializerValue(names, swarmProtocol.initial)},`)
+            writer.writeLine(`transitions: [`)
+            writer.setIndentationLevel(writer.getIndentationLevel() + 1)
+            //for (const transition of swarmProtocol.transitions) {
+            swarmProtocol.transitions.forEach((transition, index) => {
+                const labelString = `{ cmd: ${initializerValue(names, transition.label.cmd)}, role: ${initializerValue(names, transition.label.role)}, logType: [${transition.label.logType?.map(s => initializerValue(names, s)).join(", ") ?? ""}]}`
+                writer.writeLine(`{ source: ${initializerValue(names, transition.source)}, target: ${initializerValue(names, transition.target)}, label: ${labelString} }${index != swarmProtocol.transitions.length-1 ? "," : ""}`)
+            })
+            writer.setIndentationLevel(writer.getIndentationLevel() - 1)
+            writer.write(`]`)
+        })
+        //writer.setIndentationLevel(writer.getIndentationLevel() - 1)
+        //writer.writeLine(`}`)
+    })
 }
 
 function updateMetaDataAst(swarmProtocolAst: SwarmProtocolAST, metadata: SwarmProtocolMetadata | undefined, names: Set<string>) {
