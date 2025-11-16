@@ -91,22 +91,11 @@ export class ProtocolReaderWriter {
             if (oldSwarmProtocol.initial !== changeProtocolData.swarmProtocol.initial) {
                 swarmProtocolAst.initial.setInitializer(`${changeProtocolData.swarmProtocol.initial}`)
             }
-            const transitionsToMap = (transitions: {id: string, [key: string]: any}[]) => {
-                return new Map(transitions
-                    .map(t => [t.id, t]))
-            }
-
-            const newTransitionsMap = transitionsToMap(changeProtocolData.swarmProtocol.transitions)
-            const astMap = transitionsToMap(swarmProtocolAst.transitions)
-
-
+            
             // Consider just 'resetting' whole variable declaration? Set it to updated occurence? No because variables and literals
             const names = new Set(Array.from(this.getNames(filename)).concat(changeProtocolData.variables))
             writeSwarmProtocol(swarmProtocolAst.variableDeclaration, changeProtocolData.swarmProtocol, names, changeProtocolData.isStoreInMetaChecked)
 
-            if (changeProtocolData.isStoreInMetaChecked) {
-                updateMetaDataAst(swarmProtocolAst, changeProtocolData.swarmProtocol.metadata, names)
-            }
             this.addVariableDeclarations(filename, changeProtocolData.name, changeProtocolData.variables)
 
             await projectOccurrences.project.getSourceFileOrThrow(filename).save()
@@ -541,6 +530,60 @@ function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, tr
 }
 
 function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProtocol: SwarmProtocol, names: Set<string>, isStoreInMetaChecked: boolean) {
+    const nodeLayoutString = (nodeLayout: NodeLayout): string => {
+        const x = nodeLayout.x ? `, x: ${nodeLayout.x}` : ""
+        const y = nodeLayout.y ? `, y: ${nodeLayout.y}` : ""
+        return `{ name: ${initializerValue(names, nodeLayout.name)}${x}${y} }`
+    }
+
+    const positionHandlerString = (positionHandler: PositionHandler): string => {
+        return `{ x: ${positionHandler.x}, y: ${positionHandler.y}, active: ${positionHandler.active}, isLabel: ${positionHandler.isLabel} }`
+    }
+
+    const edgeLayoutString = (edgeLayout: EdgeLayout): string => {
+        return `{ id: ${edgeLayout.id}, positionHandlers: [ ${edgeLayout.positionHandlers.map(positionHandlerString).join(", ")} ]}`
+    }
+
+    const writeArrayProperty = <ElementType>(
+        writer: CodeBlockWriter,
+        propertyName: string,
+        theArray: ElementType[],
+        elementWriter: (element: ElementType) => string,
+        terminator=""
+    ): CodeBlockWriter => {
+        writer.writeLine(`${propertyName}: [`)
+        theArray.forEach((element, i) => {
+            writer.writeLine(`${elementWriter(element)}${i != theArray.length-1 ? ", " : ""}`)
+        })
+        writer.writeLine(`]${terminator}`)
+        return writer
+    }
+
+    const writeLayout = (writer: CodeBlockWriter, layout: LayoutType): CodeBlockWriter => {
+        writer.writeLine("layout: ").inlineBlock(() => {
+            if (layout.nodes) {
+                writeArrayProperty(writer, "nodes", layout.nodes, nodeLayoutString, ",")
+            }
+            if (layout.edges) {
+            writeArrayProperty(writer, "edges", layout.edges, edgeLayoutString, "")
+            }
+        }).write(",")
+        return writer
+
+    }
+
+    const writeSubscriptions = (writer: CodeBlockWriter, subscription: Record<string, string[]>): CodeBlockWriter => {
+        const subscriptionLines = Array.from(Object.entries(subscription))
+            .map(([role, eventTypes]) => `${role}: [${eventTypes.join(", ")}]`)
+            .join(", \n")
+
+        writer.writeLine("subscriptions: ").inlineBlock(() => {
+            writer.writeLine(subscriptionLines)
+        })
+        return writer
+
+    }
+    
     variableDeclaration.setInitializer(writer => {
         //writer.writeLine(`{`)
         //writer.setIndentationLevel(writer.getIndentationLevel() + 1)
@@ -559,7 +602,8 @@ function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProto
             if (isStoreInMetaChecked) {
                 writer.writeLine(`metadata: `)
                 writer.inlineBlock(() => {
-
+                    writeLayout(writer, swarmProtocol.metadata.layout)
+                    writeSubscriptions(writer, swarmProtocol.metadata.subscriptions)
                 })
             }
         })
