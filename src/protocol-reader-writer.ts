@@ -2,8 +2,6 @@ import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression
 import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NewProtocolData, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST, TransitionLabel } from "./types";
 import isIdentifier from 'is-identifier';
 import { MetadataStore } from "./handle-metadata";
-import { writer } from "repl";
-import { write } from "fs";
 
 // https://dev.to/martinpersson/a-guide-to-using-the-option-type-in-typescript-ki2
 export type Some<T> = { tag: "Some", value: T }
@@ -492,41 +490,12 @@ const initializerValue = (names: Set<string>, value: string): string =>
         ? value
         : `"${value}"`
 
-function updateTransitionAst(transition: Transition, transitionAst: TransitionAST, names: Set<string>): void {
-    transitionAst.source.setInitializer(initializerValue(names, transition.source))
-    transitionAst.target.setInitializer(initializerValue(names, transition.target))
-    transitionAst.label.cmd.setInitializer(initializerValue(names, transition.label.cmd))
-    transitionAst.label.role.setInitializer(initializerValue(names, transition.label.role))
-    transitionAst.label.logType.setInitializer(`[${transition.label.logType?.map(eventType => initializerValue(names, eventType)).join(", ") ?? "" }]`)
-}
-
 // Nice for debugging
 function basicVisit(node: Node, prepend: string = '') {
     console.log(`${prepend}Node: ${node.getText()} of kind ${SyntaxKind[node.getKind()]}`);
     node.forEachChild(child => {
         basicVisit(child, prepend + '  * ');
     });
-}
-
-// Manipulate initializer of SwarmProtocol: add a transition. Assume that variable declaration declares a proper swarm protocol
-// Do something else than replace spaces .... option to add variable declaration or insert as string literal maybe...
-function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, transition: Transition, names: Set<string>) {
-    const initializer = variableDeclaration.getInitializer()
-    const replaceSpaces = (str: string): string => str.split(" ").join("")
-    if (initializer.getKind() === SyntaxKind.ObjectLiteralExpression) {
-        try {
-        const elements = ((initializer as ObjectLiteralExpression).getProperty(TRANSITIONS_FIELD) as PropertyAssignment).getInitializer() as ArrayLiteralExpression//.addPropertyAssignment(JSON.stringify(transition, null, 2))
-        const labelString = `{ cmd: ${initializerValue(names, transition.label.cmd)}, role: ${initializerValue(names, transition.label.role)}, logType: [${transition.label.logType?.map(s => initializerValue(names, s)).join(", ") ?? ""}]}`
-        elements.addElement(writer => {
-            writer
-                .write("{")
-                .write(`source: ${initializerValue(names, transition.source)}, target: ${initializerValue(names, transition.target)}, label: ${labelString}`)
-                .write("}")
-        })
-    } catch (e) {
-            throw Error(`Could not add transition to ${variableDeclaration.getName()}: ${e}`)
-        }
-    }
 }
 
 function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProtocol: SwarmProtocol, names: Set<string>, isStoreInMetaChecked: boolean) {
@@ -612,93 +581,6 @@ function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProto
         //writer.setIndentationLevel(writer.getIndentationLevel() - 1)
         //writer.writeLine(`}`)
     })
-}
-
-function updateMetaDataAst(swarmProtocolAst: SwarmProtocolAST, metadata: SwarmProtocolMetadata | undefined, names: Set<string>) {
-    if (!metadata) {
-        return
-    }
-
-    if (swarmProtocolAst.properties.has(METADATA_FIELD)) {
-        updateMetadataInitializer(swarmProtocolAst.properties.get(METADATA_FIELD)!, metadata, names)
-    } else {
-        const initializer = swarmProtocolAst.variableDeclaration.getInitializer()
-        if (initializer.getKind() === SyntaxKind.ObjectLiteralExpression) {
-            (initializer as ObjectLiteralExpression).addPropertyAssignment({ name: METADATA_FIELD, initializer: metadataWriterFunction(metadata, names) })
-        }
-    }
-
-}
-
-function updateMetadataInitializer(propertyAssignment: PropertyAssignment, metadata: SwarmProtocolMetadata, names: Set<string>) {
-    propertyAssignment.setInitializer(metadataWriterFunction(metadata, names))
-}
-
-// Function that returns a WriterFunction to use for writing initializer of metadata field.
-// export type WriterFunction = (writer: CodeBlockWriter) => void;
-function metadataWriterFunction(metadata: SwarmProtocolMetadata, names: Set<string>): WriterFunction {
-
-    const nodeLayoutString = (nodeLayout: NodeLayout): string => {
-        const x = nodeLayout.x ? `, x: ${nodeLayout.x}` : ""
-        const y = nodeLayout.y ? `, y: ${nodeLayout.y}` : ""
-        return `{ name: ${initializerValue(names, nodeLayout.name)}${x}${y} }`
-    }
-
-    const positionHandlerString = (positionHandler: PositionHandler): string => {
-        return `{ x: ${positionHandler.x}, y: ${positionHandler.y}, active: ${positionHandler.active}, isLabel: ${positionHandler.isLabel} }`
-    }
-
-    const edgeLayoutString = (edgeLayout: EdgeLayout): string => {
-        return `{ id: ${edgeLayout.id}, positionHandlers: [ ${edgeLayout.positionHandlers.map(positionHandlerString).join(", ")} ]}`
-    }
-
-    const writeArrayProperty = <ElementType>(
-        writer: CodeBlockWriter,
-        propertyName: string,
-        theArray: ElementType[],
-        elementWriter: (element: ElementType) => string,
-        terminator=""
-    ): CodeBlockWriter => {
-        writer.writeLine(`${propertyName}: [`)
-        theArray.forEach((element, i) => {
-            writer.writeLine(`${elementWriter(element)}${i != theArray.length-1 ? ", " : ""}`)
-        })
-        writer.writeLine(`]${terminator}`)
-        return writer
-    }
-
-    const writeLayout = (writer: CodeBlockWriter, layout: LayoutType): CodeBlockWriter => {
-        writer.writeLine("layout: ").inlineBlock(() => {
-            if (layout.nodes) {
-                writeArrayProperty(writer, "nodes", layout.nodes, nodeLayoutString, ",")
-            }
-            if (layout.edges) {
-            writeArrayProperty(writer, "edges", layout.edges, edgeLayoutString, "")
-            }
-        }).write(",")
-        return writer
-
-    }
-
-    const writeSubscriptions = (writer: CodeBlockWriter, subscription: Record<string, string[]>): CodeBlockWriter => {
-        const subscriptionLines = Array.from(Object.entries(subscription))
-            .map(([role, eventTypes]) => `${role}: [${eventTypes.join(", ")}]`)
-            .join(", \n")
-
-        writer.writeLine("subscriptions: ").inlineBlock(() => {
-            writer.writeLine(subscriptionLines)
-        })
-        return writer
-
-    }
-    const writerFunction = (writer: CodeBlockWriter) => {
-        writer.inlineBlock(() => {
-            writeLayout(writer, metadata.layout)
-            writeSubscriptions(writer, metadata.subscriptions)
-        })
-    }
-
-    return writerFunction
 }
 
 function addStringVariableDeclaration(sourceFile: SourceFile, swarmProtoUsingName: SwarmProtocolAST, name: string): Option<VariableDeclaration> {
