@@ -102,19 +102,7 @@ export class ProtocolReaderWriter {
 
             // Consider just 'resetting' whole variable declaration? Set it to updated occurence? No because variables and literals
             const names = new Set(Array.from(this.getNames(filename)).concat(changeProtocolData.variables))
-            /* for (const id of astMap.keys()) {
-                if (!newTransitionsMap.has(id)) {
-                    removeTransitionFromDeclaration(astMap.get(id) as TransitionAST)
-                }
-            }
-            for (const id of newTransitionsMap.keys()) {
-                if (astMap.has(id)) {
-                    updateTransitionAst(newTransitionsMap.get(id) as Transition, astMap.get(id) as TransitionAST, names)
-                } else {
-                    addTransitionToDeclaration(swarmProtocolAst.variableDeclaration, newTransitionsMap.get(id) as Transition, names)
-                }
-            } */
-            writeSwarmProtocol(swarmProtocolAst.variableDeclaration, changeProtocolData.swarmProtocol, names)
+            writeSwarmProtocol(swarmProtocolAst.variableDeclaration, changeProtocolData.swarmProtocol, names, changeProtocolData.isStoreInMetaChecked)
 
             if (changeProtocolData.isStoreInMetaChecked) {
                 updateMetaDataAst(swarmProtocolAst, changeProtocolData.swarmProtocol.metadata, names)
@@ -552,7 +540,7 @@ function addTransitionToDeclaration(variableDeclaration: VariableDeclaration, tr
     }
 }
 
-function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProtocol: SwarmProtocol, names: Set<string>) {
+function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProtocol: SwarmProtocol, names: Set<string>, isStoreInMetaChecked: boolean) {
     variableDeclaration.setInitializer(writer => {
         //writer.writeLine(`{`)
         //writer.setIndentationLevel(writer.getIndentationLevel() + 1)
@@ -567,7 +555,16 @@ function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProto
             })
             writer.setIndentationLevel(writer.getIndentationLevel() - 1)
             writer.write(`]`)
+
+            if (isStoreInMetaChecked) {
+                writer.writeLine(`metadata: `)
+                writer.inlineBlock(() => {
+
+                })
+            }
         })
+
+
         //writer.setIndentationLevel(writer.getIndentationLevel() - 1)
         //writer.writeLine(`}`)
     })
