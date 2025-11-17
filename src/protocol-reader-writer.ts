@@ -1,4 +1,4 @@
-import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ts, ArrayLiteralExpression, NumericLiteral, WriterFunction, CodeBlockWriter, VariableDeclarationKind, ImportSpecifier, ImportDeclaration } from "ts-morph";
+import { Project, Node, SyntaxKind, VariableDeclaration, ObjectLiteralExpression, PropertyAssignment, SourceFile, StringLiteral, ArrayLiteralExpression, NumericLiteral, CodeBlockWriter, VariableDeclarationKind, ImportDeclaration } from "ts-morph";
 import { ChangeProtocolData, EdgeLayout, EdgeLayoutAST, isSwarmProtocol, LabelAST, LayoutType, LayoutTypeAST, NewProtocolData, NodeLayout, NodeLayoutAST, Occurrence, OccurrenceInfo, PositionHandler, PositionHandlerAST, SubscriptionAST, SwarmProtocol, SwarmProtocolAST, SwarmProtocolMetadata, SwarmProtocolMetadataAST, Transition, TransitionAST, TransitionLabel } from "./types";
 import isIdentifier from 'is-identifier';
 import { MetadataStore } from "./handle-metadata";
@@ -89,7 +89,7 @@ export class ProtocolReaderWriter {
             if (oldSwarmProtocol.initial !== changeProtocolData.swarmProtocol.initial) {
                 swarmProtocolAst.initial.setInitializer(`${changeProtocolData.swarmProtocol.initial}`)
             }
-            
+
             // Consider just 'resetting' whole variable declaration? Set it to updated occurence? No because variables and literals
             const names = new Set(Array.from(this.getNames(filename)).concat(changeProtocolData.variables))
             writeSwarmProtocol(swarmProtocolAst.variableDeclaration, changeProtocolData.swarmProtocol, names, changeProtocolData.isStoreInMetaChecked)
@@ -552,15 +552,12 @@ function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProto
         return writer
 
     }
-    
+
     variableDeclaration.setInitializer(writer => {
-        //writer.writeLine(`{`)
-        //writer.setIndentationLevel(writer.getIndentationLevel() + 1)
         writer.inlineBlock(() => {
             writer.writeLine(`initial: ${initializerValue(names, swarmProtocol.initial)},`)
             writer.writeLine(`transitions: [`)
             writer.setIndentationLevel(writer.getIndentationLevel() + 1)
-            //for (const transition of swarmProtocol.transitions) {
             swarmProtocol.transitions.forEach((transition, index) => {
                 const labelString = `{ cmd: ${initializerValue(names, transition.label.cmd)}, role: ${initializerValue(names, transition.label.role)}, logType: [${transition.label.logType?.map(s => initializerValue(names, s)).join(", ") ?? ""}]}`
                 writer.writeLine(`{ source: ${initializerValue(names, transition.source)}, target: ${initializerValue(names, transition.target)}, label: ${labelString} }${index != swarmProtocol.transitions.length-1 ? "," : ""}`)
@@ -569,6 +566,7 @@ function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProto
             writer.write(`]`)
 
             if (isStoreInMetaChecked) {
+                writer.write(",")
                 writer.writeLine(`metadata: `)
                 writer.inlineBlock(() => {
                     writeLayout(writer, swarmProtocol.metadata.layout)
@@ -576,10 +574,6 @@ function writeSwarmProtocol(variableDeclaration: VariableDeclaration, swarmProto
                 })
             }
         })
-
-
-        //writer.setIndentationLevel(writer.getIndentationLevel() - 1)
-        //writer.writeLine(`}`)
     })
 }
 

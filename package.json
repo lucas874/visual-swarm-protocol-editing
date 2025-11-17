@@ -4,7 +4,7 @@
   "description": "Visualise, edit and verify swarm protocols.",
   "publisher": "dtu-sse",
   "repository": "https://github.com/lucas874/visual-swarm-protocol-editing",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "engines": {
     "vscode": "^1.93.0"
   },
