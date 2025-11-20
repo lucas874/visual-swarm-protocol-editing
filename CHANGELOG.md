@@ -1,6 +1,9 @@
 # Change Log
 
-This version is only meant for testing
+## [0.3.2] - 20.11.2025
+
+- Changed how protocols are parsed before being visualised. Fields of protocol definitions may consist of expressions such as identifiers and function calls --- not only string literals.
+- Changed well-formedness check to use a revised definition of well-formedness.
 
 ## [0.3.1] - 01.01.2025
 
