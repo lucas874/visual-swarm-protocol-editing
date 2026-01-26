@@ -4,7 +4,7 @@
   "description": "Visualise, edit and verify swarm protocols.",
   "publisher": "dtu-sse",
   "repository": "https://github.com/lucas874/visual-swarm-protocol-editing",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -15,7 +15,8 @@
     "build": "npm run build:ts && npm run build:react",
     "watch:ts": "tsc --watch",
     "watch:react": "webpack --watch --config ./src/webview/webpack.config.js",
-    "watch": "npm run watch:ts & npm run watch:react"
+    "watch": "npm run watch:ts & npm run watch:react",
+    "vscode:prepublish": "npm install && tsc && npm prune --production"
   },
   "devDependencies": {
     "@actyx/machine-runner": "^0.5.7",
@@ -56,7 +57,7 @@
     ]
   },
   "dependencies": {
-    "@actyx/machine-check": "^0.3.1",
+    "@actyx/machine-check": "file:./vendor/actyx-machine-check-0.3.1.tgz",
     "@dagrejs/dagre": "^1.1.4",
     "@types/vscode": "^1.93.0",
     "@xyflow/react": "^12.3.0",

@@ -144,4 +144,6 @@ export type HighlightNodes = { command: "highlightNodes", data: { protocol: Swar
 export type ChangeProtocolData = { name: string, swarmProtocol: SwarmProtocol, isStoreInMetaChecked: boolean, variables: string[] }
 export type ChangeProtocol = { command: "changeProtocol", data: ChangeProtocolData }
 
-export type MessageEventPayload = BuildProtocol | HighLightEdges | HighlightNodes | ChangeProtocol
+export type NewProtocolData = { protocolName: string }
+export type NewProtocol = { command: "newProtocol", data: NewProtocolData }
+export type MessageEventPayload = BuildProtocol | HighLightEdges | HighlightNodes | ChangeProtocol | NewProtocol

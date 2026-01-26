@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import JSON5 from "json5";
 import path from "path";
-import { SwarmProtocolType } from "@actyx/machine-check";
 import {
   checkUnconnectedNodes,
   checkDuplicatedEdgeLabels,
@@ -9,8 +8,8 @@ import {
   checkWellFormedness,
   hasInitial,
 } from "./error-utils";
-import { getValue, isSome, ProtocolReaderWriter } from "./protocol-reader-writer";
-import { Occurrence, OccurrenceInfo, SwarmProtocol } from "./types";
+import { ProtocolReaderWriter } from "./protocol-reader-writer";
+import { SwarmProtocol } from "./types";
 import { MetadataStore } from "./handle-metadata";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -30,11 +29,6 @@ export function activate(context: vscode.ExtensionContext) {
 
       const protocolReaderWriter = new ProtocolReaderWriter(store, activeEditor.document.fileName)
       let occurrences = protocolReaderWriter.getOccurrences(activeEditor.document.fileName)
-
-      if (occurrences.length === 0) {
-        vscode.window.showErrorMessage("No swarm protocol found");
-        return
-      }
 
       // Text file could have changed since last time meta was written.
       // Synch metadata to avoid drawing states that have been renamed
@@ -121,6 +115,27 @@ export function activate(context: vscode.ExtensionContext) {
             // await??
             store.setSwarmProtocolMetaData(activeEditor.document.fileName, message.data.name, message.data.swarmProtocol.metadata)
           }
+        } else if (message.command === "newProtocol") {
+          // Editor might have been closed or tabbed away from, so make sure it's visible
+          const editor = await vscode.window.showTextDocument(
+            activeEditor.document.uri
+          );
+          protocolReaderWriter.writeNewOccurrence(activeEditor.document.fileName, message.data)
+          // Wait until the editor has been updated
+          .then(() => {
+            // Get the updated occurrences and variables
+            occurrences = protocolReaderWriter.getOccurrences(editor.document.fileName, {reload: true, updateMeta: true} )
+            variables = protocolReaderWriter.getNames(activeEditor.document.fileName, true)
+
+            // Open the webview again with the new data
+            panel.webview.postMessage({
+              command: "buildProtocol",
+              data: {occurrences, variables: Array.from(variables)},
+            });
+
+            // Make sure the panel is visible again
+            panel.reveal();
+          }, (reason) => vscode.window.showErrorMessage(`Error updating file: ${reason}`));
         } else if (message === "noEdgeLabel") {
           vscode.window.showErrorMessage("All transitions must have a label");
         } else if (message === "noCommand") {

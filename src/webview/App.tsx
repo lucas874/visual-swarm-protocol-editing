@@ -7,6 +7,7 @@ import "./style.css";
 import PositionableEdge from "./custom-elements/PositionableEdge";
 import DownloadButton from "./custom-elements/DownloadButton";
 import SubscriptionsDialog from "./modals/SubscriptionsDialog";
+import NewProtocolDialog from "./modals/NewProtocolDialog";
 import useStore, { RFState } from "./store";
 import { shallow } from "zustand/shallow";
 
@@ -27,6 +28,8 @@ const App: React.FC = () => {
   const [occurrences, setOccurrences] = useState<Map<string, Occurrence>>(new Map());
   const [protocol, setProtocol] = useState<SwarmProtocol>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isNewProtocolDialogOpen, setIsNewProtocolDialogOpen] = useState(false);
+
   const { setVariables } = useStore(selector, shallow)
   const subRef = useRef<Record<string, string[]>>({});
   const selectedProtocolRef = React.useRef("");
@@ -188,6 +191,16 @@ const App: React.FC = () => {
     });
   }
 
+  function sendNewProtocolToExtension(protocolName: string) {
+    // Send the changes to the extension
+    vscode.postMessage({
+      command: "newProtocol",
+      data: {
+        protocolName,
+      },
+    });
+  }
+
   function updateSubscriptions(subs: Record<string, string[]>) {
     subRef.current = subs;
   }
@@ -210,6 +223,23 @@ const App: React.FC = () => {
           setIsDialogOpen={setIsDialogOpen}
           setSubscriptions={updateSubscriptions}
           subRef={subRef.current}
+        />
+      )}
+      <DownloadButton />
+      <button
+        className="button"
+        type="button"
+        onClick={(event) => {
+          setIsNewProtocolDialogOpen(true);
+        }}
+      >
+        Create new protocol
+      </button>
+      {/* Create a dialog to show subscriptions */}
+      {isNewProtocolDialogOpen && (
+        <NewProtocolDialog
+          setIsNewProtocolDialogOpen={setIsNewProtocolDialogOpen}
+          sendNewProtocolToExtension={sendNewProtocolToExtension}
         />
       )}
       {/* Select element for choosing the protocol, only if there are multiple occurrences */}
