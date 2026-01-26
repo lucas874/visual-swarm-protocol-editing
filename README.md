@@ -1,8 +1,8 @@
 # Visual Swarm Protocol Editing
 
-This Visual Studio Code extension is a fork of [Visual Swarm Protocol Editing](https://marketplace.visualstudio.com/items?itemName=CarolineFallesen.visual-swarm-protocol-editing), used for visualizing, editing and verifying elements of the type `SwarmProtocolType` from the [@actyx/machine-runner](https://github.com/Actyx/machines/tree/master/machine-runner) library. This library is part of the GitHub repository from Actyx called [machines](https://github.com/Actyx/machines).
+A Visual Studio Code extension for visualising, editing and verifying elements of the type `SwarmProtocolType` from the [@actyx/machine-runner](https://github.com/Actyx/machines/tree/master/machine-runner) library. This extension is a fork of [visual-swarm-protocol-editing](https://github.com/cbfallesen/visual-swarm-protocol-editing.git) by [cbfallesen](https://github.com/cbfallesen).
 
-The extension allows the user to visualise a protocol by using the VS Code command palette and using the command `Visualise protocol`. The extension can also be opened using the keybinding Ctrl + Shift + E (Cmd + Shift + E for Mac). The extension will show the flow described in the file, and from here, it is possible to make and save changes. When the protocol is saved, the program will perform a well-formedness check.
+The extension allows visualising a protocol by using the VS Code command palette and using the command `Visualise protocol`. The extension can also be opened using the keybinding Ctrl + Shift + E (Cmd + Shift + E for Mac). The extension will show the flow described in the file, and from here, it is possible to make and save changes. When the protocol is saved, the program will perform a well-formedness check.
 
 ## Features
 
@@ -150,3 +150,7 @@ const protocol: SwarmProtocolType = {
 
 - It is possible to drag a transition going from output to input, but it will create a transition in the opposite direction.
 - Transitions and labels may overlap with states. The problem can be solved by dragging states away from each other or dragging labels.
+
+
+## Acknowledgement
+The development of this tool was partly funded by the Horizon Europe project 101093006 TaRDIS - [https://project-tardis.eu/](https://project-tardis.eu/).
