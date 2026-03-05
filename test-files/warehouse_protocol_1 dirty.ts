@@ -113,27 +113,27 @@ export const warehouse3 = {
                 { source: "2", target: "Node hehe5", label: { cmd: "da", role: "RRRR", logType: ["ADsA"]} },
                 { source: newInitialState, target: initialState, label: { cmd: "dsadad", role: "RAR", logType: ["ASDSS"]} }
             ],
-            metadata: 
+            metadata:
             {
-                layout: 
+                layout:
                 {
                     nodes: [
-                    { name: initialState, x: 312.5, y: 37.5 }, 
-                    { name: "1", x: -228.1300168634064, y: 91.19376053962898 }, 
-                    { name: "2", x: 261.25, y: 287.5 }, 
-                    { name: "3", x: 585, y: 192 }, 
-                    { name: "Node hehe5", x: -48.63001686340641, y: 434.34416165504643 }, 
+                    { name: initialState, x: 312.5, y: 37.5 },
+                    { name: "1", x: -228.1300168634064, y: 91.19376053962898 },
+                    { name: "2", x: 261.25, y: 287.5 },
+                    { name: "3", x: 585, y: 192 },
+                    { name: "Node hehe5", x: -48.63001686340641, y: 434.34416165504643 },
                     { name: newInitialState, x: 312.9000900620339, y: -178.84584083850282 }
                     ],
                     edges: [
                     ]
                 },
-                subscriptions: 
+                subscriptions:
                 {
-                    T: [], 
-                    FL: [], 
-                    D: [], 
-                    RRRR: [], 
+                    T: [],
+                    FL: [],
+                    D: [],
+                    RRRR: [],
                     RAR: []
                 }
             }

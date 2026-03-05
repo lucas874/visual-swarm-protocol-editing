@@ -15,10 +15,11 @@ const FL = 'FL'
 const D = 'D'
 
 export const warehouse: SwarmProtocolType = {
-  initial: initialState,
-  transitions: [
-    {source: initialState, target: stateReqeuested, label: {cmd: cmdRequest, role: T, logType: [Events.partID.type]}},
-    {source: stateReqeuested, target: stateGotPos, label: {cmd: cmdGet, role: FL, logType: [Events.pos.type]}},
-    {source: stateGotPos, target: initialState, label: {cmd: cmdDeliver, role: T, logType: [part.type]}},
-    {source: initialState, target: stateClosed, label: {cmd: cmdClose, role: D, logType: [Events.time.type]}},
-  ]}
+            initial: initialState,
+            transitions: [
+                { source: initialState, target: stateReqeuested, label: { cmd: cmdRequest, role: T, logType: [Events.partID.type]} },
+                { source: stateReqeuested, target: stateGotPos, label: { cmd: cmdGet, role: FL, logType: [Events.pos.type]} },
+                { source: stateGotPos, target: initialState, label: { cmd: cmdDeliver, role: T, logType: [part.type]} },
+                { source: initialState, target: stateClosed, label: { cmd: cmdClose, role: D, logType: [Events.time.type]} }
+            ]
+        }

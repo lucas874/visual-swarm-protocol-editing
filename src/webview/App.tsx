@@ -266,7 +266,7 @@ const App: React.FC = () => {
 };
 
 function createSubscriptions(protocol): Record<string, string[]> {
-  let subscriptions = protocol.subscriptions ?? {};
+  let subscriptions = protocol.metadata?.subscriptions ?? {};
 
   protocol.transitions.map((transition) => {
     if (!Object.keys(subscriptions).includes(transition.label.role)) {
