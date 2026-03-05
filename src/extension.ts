@@ -251,59 +251,6 @@ async function errorChecks(swarmProtocol: SwarmProtocol): Promise<WellFormedness
   };
 }
 
-/* function getProtocolOccurrences(protocolReaderWriter: ProtocolReaderWriter, fileName: string): Occurrence[] {
-  protocolReaderWriter.parseProtocols(fileName)
-  const occurrences = protocolReaderWriter.getOccurrences(fileName)
-
-  if (occurrences.length === 0) {
-    vscode.window.showErrorMessage("No swarm protocol found");
-  }
-
-  return occurrences
-} */
-
-/* function getProtocolOccurrences(fileName: string, store: MetadataStore): OccurrenceAndAST[] {
-  const occurrencesOption = parseProtocols(fileName)
-  if (occurrencesOption.length === 0) {
-    vscode.window.showErrorMessage("No swarm protocol found");
-  }
-
-  if (!occurrencesOption.every(o => isSome(o))) {
-    vscode.window.showErrorMessage("Error parsing swarm protocols");
-    return []
-  }
-  return occurrencesOption
-    .map(someOccurrenceAndAst => getValue(someOccurrenceAndAst))
-    .map(occurrenceAndAst => {
-      return {
-        ...occurrenceAndAst,
-        occurrence: {
-          ...occurrenceAndAst.occurrence,
-          swarmProtocol: {
-            ...occurrenceAndAst.occurrence.swarmProtocol,
-            metadata: store.getSwarmProtocolMetaData(fileName, occurrenceAndAst.occurrence.name)
-          }
-        }
-      }
-    })
-}
-
-function updateOccurrenceMeta(fileName: string, store: MetadataStore, occurrencesAndAsts: OccurrenceAndAST[]): OccurrenceAndAST[] {
-  return occurrencesAndAsts
-    .map(occurrenceAndAst => {
-      return {
-        ...occurrenceAndAst,
-        occurrence: {
-          ...occurrenceAndAst.occurrence,
-          swarmProtocol: {
-            ...occurrenceAndAst.occurrence.swarmProtocol,
-            metadata: store.getSwarmProtocolMetaData(fileName, occurrenceAndAst.occurrence.name)
-          }
-        }
-      }
-    })
-} */
-
 function getReactAppHtml(scriptUri: vscode.Uri): string {
   return `
     <!DOCTYPE html>

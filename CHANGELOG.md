@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.3.2] - 05.03.2026
+
+- Fixed bug preventing subscriptions from being shown in visual editor in some cases.
+
 ## [0.3.2] - 20.11.2025
 
 - Changed how protocols are parsed before being visualised. Fields of protocol definitions may consist of expressions such as identifiers and function calls --- not only string literals.
