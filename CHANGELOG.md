@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.3.4] - 05.03.2026
+
+- Fixed version number error.
+
 ## [0.3.3] - 05.03.2026
 
 - Fixed bug preventing subscriptions from being shown in visual editor in some cases.
