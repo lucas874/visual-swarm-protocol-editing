@@ -36,23 +36,23 @@ export const warehouse = {
                 { source: got, target: initialState, label: { cmd: deliver, role: T, logType: [part.type]} },
                 { source: initialState, target: closed, label: { cmd: clozzzz, role: D, logType: [time]} }
             ],
-            metadata: 
+            metadata:
             {
-                layout: 
+                layout:
                 {
                     nodes: [
-                    { name: initialState, x: 286.5, y: -15 }, 
-                    { name: requested, x: 75, y: 105.5 }, 
-                    { name: got, x: 226, y: 241.5 }, 
+                    { name: initialState, x: 286.5, y: -15 },
+                    { name: requested, x: 75, y: 105.5 },
+                    { name: got, x: 226, y: 241.5 },
                     { name: closed, x: 453.5, y: 130.5 }
                     ],
                     edges: [
                     ]
                 },
-                subscriptions: 
+                subscriptions:
                 {
-                    T: [Events.partID.type, Events.pos.type, part.type, time], 
-                    FL: [Events.partID.type, Events.pos.type, time], 
+                    T: [Events.partID.type, Events.pos.type, part.type, time],
+                    FL: [Events.partID.type, Events.pos.type, time],
                     D: [Events.partID.type, part.type, time]
                 }
             }
